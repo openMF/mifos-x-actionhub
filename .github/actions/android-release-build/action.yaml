@@ -1,0 +1,117 @@
+name: 'Android Release Build'
+description: 'Generate APKs for Android project'
+
+inputs:
+  package_name:
+    description: 'Name of the Android project module'
+    type: string
+    required: true
+  version_code:
+    description: 'Version code for the APK'
+    type: string
+    required: true
+  keystore_file_path:
+    description: 'Encrypted keystore file'
+    type: string
+    required: true
+  keystore_password:
+    description: 'Password for the keystore file'
+    type: string
+    required: true
+  keystore_alias:
+    description: 'Alias for the keystore'
+    type: string
+    required: true
+  keystore_alias_password:
+    description: 'Password for the keystore alias'
+    type: string
+    required: true
+  google_services:
+    description: 'google-services.json file'
+    type: string
+    required: true
+  playstore_creds:
+    description: 'Play Store credentials'
+    type: string
+    required: true
+  firebase_creds:
+    description: 'Firebase credentials'
+    type: string
+    required: true
+
+outputs:
+  demo-apk-path:
+    description: 'Path to demo APK'
+    value: ${{ steps.save-apk.outputs.demo-apk-path }}
+  prod-apk-path:
+    description: 'Path to production APK'
+    value: ${{ steps.save-apk.outputs.prod-apk-path }}
+
+runs:
+  using: "composite"
+  steps:
+    # Check out repository code
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    # Setup Java development environment
+    - name: Set up JDK 17
+      uses: actions/setup-java@v4.2.2
+      with:
+        distribution: 'temurin'
+        java-version: '17'
+
+    # Configure Gradle build tool
+    - name: Setup Gradle
+      uses: gradle/actions/setup-gradle@v4
+
+    # Cache Gradle dependencies to speed up builds
+    - uses: actions/cache@v3
+      with:
+        path: |
+          ~/.gradle/caches
+          ~/.gradle/wrapper
+          ~/.konan
+          build
+        key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*') }}
+
+    # Decrypt and prepare required secrets for signing
+    - uses: ./.github/actions/inflate-secrets
+      name: Inflate Secrets
+      with:
+        android_module_path: ${{ inputs.package_name }}
+        keystore: ${{ inputs.keystore_file_path }}
+        google-services: ${{ inputs.google_services }}
+        playstore-creds: ${{ inputs.playstore_creds }}
+        firebase-creds: ${{ inputs.firebase_creds }}
+
+    # Build signed release APK
+    - name: Build Release
+      env:
+        KEYSTORE_PASSWORD: ${{ inputs.keystore_password }}
+        KEYSTORE_ALIAS: ${{ inputs.keystore_alias }}
+        KEYSTORE_ALIAS_PASSWORD: ${{ inputs.keystore_alias_password }}
+        VERSION_CODE: ${{ inputs.version_code }}
+      run: |
+        ./gradlew :${{ inputs.package_name }}:assembleRelease
+
+    - name: Collect APK Paths
+      id: collect_apks
+      shell: bash
+      run: |
+        echo "demo-apk-path=./${{ inputs.package_name }}/build/outputs/apk/demo/release/${{ inputs.package_name }}-demo-release.apk" >> $GITHUB_OUTPUT
+        echo "prod-apk-path=./${{ inputs.package_name }}/build/outputs/apk/prod/release/${{ inputs.package_name }}-prod-release.apk" >> $GITHUB_OUTPUT
+
+    # Save built APKs as artifacts
+    - name: Upload Android Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: android-app
+        retention-days: 1
+        compression-level: 9
+        path: |
+          ./${{ inputs.package_name }}/build/outputs/apk/demo/release/${{ inputs.package_name }}-demo-release.apk
+          ./${{ inputs.package_name }}/build/outputs/apk/prod/release/${{ inputs.package_name }}-prod-release.apk
+
+
+
