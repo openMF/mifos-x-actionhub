@@ -4,11 +4,8 @@ on:
   workflow_call:
     inputs:
       release_type:
-        type: choice
-        options:
-          - internal
-          - beta
-        default: internal
+        type: string
+        default: 'internal'
         description: Release Type
       
       publish_android:
