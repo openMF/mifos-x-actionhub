@@ -76,14 +76,14 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: git-changelog
-          path: 'caller-repo/${{inputs.android_package_name}}/build/outputs/changelogGithub'
+          path: 'caller-repo/changelogGithub'
 
       # Save beta changelog
       - name: Upload Beta Changelog
         uses: actions/upload-artifact@v4
         with:
           name: beta-changelog
-          path: 'caller-repo/${{inputs.android_package_name}}/build/outputs/changelogBeta'
+          path: 'caller-repo/changelogBeta'
 
   # Build and publish web app
   build_android:
