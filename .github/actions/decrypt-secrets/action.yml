@@ -19,6 +19,9 @@ inputs:
 runs:
   using: 'composite'
   steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+
     - name: Mock debug google-services.json
       shell: bash
       run: |
