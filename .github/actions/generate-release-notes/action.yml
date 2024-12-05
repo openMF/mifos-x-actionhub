@@ -74,9 +74,9 @@ runs:
         
         echo "Full Changelog:"
         CHANGELOG="${{ steps.generate-notes.outputs.result }}"
-        
         echo -e "$CHANGELOG"
         printf "$CHANGELOG" > caller-repo/changelogGithub
 
         echo "Beta Changelog:"
-        git log --format="* %s" HEAD^..HEAD > caller-repo/changelogBeta
+        cd caller-repo
+        git log --format="* %s" HEAD^..HEAD > changelogBeta
