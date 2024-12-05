@@ -54,6 +54,12 @@ runs:
     - name: Checkout
       uses: actions/checkout@v4
 
+    # Check out current repository
+    - name: Checkout
+      uses: actions/checkout@v4
+      with:
+        repository: niyajali/mifos-mobile-github-actions
+
     # Setup Java development environment
     - name: Set up JDK 17
       uses: actions/setup-java@v4.2.2
@@ -92,6 +98,7 @@ runs:
         KEYSTORE_ALIAS: ${{ inputs.keystore_alias }}
         KEYSTORE_ALIAS_PASSWORD: ${{ inputs.keystore_alias_password }}
         VERSION_CODE: ${{ inputs.version_code }}
+      shell: bash
       run: |
         ./gradlew :${{ inputs.package_name }}:assembleRelease
 
