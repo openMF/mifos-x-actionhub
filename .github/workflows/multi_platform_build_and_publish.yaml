@@ -26,53 +26,6 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  # Generate release information
-  generate_release_info:
-    name: Generate Release Info
-    runs-on: ubuntu-latest
-    outputs:
-      version: ${{ steps.rel_number.outputs.version }}
-      version_code: ${{ steps.rel_number.outputs.version-code }}
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      # Setup Java environment
-      - uses: actions/setup-java@v4
-        with:
-          java-version: 17
-          distribution: 'temurin'
-
-      # Configure Gradle
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v4
-
-      # Generate version number
-      - uses: ./.github/actions/create-release-number
-        name: Create Release Number
-        id: rel_number
-
-      # Create release notes
-      - uses: ./.github/actions/create-release-notes
-        name: Create Release Notes
-        with:
-          tag-name: ${{ steps.rel_number.outputs.version }}
-          gh-token: ${{ secrets.GITHUB_TOKEN }}
-
-      # Save GitHub changelog
-      - name: Upload GitHub Changelog
-        uses: actions/upload-artifact@v4
-        with:
-          name: git-changelog
-          path: './${{inputs.android_package_name}}/build/outputs/changelogGithub'
-
-      # Save beta changelog
-      - name: Upload Beta Changelog
-        uses: actions/upload-artifact@v4
-        with:
-          name: beta-changelog
-          path: './${{inputs.android_package_name}}/build/outputs/changelogBeta'
 
   # Build and publish web app
   build_android:
@@ -80,13 +33,20 @@ jobs:
     runs-on: ubuntu-latest
     needs: [ generate_release_info ]
     steps:
-      # Check out repository code
-      - name: Checkout
+      # Check out caller repository
+      - name: Checkout Caller Repository
+        uses: actions/checkout@v4
+        with:
+          path: caller-repo
+
+      # Check out actions repository
+      - name: Checkout Actions Repository
         uses: actions/checkout@v4
         with:
           repository: niyajali/mifos-mobile-github-actions
+          path: actions-repo
 
-      - uses: ./.github/actions/android-release-build
+      - uses: ./actions-repo/.github/actions/android-release-build
         with:
           package_name: ${{ inputs.android_package_name }}
           version_code: ${{ needs.generate_release_info.outputs.version_code }}
@@ -203,7 +163,7 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
 
       # Prepare necessary secrets
-      - uses: ./.github/actions/inflate-secrets
+      - uses: ./.github/actions/decrypt-secrets
         name: Inflate Secrets
         with:
           keystore: ${{ secrets.UPLOAD_KEYSTORE_FILE }}
@@ -236,3 +196,64 @@ jobs:
       - name: Promote Internal to Beta
         if: github.event.inputs.release_type == 'beta'
         run: bundle exec fastlane promote_to_beta
+
+  # Generate release information
+  generate_release_info:
+    name: Generate Release Info
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.rel_number.outputs.version }}
+      version_code: ${{ steps.rel_number.outputs.version-code }}
+    steps:
+      - uses: actions/checkout@v4
+
+
+      # Check out caller repository
+      - name: Checkout Caller Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          path: caller-repo
+
+      # Check out actions repository
+      - name: Checkout Actions Repository
+        uses: actions/checkout@v4
+        with:
+          repository: niyajali/mifos-mobile-github-actions
+          path: actions-repo
+
+      # Setup Java environment
+      - uses: actions/setup-java@v4
+        with:
+          java-version: 17
+          distribution: 'temurin'
+
+      # Configure Gradle
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      # Generate version number
+      - uses: ./actions-repo/.github/actions/generate-release-number
+        name: Create Release Number
+        id: rel_number
+
+      # Create release notes
+      - uses: ./actions-repo/.github/actions/generate-release-notes
+        name: Create Release Notes
+        with:
+          tag-name: ${{ steps.rel_number.outputs.version }}
+          gh-token: ${{ secrets.GITHUB_TOKEN }}
+
+      # Save GitHub changelog
+      - name: Upload GitHub Changelog
+        uses: actions/upload-artifact@v4
+        with:
+          name: git-changelog
+          path: 'caller-repo/${{inputs.android_package_name}}/build/outputs/changelogGithub'
+
+      # Save beta changelog
+      - name: Upload Beta Changelog
+        uses: actions/upload-artifact@v4
+        with:
+          name: beta-changelog
+          path: 'caller-repo/${{inputs.android_package_name}}/build/outputs/changelogBeta'
