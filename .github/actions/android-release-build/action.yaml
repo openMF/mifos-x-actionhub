@@ -94,11 +94,10 @@ runs:
 
     - name: Collect APK Paths
       id: collect_apks
-      working-directory: caller-repo
       shell: bash
       run: |
-        echo "demo-apk-path=./${{ inputs.package_name }}/build/outputs/apk/demo/release/${{ inputs.package_name }}-demo-release.apk" >> $GITHUB_OUTPUT
-        echo "prod-apk-path=./${{ inputs.package_name }}/build/outputs/apk/prod/release/${{ inputs.package_name }}-prod-release.apk" >> $GITHUB_OUTPUT
+        echo "demo-apk-path=${{ inputs.package_name }}/build/outputs/apk/demo/release/${{ inputs.package_name }}-demo-release.apk" >> $GITHUB_OUTPUT
+        echo "prod-apk-path=${{ inputs.package_name }}/build/outputs/apk/prod/release/${{ inputs.package_name }}-prod-release.apk" >> $GITHUB_OUTPUT
 
     # Save built APKs as artifacts
     - name: Upload Android Artifact
