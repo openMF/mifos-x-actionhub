@@ -50,9 +50,6 @@ outputs:
 runs:
   using: "composite"
   steps:
-    - name: Checkout Repository
-      uses: actions/checkout@v4
-
     # Setup Java development environment
     - name: Set up JDK 17
       uses: actions/setup-java@v4.2.2
