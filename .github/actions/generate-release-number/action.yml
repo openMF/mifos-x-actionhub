@@ -14,6 +14,8 @@ runs:
       id: version-generator
       shell: bash
       run: |
+        cd caller-repo
+        chmod +x gradlew
         ./gradlew versionFile
         COMMITS=`git rev-list --count HEAD`
         TAGS=`git tag | grep -v beta | wc -l`
