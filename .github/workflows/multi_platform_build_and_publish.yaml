@@ -101,6 +101,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          path: caller-repo
 
       # Setup Java development environment
       - name: Set up JDK 17
@@ -140,9 +141,10 @@ jobs:
           KEYSTORE_PASSWORD: ${{ secrets.ORIGINAL_KEYSTORE_FILE_PASSWORD }}
           KEYSTORE_ALIAS: ${{ secrets.ORIGINAL_KEYSTORE_ALIAS }}
           KEYSTORE_ALIAS_PASSWORD: ${{ secrets.ORIGINAL_KEYSTORE_ALIAS_PASSWORD }}
-          VERSION_CODE:  "30" # ${{ needs.generate_release_info.outputs.version_code }}
+          VERSION_CODE: "30" # ${{ needs.generate_release_info.outputs.version_code }}
         shell: bash
         run: |
+          cd caller-repo
           ./gradlew :${{ inputs.android_package_name }}:assembleRelease
 
       # Save built APKs as artifacts
@@ -153,10 +155,12 @@ jobs:
           retention-days: 1
           compression-level: 9
           path: |
-            ${{ inputs.android_package_name }}/build/outputs/apk/demo/release/${{ inputs.android_package_name }}-demo-release.apk
-            ${{ inputs.android_package_name }}/build/outputs/apk/prod/release/${{ inputs.android_package_name }}-prod-release.apk
+            caller-repo/${{ inputs.android_package_name }}/build/outputs/apk/demo/release/${{ inputs.android_package_name }}-demo-release.apk
+            caller-repo/${{ inputs.android_package_name }}/build/outputs/apk/prod/release/${{ inputs.android_package_name }}-prod-release.apk
   
-
+  
+  
+  
 
 
   # Publish Android app on Firebase App Distribution
