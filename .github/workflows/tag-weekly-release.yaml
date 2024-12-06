@@ -4,13 +4,12 @@
 name: Tag Weekly Release
 
 on:
-  # Allow manual triggering of the workflow
-  workflow_dispatch:
-  # Schedule the workflow to run weekly
-  schedule:
-    # Runs at 04:00 UTC every Sunday
-    # Cron syntax: minute hour day-of-month month day-of-week
-    - cron: '0 4 */2 * 0'
+  workflow_call:
+    inputs:
+      target_branch:
+        type: string
+        default: 'dev'
+        description: 'Target branch for release'
 
 jobs:
   tag:
@@ -45,8 +44,8 @@ jobs:
             github.rest.actions.createWorkflowDispatch({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              workflow_id: 'build_and_publish_on_platforms.yaml',
-              ref: 'dev',
+              workflow_id: 'multi-platform-build-and-publish.yaml',
+              ref: '${{ inputs.target_branch }}',
               inputs: {
                 "release_type": "beta",
               },

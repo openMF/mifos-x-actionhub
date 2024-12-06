@@ -1,12 +1,20 @@
 # GitHub Actions workflow for continuous integration of Mobile-Wallet project
 # Runs on master and dev branches to ensure code quality and build stability
-name: Mobile-Wallet CI[Master/Dev]
+name: Debug Build & PR Checks
 
 # Trigger conditions for the workflow
 on:
-  push:
-    branches: [ dev ]  # Runs on pushes to dev branch
-  pull_request:       # Runs on all pull requests
+  workflow_call:
+    inputs:
+      android_package_name:
+        description: 'Name of the Android project module'
+        type: string
+        required: true
+
+      desktop_package_name:
+        description: 'Name of the Desktop project module'
+        type: string
+        required: true
 
 # Concurrency settings to prevent multiple simultaneous workflow runs
 concurrency:
@@ -72,6 +80,8 @@ jobs:
           path: |
             **/build/reports/detekt/detekt.md
 
+
+
   # Dependency verification and management job
   dependency_guard:
     needs: setup
@@ -87,7 +97,7 @@ jobs:
       - name: Check Dependency Guard
         id: dependencyguard_verify
         continue-on-error: true
-        run: ./gradlew :mifospay-android:dependencyGuard
+        run: ./gradlew :${{ inputs.android_package_name }}:dependencyGuard
 
       # Prevent baseline updates on fork PRs
       - name: Prevent updating Dependency Guard baselines if this is a fork
@@ -101,7 +111,7 @@ jobs:
         id: dependencyguard_baseline
         if: steps.dependencyguard_verify.outcome == 'failure' && github.event_name == 'pull_request'
         run: |
-          ./gradlew :mifospay-android:dependencyGuardBaseline
+          ./gradlew :${{ inputs.android_package_name }}:dependencyGuardBaseline
 
       # Automatically commit new baselines if generated
       - name: Push new Dependency Guard baselines if available
@@ -125,7 +135,7 @@ jobs:
 
       # Build debug APK for demo flavor
       - name: Build APKs
-        run: ./gradlew :mifospay-android:assembleDemoDebug
+        run: ./gradlew :${{ inputs.android_package_name }}:assembleDemoDebug
 
       # Upload built APKs as artifacts
       - name: Upload APKs
@@ -166,8 +176,8 @@ jobs:
         with:
           name: Windows-Apps
           path: |
-            ./mifospay-desktop/build/compose/binaries/main/exe/*.exe
-            ./mifospay-desktop/build/compose/binaries/main/msi/*.msi
+            ./${{ inputs.desktop_package_name }}/build/compose/binaries/main/exe/*.exe
+            ./${{ inputs.desktop_package_name }}/build/compose/binaries/main/msi/*.msi
 
       # Upload Linux package
       - name: Upload Linux App
@@ -175,7 +185,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: Linux-App
-          path: './mifospay-desktop/build/compose/binaries/main/deb/*.deb'
+          path: './${{ inputs.desktop_package_name }}/build/compose/binaries/main/deb/*.deb'
 
       # Upload MacOS package
       - name: Upload MacOS App
@@ -183,4 +193,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: MacOS-App
-          path: './mifospay-desktop/build/compose/binaries/main/dmg/*.dmg'
+          path: './${{ inputs.desktop_package_name }}/build/compose/binaries/main/dmg/*.dmg'

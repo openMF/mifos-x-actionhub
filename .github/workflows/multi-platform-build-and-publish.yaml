@@ -24,12 +24,12 @@ on:
         required: true
 
       desktop_package_name:
-        description: 'Name of the iOS project module'
+        description: 'Name of the Desktop project module'
         type: string
         required: true
 
       web_package_name:
-        description: 'Name of the iOS project module'
+        description: 'Name of the Web project module'
         type: string
         required: true
 
