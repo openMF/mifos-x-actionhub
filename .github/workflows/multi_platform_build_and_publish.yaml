@@ -97,6 +97,17 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
 
+      # Decrypt and prepare required secrets for signing
+      - uses: ./actions-repo/.github/actions/decrypt-secrets
+        name: Inflate Secrets
+        with:
+          android_module_path: ${{ inputs.android_package_name }}
+          keystore: ${{ secrets.ORIGINAL_KEYSTORE_FILE }}
+          google-services: ${{ secrets.GOOGLESERVICES }}
+          playstore-creds: ${{ secrets.PLAYSTORECREDS }}
+          firebase-creds: ${{ secrets.FIREBASECREDS }}
+
+
       # Generate version number
       - uses: ./actions-repo/.github/actions/generate-release-number
         name: Create Release Number
@@ -108,17 +119,6 @@ jobs:
         with:
           tag-name: ${{ steps.rel_number.outputs.version }}
           gh-token: ${{ secrets.GITHUB_TOKEN }}
-
-      # Decrypt and prepare required secrets for signing
-      - uses: ./actions-repo/.github/actions/decrypt-secrets
-        name: Inflate Secrets
-        with:
-          android_module_path: ${{ inputs.android_package_name }}
-          keystore: ${{ secrets.ORIGINAL_KEYSTORE_FILE }}
-          google-services: ${{ secrets.GOOGLESERVICES }}
-          playstore-creds: ${{ secrets.PLAYSTORECREDS }}
-          firebase-creds: ${{ secrets.FIREBASECREDS }}
-
 
       # Save GitHub changelog
       - name: Upload GitHub Changelog
@@ -133,6 +133,7 @@ jobs:
         with:
           name: beta-changelog
           path: 'caller-repo/changelogBeta'
+
 
   # Build and publish web app
   build_android:
@@ -265,18 +266,25 @@ jobs:
     if: inputs.publish_android
     runs-on: macos-latest
     steps:
-      # Check out caller repository
-      - name: Checkout Caller Repository
-        uses: actions/checkout@v4
-        with:
-          path: caller-repo
-
       # Check out actions repository
       - name: Checkout Actions Repository
         uses: actions/checkout@v4
         with:
           repository: niyajali/mifos-mobile-github-actions
           path: actions-repo
+
+      # Prepare necessary secrets
+      - uses: ./actions-repo/.github/actions/decrypt-secrets
+        name: Inflate Secrets
+        with:
+          keystore: ${{ secrets.UPLOAD_KEYSTORE_FILE }}
+          google-services: ${{ secrets.GOOGLESERVICES }}
+          playstore-creds: ${{ secrets.PLAYSTORECREDS }}
+          firebase-creds: ${{ secrets.FIREBASECREDS }}
+
+      # Check out caller repository
+      - name: Checkout Caller Repository
+        uses: actions/checkout@v4
 
       # Setup Java environment
       - name: Set up JDK 17
@@ -302,15 +310,6 @@ jobs:
       # Setup Gradle build tool
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
-
-      # Prepare necessary secrets
-      - uses: ./actions-repo/.github/actions/decrypt-secrets
-        name: Inflate Secrets
-        with:
-          keystore: ${{ secrets.UPLOAD_KEYSTORE_FILE }}
-          google-services: ${{ secrets.GOOGLESERVICES }}
-          playstore-creds: ${{ secrets.PLAYSTORECREDS }}
-          firebase-creds: ${{ secrets.FIREBASECREDS }}
 
       # Build Android App Bundle for Play Store
       - name: Build Release
