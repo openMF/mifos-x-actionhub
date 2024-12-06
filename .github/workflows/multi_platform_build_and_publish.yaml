@@ -118,7 +118,7 @@ jobs:
           key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*') }}
 
       # Decrypt and prepare required secrets for signing
-      - uses: niyajali/mifos-mobile-github-actions/.github/actions/decrypt-secrets
+      - uses: ./niyajali/mifos-mobile-github-actions/.github/actions/decrypt-secrets
         name: Inflate Secrets
         with:
           android_module_path: ${{ inputs.android_package_name }}
