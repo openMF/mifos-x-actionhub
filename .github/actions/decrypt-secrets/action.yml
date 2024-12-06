@@ -49,7 +49,7 @@ runs:
         CREDS: ${{ inputs.playstore-creds }}
       run: |
         # Create the file with appropriate permissions
-        touch ${{ inputs.android_module_path }}/playStorePublishServiceCredentialsFile.json
+        touch caller-repo/${{ inputs.android_module_path }}/playStorePublishServiceCredentialsFile.json
         echo $CREDS > caller-repo/${{ inputs.android_module_path }}/playStorePublishServiceCredentialsFile.json
 
     - name: Inflate firebaseAppDistributionServiceCredentialsFile.json
