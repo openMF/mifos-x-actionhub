@@ -11,7 +11,6 @@ on:
       target_branch:
         type: string
         default: 'dev'
-        required: true
         description: 'Target branch for release'
 
       android_package_name:
