@@ -8,6 +8,12 @@ on:
         default: 'internal'
         description: Release Type
 
+      target_branch:
+        type: string
+        default: 'dev'
+        required: true
+        description: 'Target branch for release'
+
       android_package_name:
         description: 'Name of the Android project module'
         type: string
@@ -78,14 +84,6 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          path: caller-repo
-
-      # Check out actions repository
-      - name: Checkout Actions Repository
-        uses: actions/checkout@v4
-        with:
-          repository: niyajali/mifos-mobile-github-actions
-          path: actions-repo
 
       # Setup Java environment
       - uses: actions/setup-java@v4
@@ -97,43 +95,72 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
 
-      # Decrypt and prepare required secrets for signing
-      - uses: ./actions-repo/.github/actions/decrypt-secrets
-        name: Inflate Secrets
-        with:
-          android_module_path: ${{ inputs.android_package_name }}
-          keystore: ${{ secrets.ORIGINAL_KEYSTORE_FILE }}
-          google-services: ${{ secrets.GOOGLESERVICES }}
-          playstore-creds: ${{ secrets.PLAYSTORECREDS }}
-          firebase-creds: ${{ secrets.FIREBASECREDS }}
-
-
       # Generate version number
-      - uses: ./actions-repo/.github/actions/generate-release-number
-        name: Create Release Number
+      - name: Generate Release Number
         id: rel_number
+        shell: bash
+        run: |
+          ./gradlew versionFile
+          COMMITS=`git rev-list --count HEAD`
+          TAGS=`git tag | grep -v beta | wc -l`
+          VC=$(((COMMITS+TAGS) << 1))
+          echo "version-code=$VC" >> $GITHUB_OUTPUT
+          VERSION=`cat version.txt`
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
 
-      # Create release notes
-      - uses: ./actions-repo/.github/actions/generate-release-notes
-        name: Create Release Notes
+
+      - name: Generate Release Notes
+        uses: actions/github-script@v7
+        id: release-notes
         with:
-          tag-name: ${{ steps.rel_number.outputs.version }}
-          gh-token: ${{ secrets.GITHUB_TOKEN }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            try {
+              // Get latest release tag
+              const latestRelease = await github.rest.repos.getLatestRelease({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+              });
+              const previousTag = latestRelease.data.tag_name;
+            
+              // Generate release notes
+              const params = {
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                tag_name: '${{ steps.rel_number.outputs.version }}',
+                target_commitish: '${{ github.event.inputs.target_branch }}'
+              };
+            
+              const { data } = await github.rest.repos.generateReleaseNotes(params);
+              const changelog = data.body.replaceAll('`', '\'').replaceAll('"', '\'');
+            
+              // Write changelog files
+              const fs = require('fs');
+              fs.writeFileSync('changelogGithub', changelog);
+            
+              // Generate beta changelog
+              const { execSync } = require('child_process');
+              execSync('git log --format="* %s" HEAD^..HEAD > changelogBeta');
+            
+              return changelog;
+            } catch (error) {
+              console.error('Error generating release notes:', error);
+              return '';
+            }
 
       # Save GitHub changelog
       - name: Upload GitHub Changelog
         uses: actions/upload-artifact@v4
         with:
           name: git-changelog
-          path: 'caller-repo/changelogGithub'
+          path: changelogGithub
 
       # Save beta changelog
       - name: Upload Beta Changelog
         uses: actions/upload-artifact@v4
         with:
           name: beta-changelog
-          path: 'caller-repo/changelogBeta'
-
+          path: changelogBeta
 
   # Build and publish web app
   build_android:
@@ -141,8 +168,8 @@ jobs:
     runs-on: ubuntu-latest
     needs: [ generate_release_info ]
     steps:
-      # Check out caller repository
-      - name: Checkout Caller Repository
+      # Check out repository
+      - name: Checkout Repository
         uses: actions/checkout@v4
 
       # Setup Java development environment
@@ -165,6 +192,32 @@ jobs:
             ~/.konan
             build
           key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*') }}
+
+      - name: Inflate Secrets
+        shell: bash
+        env:
+          KEYSTORE: ${{ secrets.ORIGINAL_KEYSTORE_FILE }}
+          GOOGLE_SERVICES: ${{ secrets.GOOGLESERVICES }}
+          PLAYSTORE_CREDS: ${{ secrets.PLAYSTORECREDS }}
+          FIREBASE_CREDS: ${{ secrets.FIREBASECREDS }}
+        run: |
+          # Mock debug google-services.json
+          cp .github/mock-google-services.json ${{ inputs.android-module-path }}/google-services.json
+          
+          # Inflate keystore
+          echo $KEYSTORE | base64 --decode > ${{ inputs.android-module-path }}/release_keystore.keystore
+          
+          # Inflate google-services.json
+          echo $GOOGLE_SERVICES > ${{ inputs.android-module-path }}/google-services.json
+          
+          # Inflate PlayStore credentials
+          touch ${{ inputs.android-module-path }}/playStorePublishServiceCredentialsFile.json
+          echo $PLAYSTORE_CREDS > ${{ inputs.android-module-path }}/playStorePublishServiceCredentialsFile.json
+          
+          # Inflate Firebase credentials
+          touch ${{ inputs.android-module-path }}/firebaseAppDistributionServiceCredentialsFile.json
+          echo $FIREBASE_CREDS > ${{ inputs.android-module-path }}/firebaseAppDistributionServiceCredentialsFile.json
+
 
       # Build signed release APK
       - name: Build Release
@@ -252,6 +305,13 @@ jobs:
           mv ./android-artifacts/prod/release/${{inputs.android_package_name}}-prod-release.apk ./${{inputs.android_package_name}}/build/outputs/apk/prod/release/
           mv ./changelogBeta ./${{inputs.android_package_name}}/build/outputs/
 
+      - name: Inflate Secrets
+        shell: bash
+        env:
+          FIREBASE_CREDS: ${{ secrets.FIREBASECREDS }}
+        run: |
+          touch ${{ inputs.android-module-path }}/firebaseAppDistributionServiceCredentialsFile.json
+          echo $FIREBASE_CREDS > ${{ inputs.android-module-path }}/firebaseAppDistributionServiceCredentialsFile.json
 
       # Deploy to Firebase App Distribution
       - name: ☁️ Deploy to Firebase
@@ -266,22 +326,6 @@ jobs:
     if: inputs.publish_android
     runs-on: macos-latest
     steps:
-      # Check out actions repository
-      - name: Checkout Actions Repository
-        uses: actions/checkout@v4
-        with:
-          repository: niyajali/mifos-mobile-github-actions
-          path: actions-repo
-
-      # Prepare necessary secrets
-      - uses: ./actions-repo/.github/actions/decrypt-secrets
-        name: Inflate Secrets
-        with:
-          keystore: ${{ secrets.UPLOAD_KEYSTORE_FILE }}
-          google-services: ${{ secrets.GOOGLESERVICES }}
-          playstore-creds: ${{ secrets.PLAYSTORECREDS }}
-          firebase-creds: ${{ secrets.FIREBASECREDS }}
-
       # Check out caller repository
       - name: Checkout Caller Repository
         uses: actions/checkout@v4
@@ -310,6 +354,32 @@ jobs:
       # Setup Gradle build tool
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
+
+      - name: Inflate Secrets
+        shell: bash
+        env:
+          KEYSTORE: ${{ secrets.UPLOAD_KEYSTORE_FILE }}
+          GOOGLE_SERVICES: ${{ secrets.GOOGLESERVICES }}
+          PLAYSTORE_CREDS: ${{ secrets.PLAYSTORECREDS }}
+          FIREBASE_CREDS: ${{ secrets.FIREBASECREDS }}
+        run: |
+          # Mock debug google-services.json
+          cp .github/mock-google-services.json ${{ inputs.android-module-path }}/google-services.json
+
+          # Inflate keystore
+          echo $KEYSTORE | base64 --decode > ${{ inputs.android-module-path }}/release_keystore.keystore
+
+          # Inflate google-services.json
+          echo $GOOGLE_SERVICES > ${{ inputs.android-module-path }}/google-services.json
+
+          # Inflate PlayStore credentials
+          touch ${{ inputs.android-module-path }}/playStorePublishServiceCredentialsFile.json
+          echo $PLAYSTORE_CREDS > ${{ inputs.android-module-path }}/playStorePublishServiceCredentialsFile.json
+
+          # Inflate Firebase credentials
+          touch ${{ inputs.android-module-path }}/firebaseAppDistributionServiceCredentialsFile.json
+          echo $FIREBASE_CREDS > ${{ inputs.android-module-path }}/firebaseAppDistributionServiceCredentialsFile.json
+      
 
       # Build Android App Bundle for Play Store
       - name: Build Release
@@ -599,43 +669,33 @@ jobs:
   # Creates GitHub release with all built artifacts
   github_release:
     name: Create Github Release
-    #Specifies that this job depends on the successful completion of the build and release information generation jobs for all platforms (Android, desktop, web, iOS).
     needs: [ build_android, build_desktop, build_web, build_ios, generate_release_info ]
-    #This job will only run if the release_type input is set to beta when the workflow is triggered.
-    #This indicates that this job is specifically for creating beta releases.
     if: inputs.release_type == 'beta'
     runs-on: ubuntu-latest
-    # Checks out the repository code using the actions/checkout@v4 action.
     steps:
       - uses: actions/checkout@v4
-        #Fetches the complete commit history, which might be necessary for including commit information in the release.
         with:
           fetch-depth: 0
 
       # Get all build artifacts
-      #Downloads all the build artifacts from previous jobs using the actions/download-artifact@v4 action.
       - name: Download All Artifacts
         uses: actions/download-artifact@v4
-        #Defines the local directory where the downloaded artifacts will be stored.
         with:
           path: ./all-artifacts
 
       # Debug: Show downloaded files
-      # Executes the ls -R ./all-artifacts command to list the downloaded artifacts and their directory structure.
-      #This is a debugging step to verify the downloaded files.
       - name: Display structure of downloaded files
         run: ls -R ./all-artifacts
 
       #Creates a ZIP archive of the web app build using PowerShell.
       - name: Archive Web Build
-        shell: pwsh #Specifies that the step should use PowerShell as the shell.
+        shell: pwsh
         # Executes the Compress-Archive command to create the ZIP archive.
         run: |
           Compress-Archive -Path './all-artifacts/web-app/*' -DestinationPath './all-artifacts/${{ inputs.web_package_name }}.zip'
 
 
       # Get changelog for release
-      #Downloads the Git changelog artifact generated in the generate_release_info job.
       - name: Download Git Changelog
         uses: actions/download-artifact@v4
         with:
