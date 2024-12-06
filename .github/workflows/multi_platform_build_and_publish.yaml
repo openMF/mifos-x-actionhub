@@ -201,21 +201,21 @@ jobs:
           FIREBASE_CREDS: ${{ secrets.FIREBASECREDS }}
         run: |
           # Mock debug google-services.json
-          cp .github/mock-google-services.json ${{ inputs.android-module-path }}/google-services.json
+          cp .github/mock-google-services.json ${{ inputs.android_package_name }}/google-services.json
           
           # Inflate keystore
-          echo $KEYSTORE | base64 --decode > ${{ inputs.android-module-path }}/release_keystore.keystore
+          echo $KEYSTORE | base64 --decode > ${{ inputs.android_package_name }}/release_keystore.keystore
           
           # Inflate google-services.json
-          echo $GOOGLE_SERVICES > ${{ inputs.android-module-path }}/google-services.json
+          echo $GOOGLE_SERVICES > ${{ inputs.android_package_name }}/google-services.json
           
           # Inflate PlayStore credentials
-          touch ${{ inputs.android-module-path }}/playStorePublishServiceCredentialsFile.json
-          echo $PLAYSTORE_CREDS > ${{ inputs.android-module-path }}/playStorePublishServiceCredentialsFile.json
+          touch ${{ inputs.android_package_name }}/playStorePublishServiceCredentialsFile.json
+          echo $PLAYSTORE_CREDS > ${{ inputs.android_package_name }}/playStorePublishServiceCredentialsFile.json
           
           # Inflate Firebase credentials
-          touch ${{ inputs.android-module-path }}/firebaseAppDistributionServiceCredentialsFile.json
-          echo $FIREBASE_CREDS > ${{ inputs.android-module-path }}/firebaseAppDistributionServiceCredentialsFile.json
+          touch ${{ inputs.android_package_name }}/firebaseAppDistributionServiceCredentialsFile.json
+          echo $FIREBASE_CREDS > ${{ inputs.android_package_name }}/firebaseAppDistributionServiceCredentialsFile.json
 
 
       # Build signed release APK
@@ -309,8 +309,8 @@ jobs:
         env:
           FIREBASE_CREDS: ${{ secrets.FIREBASECREDS }}
         run: |
-          touch ${{ inputs.android-module-path }}/firebaseAppDistributionServiceCredentialsFile.json
-          echo $FIREBASE_CREDS > ${{ inputs.android-module-path }}/firebaseAppDistributionServiceCredentialsFile.json
+          touch ${{ inputs.android_package_name }}/firebaseAppDistributionServiceCredentialsFile.json
+          echo $FIREBASE_CREDS > ${{ inputs.android_package_name }}/firebaseAppDistributionServiceCredentialsFile.json
 
       # Deploy to Firebase App Distribution
       - name: ☁️ Deploy to Firebase
@@ -363,21 +363,21 @@ jobs:
           FIREBASE_CREDS: ${{ secrets.FIREBASECREDS }}
         run: |
           # Mock debug google-services.json
-          cp .github/mock-google-services.json ${{ inputs.android-module-path }}/google-services.json
+          cp .github/mock-google-services.json ${{ inputs.android_package_name }}/google-services.json
 
           # Inflate keystore
-          echo $KEYSTORE | base64 --decode > ${{ inputs.android-module-path }}/release_keystore.keystore
+          echo $KEYSTORE | base64 --decode > ${{ inputs.android_package_name }}/release_keystore.keystore
 
           # Inflate google-services.json
-          echo $GOOGLE_SERVICES > ${{ inputs.android-module-path }}/google-services.json
+          echo $GOOGLE_SERVICES > ${{ inputs.android_package_name }}/google-services.json
 
           # Inflate PlayStore credentials
-          touch ${{ inputs.android-module-path }}/playStorePublishServiceCredentialsFile.json
-          echo $PLAYSTORE_CREDS > ${{ inputs.android-module-path }}/playStorePublishServiceCredentialsFile.json
+          touch ${{ inputs.android_package_name }}/playStorePublishServiceCredentialsFile.json
+          echo $PLAYSTORE_CREDS > ${{ inputs.android_package_name }}/playStorePublishServiceCredentialsFile.json
 
           # Inflate Firebase credentials
-          touch ${{ inputs.android-module-path }}/firebaseAppDistributionServiceCredentialsFile.json
-          echo $FIREBASE_CREDS > ${{ inputs.android-module-path }}/firebaseAppDistributionServiceCredentialsFile.json
+          touch ${{ inputs.android_package_name }}/firebaseAppDistributionServiceCredentialsFile.json
+          echo $FIREBASE_CREDS > ${{ inputs.android_package_name }}/firebaseAppDistributionServiceCredentialsFile.json
       
 
       # Build Android App Bundle for Play Store
