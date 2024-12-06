@@ -27,7 +27,7 @@ concurrency:
 
 jobs:
   # Generate release information
-  generate_release_version:
+  generate_release_info:
     name: Generate Release Info
     runs-on: ubuntu-latest
     outputs:
