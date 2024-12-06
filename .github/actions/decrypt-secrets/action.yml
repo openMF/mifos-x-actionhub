@@ -21,25 +21,27 @@ runs:
   steps:
     - name: Checkout Repository
       uses: actions/checkout@v4
+      with:
+        path: caller-repo
 
     - name: Mock debug google-services.json
       shell: bash
       run: |
-        cp .github/mock-google-services.json ${{ inputs.android_module_path }}/google-services.json
+        cp caller-repo/.github/mock-google-services.json caller-repo/${{ inputs.android_module_path }}/google-services.json
 
     - name: Inflate release_keystore.keystore
       shell: bash
       env:
         KEYSTORE: ${{ inputs.keystore }}
       run: |
-        echo $KEYSTORE | base64 --decode > ${{ inputs.android_module_path }}/release_keystore.keystore
+        echo $KEYSTORE | base64 --decode > caller-repo/${{ inputs.android_module_path }}/release_keystore.keystore
 
     - name: Inflate google-services.json
       shell: bash
       env:
         GOOGLE_SERVICES: ${{ inputs.google-services }}
       run: |
-        echo $GOOGLE_SERVICES > ${{ inputs.android_module_path }}/google-services.json
+        echo $GOOGLE_SERVICES > caller-repo/${{ inputs.android_module_path }}/google-services.json
 
     - name: Inflate playStorePublishServiceCredentialsFile.json
       shell: bash
@@ -48,11 +50,11 @@ runs:
       run: |
         # Create the file with appropriate permissions
         touch ${{ inputs.android_module_path }}/playStorePublishServiceCredentialsFile.json
-        echo $CREDS > ${{ inputs.android_module_path }}/playStorePublishServiceCredentialsFile.json
+        echo $CREDS > caller-repo/${{ inputs.android_module_path }}/playStorePublishServiceCredentialsFile.json
 
     - name: Inflate firebaseAppDistributionServiceCredentialsFile.json
       shell: bash
       env:
         FIREBASE_CREDS: ${{ inputs.firebase-creds }}
       run: |
-        echo $FIREBASE_CREDS > ${{ inputs.android_module_path }}/firebaseAppDistributionServiceCredentialsFile.json
+        echo $FIREBASE_CREDS > caller-repo/${{ inputs.android_module_path }}/firebaseAppDistributionServiceCredentialsFile.json

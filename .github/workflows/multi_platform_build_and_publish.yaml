@@ -94,6 +94,7 @@ jobs:
       - name: Checkout Caller Repository
         uses: actions/checkout@v4
         with:
+          fetch-depth: 0
           path: caller-repo
 
       # Check out actions repository
