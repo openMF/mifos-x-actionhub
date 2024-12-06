@@ -129,18 +129,19 @@ jobs:
         name: Inflate Secrets
         with:
           android_module_path: ${{ inputs.android_package_name }}
-          keystore: ${{ inputs.ORIGINAL_KEYSTORE_FILE }}
-          google-services: ${{ inputs.GOOGLESERVICES }}
-          playstore-creds: ${{ inputs.PLAYSTORECREDS }}
-          firebase-creds: ${{ inputs.FIREBASECREDS }}
+          keystore: ${{ secrets.ORIGINAL_KEYSTORE_FILE }}
+          google-services: ${{ secrets.GOOGLESERVICES }}
+          playstore-creds: ${{ secrets.PLAYSTORECREDS }}
+          firebase-creds: ${{ secrets.FIREBASECREDS }}
+
 
       # Build signed release APK
       - name: Build Release
         env:
-          KEYSTORE_PASSWORD: ${{ inputs.ORIGINAL_KEYSTORE_FILE_PASSWORD }}
-          KEYSTORE_ALIAS: ${{ inputs.ORIGINAL_KEYSTORE_ALIAS }}
-          KEYSTORE_ALIAS_PASSWORD: ${{ inputs.ORIGINAL_KEYSTORE_ALIAS_PASSWORD }}
-          VERSION_CODE: ${{ inputs.version_code }}
+          KEYSTORE_PASSWORD: ${{ secrets.ORIGINAL_KEYSTORE_FILE_PASSWORD }}
+          KEYSTORE_ALIAS: ${{ secrets.ORIGINAL_KEYSTORE_ALIAS }}
+          KEYSTORE_ALIAS_PASSWORD: ${{ secrets.ORIGINAL_KEYSTORE_ALIAS_PASSWORD }}
+          VERSION_CODE: ${{ needs.generate_release_info.outputs.version_code }}
         shell: bash
         run: |
           ./gradlew :${{ inputs.android_package_name }}:assembleRelease
@@ -156,6 +157,8 @@ jobs:
             ${{ inputs.android_package_name }}/build/outputs/apk/demo/release/${{ inputs.android_package_name }}-demo-release.apk
             ${{ inputs.android_package_name }}/build/outputs/apk/prod/release/${{ inputs.android_package_name }}-prod-release.apk
   
+
+
 
 
   # Publish Android app on Firebase App Distribution
