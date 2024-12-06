@@ -96,13 +96,6 @@ jobs:
         with:
           fetch-depth: 0
 
-      # Check out actions repository
-      - name: Checkout Actions Repository
-        uses: actions/checkout@v4
-        with:
-          repository: niyajali/mifos-mobile-github-actions
-          path: actions-repo
-
       # Setup Java development environment
       - name: Set up JDK 17
         uses: actions/setup-java@v4.2.2
@@ -125,7 +118,7 @@ jobs:
           key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*') }}
 
       # Decrypt and prepare required secrets for signing
-      - uses: ./actions-repo/.github/actions/decrypt-secrets
+      - uses: niyajali/mifos-mobile-github-actions/.github/actions/decrypt-secrets
         name: Inflate Secrets
         with:
           android_module_path: ${{ inputs.android_package_name }}
