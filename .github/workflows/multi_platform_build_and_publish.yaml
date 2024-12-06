@@ -90,11 +90,19 @@ jobs:
     runs-on: ubuntu-latest
     needs: [ generate_release_info ]
     steps:
+      # Check out actions repository
+      - name: Checkout Actions Repository
+        uses: actions/checkout@v4
+        with:
+          repository: niyajali/mifos-mobile-github-actions
+          path: actions-repo
+
       # Check out caller repository
       - name: Checkout Caller Repository
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          path: caller-repo
 
       # Setup Java development environment
       - name: Set up JDK 17
@@ -118,7 +126,7 @@ jobs:
           key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*') }}
 
       # Decrypt and prepare required secrets for signing
-      - uses: ./niyajali/mifos-mobile-github-actions/.github/actions/decrypt-secrets
+      - uses: ./actions-repo/.github/actions/decrypt-secrets
         name: Inflate Secrets
         with:
           android_module_path: ${{ inputs.android_package_name }}
@@ -137,6 +145,7 @@ jobs:
           VERSION_CODE: ${{ needs.generate_release_info.outputs.version_code }}
         shell: bash
         run: |
+          cd caller-repo
           ./gradlew :${{ inputs.android_package_name }}:assembleRelease
 
       # Save built APKs as artifacts
@@ -147,8 +156,8 @@ jobs:
           retention-days: 1
           compression-level: 9
           path: |
-            ${{ inputs.android_package_name }}/build/outputs/apk/demo/release/${{ inputs.android_package_name }}-demo-release.apk
-            ${{ inputs.android_package_name }}/build/outputs/apk/prod/release/${{ inputs.android_package_name }}-prod-release.apk
+            caller-repo/${{ inputs.android_package_name }}/build/outputs/apk/demo/release/${{ inputs.android_package_name }}-demo-release.apk
+            caller-repo/${{ inputs.android_package_name }}/build/outputs/apk/prod/release/${{ inputs.android_package_name }}-prod-release.apk
   
 
 
