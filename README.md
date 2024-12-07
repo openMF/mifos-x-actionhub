@@ -226,6 +226,8 @@ end
 > \[!TIP]
 >  ####  _[multi_platform_build_and_publish.yaml](.github/workflows/multi-platform-build-and-publish.yaml)_ 👀️
 
+![multiplatform](https://github.com/user-attachments/assets/83efb5c4-040e-46ee-a350-41ff45254fd3)
+
 ## Overview
 
 This GitHub Actions workflow provides a comprehensive solution for building and publishing multi-platform applications, supporting:
@@ -451,6 +453,8 @@ jobs:
 > \[!TIP]
 > #### [_build-and-deploy-site.yaml_](.github/workflows/build-and-deploy-site.yaml)
 
+![deploy-web-app](https://github.com/user-attachments/assets/3e12f1f1-cfd3-43c2-8689-28531253c2f0)
+
 ## Overview
 
 This GitHub Actions workflow automates the build and deployment of a Kotlin/JS web application to GitHub Pages. It simplifies the process of publishing your web application by automatically handling the build and deployment steps whenever changes are merged into the development branch.
@@ -594,6 +598,8 @@ kotlin {
 > 
 > #### [_monthly-version-tag.yaml_](.github/workflows/monthly-version-tag.yaml)
 
+![monthly](https://github.com/user-attachments/assets/f5d98593-38b2-43e4-bbf4-1f46b85e75a6)
+
 ## Overview
 
 This GitHub Actions workflow automates the creation of monthly version tags for your repository. It follows a calendar-based versioning scheme, generating tags that represent the year and month of release.
@@ -732,6 +738,8 @@ jobs:
 
 > \[!TIP]
 > #### [_pr_check.yml_](.github/workflows/pr-check.yaml)
+
+![pr-checks](https://github.com/user-attachments/assets/4fdf81ef-9636-4409-b2c6-4964614219c3)
 
 ## Overview
 
@@ -882,6 +890,8 @@ jobs:
 > \[!TIP]
 > #### [_promote_to_production.yml_](.github/workflows/promote-to-production.yaml)
 
+![promotion](https://github.com/user-attachments/assets/9b69264b-cb6a-47ef-8ea9-ca079bd8e3bf)
+
 ### Overview
 This workflow automates the promotion of a beta release to the production environment on the Google Play Store.
 
@@ -978,6 +988,8 @@ jobs:
 # Tag Weekly Release Workflow
 > \[!TIP]
 > #### [_tag_weekly_release.yml_](.github/workflows/tag-weekly-release.yaml)
+
+![weekly](https://github.com/user-attachments/assets/88501ddd-809b-49e0-afe8-e9170a9b5894)
 
 ### Overview
 This workflow automatically creates weekly version tags and triggers beta releases every Sunday at 4:00 AM UTC.
