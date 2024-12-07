@@ -19,6 +19,10 @@
 # - ORIGINAL_KEYSTORE_FILE_PASSWORD: Keystore password
 # - ORIGINAL_KEYSTORE_ALIAS: Keystore alias
 # - ORIGINAL_KEYSTORE_ALIAS_PASSWORD: Keystore alias password
+# - UPLOAD_KEYSTORE_FILE: Base64 encoded Android release keystore
+# - UPLOAD_KEYSTORE_FILE_PASSWORD: Keystore password
+# - UPLOAD_KEYSTORE_ALIAS: Keystore alias
+# - UPLOAD_KEYSTORE_ALIAS_PASSWORD: Keystore alias password
 # - GOOGLESERVICES: Google Services configuration JSON
 # - PLAYSTORECREDS: Play Store service account credentials
 # - FIREBASECREDS: Firebase distribution credentials
