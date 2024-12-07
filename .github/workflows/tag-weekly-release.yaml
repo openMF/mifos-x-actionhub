@@ -1,5 +1,58 @@
-# Workflow to automatically create weekly version tags and trigger beta releases
-# This workflow runs every Sunday at 4:00 AM UTC and can also be triggered manually
+# Weekly Release Tagging and Beta Deployment Workflow
+# ===================================================
+
+# Purpose:
+# - Automate weekly version tagging for consistent software versioning
+# - Trigger automated beta releases across multiple platforms
+# - Maintain a predictable release cycle
+
+# Workflow Overview:
+# - Runs automatically every Sunday at 4:00 AM UTC
+# - Supports manual triggering via workflow_dispatch
+# - Utilizes Gradle Reckon plugin for intelligent versioning
+# - Triggers multi-platform build and publish workflow
+
+# Key Features:
+# - Automatic semantic versioning
+# - Cross-platform release automation
+# - Configurable target branch for releases
+# - Full repository history checkout for accurate versioning
+
+# Versioning Strategy:
+# - Uses Reckon Gradle plugin for semantic versioning
+# - Generates production-ready (final) version tags
+# - Provides consistent and predictable version incrementation
+
+# Release Process:
+# 1. Checkout repository with full commit history
+# 2. Setup Java 17 development environment
+# 3. Create and push new version tag
+# 4. Trigger multi-platform build and publish workflow
+
+# Prerequisites:
+# - Gradle project configured with Reckon plugin
+# - Java 17 development environment
+# - Configured multi-platform build workflow
+# - GitHub Actions permissions for workflow dispatch
+
+# Workflow Inputs:
+# - target_branch: Branch to use for releases (default: 'dev')
+#   Allows flexible release targeting across different branches
+
+# Security Considerations:
+# - Uses GitHub's native GITHUB_TOKEN for authentication
+# - Controlled workflow dispatch with specific inputs
+# - Limited to authorized repository members
+
+# Potential Use Cases:
+# - Regular software release cycles
+# - Automated beta testing distributions
+# - Consistent multi-platform deployment
+
+# Workflow Triggers:
+# - Scheduled weekly run (Sunday 4:00 AM UTC)
+# - Manual workflow dispatch
+# - Callable from other workflows
 
 name: Tag Weekly Release
 

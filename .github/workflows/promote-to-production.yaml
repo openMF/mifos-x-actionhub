@@ -1,3 +1,53 @@
+# Play Store Release Promotion Workflow
+# =====================================
+
+# Purpose:
+# - Automate the process of promoting beta releases to production on Google Play Store
+# - Streamline the app release management workflow
+# - Ensure consistent and reliable deployment of Android applications
+
+# Workflow Overview:
+# - Handles the transition of a beta version to full production release
+# - Uses Fastlane for deployment automation
+# - Configures necessary credentials and environments for Play Store publishing
+
+# Key Features:
+# - Reusable workflow callable from other workflows
+# - Runs on macOS runner (optimal for iOS and Android deployments)
+# - Configures Ruby and Fastlane environment
+# - Securely manages Play Store credentials
+# - Supports multiple Fastlane plugins for enhanced functionality
+
+# Prerequisites:
+# - Fastlane installed and configured
+# - Fastlane plugins:
+#   * firebase_app_distribution
+#   * increment_build_number
+# - Play Store service account credentials
+# - Existing beta version of the app ready for promotion
+
+# Deployment Process:
+# 1. Check out repository code
+# 2. Set up Ruby environment
+# 3. Install Fastlane and required plugins
+# 4. Inflate Play Store credentials
+# 5. Promote beta version to production
+
+# Security Considerations:
+# - Uses GitHub Secrets for credential management
+# - Temporary credential file created during workflow
+# - Limited number of upload retries to prevent potential issues
+
+# Workflow Characteristics:
+# - Configurable maximum upload retries
+# - Uses bundler for dependency management
+# - Supports modular deployment configuration via Fastlane
+
+# Potential Use Cases:
+# - Automated monthly app releases
+# - Continuous deployment for mobile applications
+# - Consistent app version management
+
 # GitHub Actions workflow for deploying the app to production environments
 # This workflow handles the promotion of beta releases to production on the Play Store
 name: Promote Release to Play Store
@@ -9,6 +59,9 @@ on:
 env:
   # Maximum number of retries for Play Store upload attempts
   SUPPLY_UPLOAD_MAX_RETRIES: 5
+
+permissions:
+  contents: write
 
 jobs:
   # Job to promote app from beta to production in Play Store

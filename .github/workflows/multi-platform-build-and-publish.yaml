@@ -1,3 +1,56 @@
+# GitHub Actions Workflow for Multi-Platform Application Deployment
+#
+# OVERVIEW:
+# This workflow supports building and publishing applications across multiple platforms:
+# - Android (APK/AAB)
+# - iOS (IPA)
+# - Desktop (EXE, MSI, DMG, DEB)
+# - Web (GitHub Pages)
+#
+# PREREQUISITES:
+# 1. Ensure your project is configured with:
+#    - Gradle build system
+#    - Fastlane for deployment automation
+#    - Separate modules/package names for each platform
+#
+# REQUIRED SECRETS:
+# Configure the following secrets in GitHub repository settings:
+# - ORIGINAL_KEYSTORE_FILE: Base64 encoded Android release keystore
+# - ORIGINAL_KEYSTORE_FILE_PASSWORD: Keystore password
+# - ORIGINAL_KEYSTORE_ALIAS: Keystore alias
+# - ORIGINAL_KEYSTORE_ALIAS_PASSWORD: Keystore alias password
+# - GOOGLESERVICES: Google Services configuration JSON
+# - PLAYSTORECREDS: Play Store service account credentials
+# - FIREBASECREDS: Firebase distribution credentials
+# - NOTARIZATION_APPLE_ID: Apple ID for macOS app notarization
+# - NOTARIZATION_PASSWORD: Notarization password
+# - NOTARIZATION_TEAM_ID: Apple developer team ID
+#
+# WORKFLOW INPUTS:
+# - release_type: 'internal' (default) or 'beta'
+# - target_branch: Branch to use for release (default: 'dev')
+# - android_package_name: Name of Android module
+# - ios_package_name: Name of iOS module
+# - desktop_package_name: Name of desktop module
+# - web_package_name: Name of web module
+# - publish_android: Enable/disable Android Play Store publishing
+# - build_ios: Enable/disable iOS build
+# - publish_ios: Enable/disable iOS App Store publishing
+# - publish_desktop: Enable/disable desktop app publishing
+# - publish_web: Enable/disable web app deployment (default: true)
+#
+# USAGE:
+# 1. Ensure all required secrets are configured
+# 2. Customize package names in workflow inputs
+# 3. Toggle platform-specific publishing flags
+# 4. Trigger workflow manually or via GitHub Actions UI
+#
+# NOTES:
+# - Some TODO sections exist for future implementation
+# - Requires Fastlane and specific project structure
+# - Assumes Kotlin Multiplatform or similar cross-platform setup
+
+
 name: Multi-Platform App Build and Publish
 
 on:

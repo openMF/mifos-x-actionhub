@@ -5,6 +5,10 @@
 ![GitHub](https://img.shields.io/badge/github-%23121011.svg?style=for-the-badge&logo=github&logoColor=white)
 ![GitHub Actions](https://img.shields.io/badge/github%20actions-%232671E5.svg?style=for-the-badge&logo=githubactions&logoColor=white)
 ![Github Pages](https://img.shields.io/badge/github%20pages-121013?style=for-the-badge&logo=github&logoColor=white)
+![Kotlin](https://img.shields.io/badge/kotlin-%237F52FF.svg?style=for-the-badge&logo=kotlin&logoColor=white)
+![Android](https://img.shields.io/badge/Android-3DDC84?style=for-the-badge&logo=android&logoColor=white)
+
+&copy; 2024 [Sk Niyaj Ali](https://github.com/niyajali)
 
 </div>
 
@@ -19,7 +23,7 @@
   - [Workflow Configuration](#workflow-configuration)
 - [✨ Monthly Version Tagging Workflow](#monthly-version-tagging-workflow)
   - [Workflow Configuration](#workflow-configuration-1)
-- [✨ Mobile-Wallet Continuous Integration Workflow](#mobile-wallet-continuous-integration-workflow)
+- [✨ PR Check Workflow](#pr-check-workflow)
   - [Workflow Usage Example](#workflow-usage-example-1)
 - [✨ Promote Release to Play Store Workflow](#promote-release-to-play-store-workflow)
   - [Configuration Steps](#configuration-steps)
@@ -417,31 +421,26 @@ The workflow creates tags in the format: `YYYY.MM.0`
 Create a new workflow file in `.github/workflows/monthly-version-tag.yml`:
 
 ```yaml
-name: Bump our Calendar Version
+name: Tag Monthly Release
 
 on:
-  # Scheduled to run on the first day of each month at 3:30 AM UTC
-  schedule:
-    - cron: '30 3 1 * *'
-  
-  # Allow manual triggering
+  # Allow manual triggering of the workflow
   workflow_dispatch:
+  # Schedule the workflow to run monthly
+  schedule:
+    # Runs at 03:30 UTC on the first day of every month
+    # Cron syntax: minute hour day-of-month month day-of-week
+    - cron: '30 3 1 * *'
+
+concurrency:
+  group: "monthly-release"
+  cancel-in-progress: false
 
 jobs:
-  tag:
+  monthly_release:
     name: Tag Monthly Release
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Get Current Time
-        uses: josStorer/get-current-time@v2.1.2
-        id: current-time
-
-      - name: Bump Calendar Version
-        uses: rickstaa/action-create-tag@v1.7.2
-        with:
-          tag: ${{ steps.current-time.outputs.year }}.${{ steps.current-time.outputs.month }}.0
+    uses: niyajali/mifos-mobile-github-actions/.github/workflows/monthly-version-tag.yaml@main
+    secrets: inherit
 ```
 
 ## Workflow Details
@@ -609,20 +608,30 @@ Builds desktop applications for:
 ## Workflow Usage Example
 
 ```yaml
-name: Project CI
+name: PR Checks
 
+# Trigger conditions for the workflow
 on:
-  pull_request:
-    branches:
-      - main
-      - dev
+  push:
+    branches: [ dev ]  # Runs on pushes to dev branch
+  pull_request:       # Runs on all pull requests
+
+# Concurrency settings to prevent multiple simultaneous workflow runs
+concurrency:
+  group: pr-${{ github.ref }}
+  cancel-in-progress: true  # Cancels previous runs if a new one is triggered
+
+permissions:
+  contents: write
 
 jobs:
-  project_checks:
-    uses: ./.github/workflows/mobile-wallet-ci.yml
+  pr_checks:
+    name: PR Checks
+    uses: niyajali/mifos-mobile-github-actions/.github/workflows/pr-check.yaml@main
+    secrets: inherit
     with:
-      android_package_name: 'android-app'
-      desktop_package_name: 'desktop-app'
+      android_package_name: 'mifospay-android'
+      desktop_package_name: 'mifospay-desktop'
 ```
 
 ## Best Practices
