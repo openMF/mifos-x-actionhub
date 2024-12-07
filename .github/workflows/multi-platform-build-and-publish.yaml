@@ -1,0 +1,838 @@
+# GitHub Actions Workflow for Multi-Platform Application Deployment
+#
+# OVERVIEW:
+# This workflow supports building and publishing applications across multiple platforms:
+# - Android (APK/AAB)
+# - iOS (IPA)
+# - Desktop (EXE, MSI, DMG, DEB)
+# - Web (GitHub Pages)
+#
+# PREREQUISITES:
+# 1. Ensure your project is configured with:
+#    - Gradle build system
+#    - Fastlane for deployment automation
+#    - Separate modules/package names for each platform
+#
+# REQUIRED SECRETS:
+# Configure the following secrets in GitHub repository settings:
+# - ORIGINAL_KEYSTORE_FILE: Base64 encoded Android release keystore
+# - ORIGINAL_KEYSTORE_FILE_PASSWORD: Keystore password
+# - ORIGINAL_KEYSTORE_ALIAS: Keystore alias
+# - ORIGINAL_KEYSTORE_ALIAS_PASSWORD: Keystore alias password
+# - UPLOAD_KEYSTORE_FILE: Base64 encoded Android release keystore
+# - UPLOAD_KEYSTORE_FILE_PASSWORD: Keystore password
+# - UPLOAD_KEYSTORE_ALIAS: Keystore alias
+# - UPLOAD_KEYSTORE_ALIAS_PASSWORD: Keystore alias password
+# - GOOGLESERVICES: Google Services configuration JSON
+# - PLAYSTORECREDS: Play Store service account credentials
+# - FIREBASECREDS: Firebase distribution credentials
+# - NOTARIZATION_APPLE_ID: Apple ID for macOS app notarization
+# - NOTARIZATION_PASSWORD: Notarization password
+# - NOTARIZATION_TEAM_ID: Apple developer team ID
+
+# WORKFLOW INPUTS:
+# - release_type: 'internal' (default) or 'beta'
+# - target_branch: Branch to use for release (default: 'dev')
+# - android_package_name: Name of Android module
+# - ios_package_name: Name of iOS module
+# - desktop_package_name: Name of desktop module
+# - web_package_name: Name of web module
+# - publish_android: Enable/disable Android Play Store publishing
+# - build_ios: Enable/disable iOS build
+# - publish_ios: Enable/disable iOS App Store publishing
+# - publish_desktop: Enable/disable desktop app publishing
+# - publish_web: Enable/disable web app deployment (default: true)
+
+# USAGE:
+# 1. Ensure all required secrets are configured
+# 2. Customize package names in workflow inputs
+# 3. Toggle platform-specific publishing flags
+# 4. Trigger workflow manually or via GitHub Actions UI
+
+# NOTES:
+# - Some TODO sections exist for future implementation
+# - Requires Fastlane and specific project structure
+# - Assumes Kotlin Multiplatform or similar cross-platform setup
+
+## Workflow Usage Example
+#   ```yaml
+# name: Multi-Platform(Re-Usable) App Build and Publish
+# on:
+#   workflow_dispatch:
+#     inputs:
+#       release_type:
+#         type: choice
+#         options:
+#           - internal
+#           - beta
+#         default: internal
+#         description: Release Type
+#       target_branch:
+#         type: string
+#         default: 'dev'
+#         description: 'Target branch for release'
+#       publish_android:
+#         type: boolean
+#         default: false
+#         description: Publish Android App On Play Store
+#       publish_ios:
+#         type: boolean
+#         default: false
+#         description: Publish iOS App On App Store
+#       publish_desktop:
+#         type: boolean
+#         default: false
+#         description: Publish Desktop Apps On App Store
+#       publish_web:
+#         type: boolean
+#         default: true
+#         description: Publish Web App
+#       build_ios:
+#         type: boolean
+#         default: false
+#         description: Build iOS App
+# permissions:
+#   contents: write
+#   id-token: write
+#   pages: write
+# concurrency:
+#   group: "reusable"
+#   cancel-in-progress: false
+# jobs:
+#   multi_platform_build_and_publish:
+#     name: Multi-Platform Build and Publish
+#     uses: openMF/mifos-mobile-github-actions/.github/workflows/multi-platform-build-and-publish.yaml@main
+#     secrets: inherit
+#     with:
+#       android_package_name: 'mifospay-android'
+#       ios_package_name: 'mifospay-ios'
+#       desktop_package_name: 'mifospay-desktop'
+#       web_package_name: 'mifospay-web'
+#       release_type: ${{ inputs.release_type }}
+#       target_branch: ${{ inputs.target_branch }}
+#       publish_android: ${{ inputs.publish_android }}
+#       build_ios: ${{ inputs.build_ios }}
+#       publish_ios: ${{ inputs.publish_ios }}
+#       publish_desktop: ${{ inputs.publish_desktop }}
+#       publish_web: ${{ inputs.publish_web }}
+#   ```
+
+
+name: Multi-Platform App Build and Publish
+
+on:
+  workflow_call:
+    inputs:
+      release_type:
+        type: string
+        default: 'internal'
+        description: Release Type
+
+      target_branch:
+        type: string
+        default: 'dev'
+        description: 'Target branch for release'
+
+      android_package_name:
+        description: 'Name of the Android project module'
+        type: string
+        required: true
+
+      ios_package_name:
+        description: 'Name of the iOS project module'
+        type: string
+        required: true
+
+      desktop_package_name:
+        description: 'Name of the Desktop project module'
+        type: string
+        required: true
+
+      web_package_name:
+        description: 'Name of the Web project module'
+        type: string
+        required: true
+
+      publish_android:
+        type: boolean
+        default: false
+        description: Publish Android App On Play Store
+
+      #  A boolean input to control the iOS build process, defaulting to false.
+      build_ios:
+        type: boolean
+        default: false
+        description: Build iOS App
+
+      # Toggle for iOS App Store publishing
+      publish_ios:
+        type: boolean
+        default: false
+        description: Publish iOS App On App Store
+
+      # Toggle for Desktop app publishing (Windows/macOS/Linux)
+      publish_desktop:
+        type: boolean
+        default: false
+        description: Publish Desktop Apps On App Store
+
+      # Toggle for Web app deployment
+      publish_web:
+        type: boolean
+        default: true
+        description: Publish Web App
+
+permissions:
+  contents: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  # Generate release information
+  generate_release_info:
+    name: Generate Release Info
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.rel_number.outputs.version }}
+      version_code: ${{ steps.rel_number.outputs.version-code }}
+    steps:
+      # Check out caller repository
+      - name: Checkout Caller Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # Setup Java environment
+      - uses: actions/setup-java@v4
+        with:
+          java-version: 17
+          distribution: 'temurin'
+
+      # Configure Gradle
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      # Generate version number
+      - name: Generate Release Number
+        id: rel_number
+        shell: bash
+        run: |
+          ./gradlew versionFile
+          COMMITS=`git rev-list --count HEAD`
+          TAGS=`git tag | grep -v beta | wc -l`
+          VC=$(((COMMITS+TAGS) << 1))
+          echo "version-code=$VC" >> $GITHUB_OUTPUT
+          VERSION=`cat version.txt`
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+
+      - name: Generate Release Notes
+        uses: actions/github-script@v7
+        id: release-notes
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            try {
+              // Get latest release tag
+              const latestRelease = await github.rest.repos.getLatestRelease({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+              });
+              const previousTag = latestRelease.data.tag_name;
+            
+              // Generate release notes
+              const params = {
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                tag_name: '${{ steps.rel_number.outputs.version }}',
+                target_commitish: '${{ inputs.target_branch }}'
+              };
+            
+              const { data } = await github.rest.repos.generateReleaseNotes(params);
+              const changelog = data.body.replaceAll('`', '\'').replaceAll('"', '\'');
+            
+              // Write changelog files
+              const fs = require('fs');
+              fs.writeFileSync('changelogGithub', changelog);
+            
+              // Generate beta changelog
+              const { execSync } = require('child_process');
+              execSync('git log --format="* %s" HEAD^..HEAD > changelogBeta');
+            
+              return changelog;
+            } catch (error) {
+              console.error('Error generating release notes:', error);
+              return '';
+            }
+
+      # Save GitHub changelog
+      - name: Upload GitHub Changelog
+        uses: actions/upload-artifact@v4
+        with:
+          name: git-changelog
+          path: changelogGithub
+
+      # Save beta changelog
+      - name: Upload Beta Changelog
+        uses: actions/upload-artifact@v4
+        with:
+          name: beta-changelog
+          path: changelogBeta
+
+  # Build and publish web app
+  build_android:
+    name: Build Android Application
+    runs-on: ubuntu-latest
+    needs: [ generate_release_info ]
+    steps:
+      # Check out repository
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      # Setup Java development environment
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4.2.2
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      # Configure Gradle build tool
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      # Cache Gradle dependencies to speed up builds
+      - uses: actions/cache@v3
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+            ~/.konan
+            build
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*') }}
+
+      - name: Inflate Secrets
+        shell: bash
+        env:
+          KEYSTORE: ${{ secrets.ORIGINAL_KEYSTORE_FILE }}
+          GOOGLE_SERVICES: ${{ secrets.GOOGLESERVICES }}
+          PLAYSTORE_CREDS: ${{ secrets.PLAYSTORECREDS }}
+          FIREBASE_CREDS: ${{ secrets.FIREBASECREDS }}
+        run: |
+          # Mock debug google-services.json
+          cp .github/mock-google-services.json ${{ inputs.android_package_name }}/google-services.json
+          
+          # Inflate keystore
+          echo $KEYSTORE | base64 --decode > ${{ inputs.android_package_name }}/release_keystore.keystore
+          
+          # Inflate google-services.json
+          echo $GOOGLE_SERVICES > ${{ inputs.android_package_name }}/google-services.json
+          
+          # Inflate PlayStore credentials
+          touch ${{ inputs.android_package_name }}/playStorePublishServiceCredentialsFile.json
+          echo $PLAYSTORE_CREDS > ${{ inputs.android_package_name }}/playStorePublishServiceCredentialsFile.json
+          
+          # Inflate Firebase credentials
+          touch ${{ inputs.android_package_name }}/firebaseAppDistributionServiceCredentialsFile.json
+          echo $FIREBASE_CREDS > ${{ inputs.android_package_name }}/firebaseAppDistributionServiceCredentialsFile.json
+
+
+      # Build signed release APK
+      - name: Build Release
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.ORIGINAL_KEYSTORE_FILE_PASSWORD }}
+          KEYSTORE_ALIAS: ${{ secrets.ORIGINAL_KEYSTORE_ALIAS }}
+          KEYSTORE_ALIAS_PASSWORD: ${{ secrets.ORIGINAL_KEYSTORE_ALIAS_PASSWORD }}
+          VERSION_CODE: ${{ needs.generate_release_info.outputs.version_code }}
+          VERSION: ${{ needs.generate_release_info.outputs.version }}
+        shell: bash
+        run: |
+          ./gradlew :${{ inputs.android_package_name }}:assembleRelease
+
+      # Save built APKs as artifacts
+      - name: Upload Android Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-app
+          retention-days: 1
+          compression-level: 9
+          path: |
+            ${{ inputs.android_package_name }}/build/outputs/apk/demo/release/${{ inputs.android_package_name }}-demo-release.apk
+            ${{ inputs.android_package_name }}/build/outputs/apk/prod/release/${{ inputs.android_package_name }}-prod-release.apk
+
+      - name: Print Git Status
+        run: git status
+
+  # Publish Android app on Firebase App Distribution
+  publish_android_on_firebase:
+    name: Deploy Android App On Firebase
+    needs: [ build_android, generate_release_info ]
+    runs-on: macos-latest
+    steps:
+      # Check out caller repository
+      - name: Checkout Caller Repository
+        uses: actions/checkout@v4
+
+      # Setup Java environment
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4.2.2
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      # Configure Gradle
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      # Setup Ruby for Fastlane automation
+      - name: Configure Ruby
+        uses: ruby/setup-ruby@a2bbe5b1b236842c1cb7dd11e8e3b51e0a616acc # v1.202.0
+        with:
+          bundler-cache: true
+
+      # Install Fastlane and required plugins for deployment automation
+      - name: Install Fastlane
+        run: |
+          gem install bundler:2.2.27
+          bundle install --jobs 4 --retry 3
+          bundle exec fastlane add_plugin firebase_app_distribution
+          bundle exec fastlane add_plugin increment_build_number
+
+      # Retrieve built Android artifacts
+      - name: Download Android Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: android-app
+          path: ./android-artifacts
+
+      # Debug: List downloaded artifacts
+      - name: List downloaded artifacts
+        run: |
+          ls -R ./android-artifacts
+
+      # Get changelog for Firebase distribution
+      - name: Download Beta Changelog
+        uses: actions/download-artifact@v4
+        with:
+          name: beta-changelog
+
+      # Organize files for Firebase deployment
+      - name: Move APK to build directory
+        run: |
+          mkdir -p ./${{inputs.android_package_name}}/build/outputs/apk/prod/release/
+          mv ./android-artifacts/prod/release/${{inputs.android_package_name}}-prod-release.apk ./${{inputs.android_package_name}}/build/outputs/apk/prod/release/
+          mv ./changelogBeta ./${{inputs.android_package_name}}/build/outputs/
+
+      - name: Inflate Secrets
+        shell: bash
+        env:
+          FIREBASE_CREDS: ${{ secrets.FIREBASECREDS }}
+        run: |
+          touch ${{ inputs.android_package_name }}/firebaseAppDistributionServiceCredentialsFile.json
+          echo $FIREBASE_CREDS > ${{ inputs.android_package_name }}/firebaseAppDistributionServiceCredentialsFile.json
+
+      # Deploy to Firebase App Distribution
+      - name: ☁️ Deploy to Firebase
+        env:
+          VERSION_CODE: ${{ needs.generate_release_info.outputs.version_code }}
+        run: bundle exec fastlane android deploy_on_firebase
+
+  # Publish Android app on Play Store
+  publish_android_on_playstore:
+    name: Publish Android App On Play Store
+    needs: [ build_android, generate_release_info ]
+    if: inputs.publish_android
+    runs-on: macos-latest
+    steps:
+      # Check out caller repository
+      - name: Checkout Caller Repository
+        uses: actions/checkout@v4
+
+      # Setup Java environment
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4.2.2
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      # Setup Ruby for Fastlane
+      - name: Configure Ruby
+        uses: ruby/setup-ruby@a2bbe5b1b236842c1cb7dd11e8e3b51e0a616acc # v1.202.0
+        with:
+          bundler-cache: true
+
+      # Install Fastlane and plugins for Play Store deployment
+      - name: Install Fastlane
+        run: |
+          gem install bundler:2.2.27
+          bundle install --jobs 4 --retry 3
+          bundle exec fastlane add_plugin firebase_app_distribution
+          bundle exec fastlane add_plugin increment_build_number
+
+      # Setup Gradle build tool
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Inflate Secrets
+        shell: bash
+        env:
+          KEYSTORE: ${{ secrets.UPLOAD_KEYSTORE_FILE }}
+          GOOGLE_SERVICES: ${{ secrets.GOOGLESERVICES }}
+          PLAYSTORE_CREDS: ${{ secrets.PLAYSTORECREDS }}
+          FIREBASE_CREDS: ${{ secrets.FIREBASECREDS }}
+        run: |
+          # Mock debug google-services.json
+          cp .github/mock-google-services.json ${{ inputs.android_package_name }}/google-services.json
+
+          # Inflate keystore
+          echo $KEYSTORE | base64 --decode > ${{ inputs.android_package_name }}/release_keystore.keystore
+
+          # Inflate google-services.json
+          echo $GOOGLE_SERVICES > ${{ inputs.android_package_name }}/google-services.json
+
+          # Inflate PlayStore credentials
+          touch ${{ inputs.android_package_name }}/playStorePublishServiceCredentialsFile.json
+          echo $PLAYSTORE_CREDS > ${{ inputs.android_package_name }}/playStorePublishServiceCredentialsFile.json
+
+          # Inflate Firebase credentials
+          touch ${{ inputs.android_package_name }}/firebaseAppDistributionServiceCredentialsFile.json
+          echo $FIREBASE_CREDS > ${{ inputs.android_package_name }}/firebaseAppDistributionServiceCredentialsFile.json
+      
+
+      # Build Android App Bundle for Play Store
+      - name: Build Release
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.UPLOAD_KEYSTORE_FILE_PASSWORD }}
+          KEYSTORE_ALIAS: ${{ secrets.UPLOAD_KEYSTORE_ALIAS }}
+          KEYSTORE_ALIAS_PASSWORD: ${{ secrets.UPLOAD_KEYSTORE_ALIAS_PASSWORD }}
+          VERSION_CODE: ${{ needs.generate_release_info.outputs.version_code }}
+          VERSION: ${{ needs.generate_release_info.outputs.version }}
+        run: |
+          ./gradlew :${{inputs.android_package_name}}:bundleRelease
+
+      # Save AAB files as artifacts
+      - name: Archive Build
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-aabs
+          path: ./**/*.aab
+
+      # Deploy to Play Store Internal testing track
+      - name: Deploy to Playstore Internal
+        run: bundle exec fastlane deploy_internal
+
+      # Promote to beta if specified
+      - name: Promote Internal to Beta
+        if: github.event.inputs.release_type == 'beta'
+        run: bundle exec fastlane promote_to_beta
+
+  # iOS Build Job
+  build_ios:
+    name: Build iOS App
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          java-version: 17
+          distribution: 'temurin'
+
+      - name: Configure Ruby
+        uses: ruby/setup-ruby@a2bbe5b1b236842c1cb7dd11e8e3b51e0a616acc # v1.202.0
+        with:
+          bundler-cache: true
+
+      - name: Install Fastlane
+        run: |
+          gem install bundler:2.2.27
+          bundle install --jobs 4 --retry 3
+          bundle exec fastlane add_plugin firebase_app_distribution
+          bundle exec fastlane add_plugin increment_build_number
+
+
+      - name: Build iOS App
+        if: inputs.build_ios
+        run: bundle exec fastlane ios build_ios
+
+      - name: Upload iOS Artifact
+        if: inputs.build_ios
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-app
+          retention-days: 1
+          compression-level: 9
+          path: mifospay-ios/mifospay-ios-app.ipa
+
+  # Firebase Distribution Job for iOS
+  publish_ios_app_to_firebase:
+    name: Publish iOS App On Firebase
+    if: inputs.publish_ios
+    needs: [ build_ios, generate_release_info ]
+    runs-on: macos-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure Ruby
+        uses: ruby/setup-ruby@a2bbe5b1b236842c1cb7dd11e8e3b51e0a616acc # v1.202.0
+        with:
+          bundler-cache: true
+
+      - name: Install Fastlane
+        run: |
+          gem install bundler:2.2.27
+          bundle install --jobs 4 --retry 3
+          bundle exec fastlane add_plugin firebase_app_distribution
+          bundle exec fastlane add_plugin increment_build_number
+
+
+      - name: Download iOS App
+        uses: actions/download-artifact@v4
+        with:
+          name: ios-app
+
+      - name: Download Beta Changelog
+        uses: actions/download-artifact@v4
+        with:
+          name: beta-changelog
+
+      - name: Move APK to build directory
+        run: |
+          mv *.ipa ./${{ inputs.ios_package_name }}/
+          mv changelogBeta ./mifospay-android/build/outputs/
+
+
+      - name: Upload iOS App to Firebase Distribution
+        run: bundle exec fastlane ios deploy_on_firebase
+
+      - name: Print `git status`
+        run: git status
+
+  # App Store Publishing Job
+  publish_ios_app_to_app_center:
+    needs: [ build_ios, generate_release_info ]
+    name: Publish iOS App On App Center
+    if: inputs.publish_ios
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download iOS Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: ios-app
+
+      - name: Download Changelog
+        uses: actions/download-artifact@v4
+        with:
+          name: git-changelog
+
+      # TODO: Implement App Store publishing
+
+  # Desktop Build Job
+  build_desktop:
+    name: Build Desktop App
+    strategy:
+      matrix:
+        os: [ ubuntu-latest, macos-latest, windows-latest ]
+    runs-on: ${{ matrix.os }}
+    steps: # Defines the sequence of steps to be executed within the job.
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          java-version: 17
+          distribution: 'temurin'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Build Desktop App
+        env:
+          NOTARIZATION_APPLE_ID: ${{ secrets.NOTARIZATION_APPLE_ID }} #Sets the Apple ID for notarization.
+          NOTARIZATION_PASSWORD: ${{ secrets.NOTARIZATION_PASSWORD }} #Sets the password for notarization.
+          NOTARIZATION_TEAM_ID: ${{ secrets.NOTARIZATION_TEAM_ID }} #Sets the team ID for notarization.
+        run: ./gradlew packageReleaseDistributionForCurrentOS
+
+      # Save Windows artifacts (EXE and MSI)
+      - name: Upload Windows Apps
+        if: matrix.os == 'windows-latest'
+        uses: actions/upload-artifact@v4
+        with:
+          name: desktop-app-${{ matrix.os }} #Specifies the name of the artifact, including the operating system.
+          retention-days: 1 #Sets the retention period for the artifact to 1 day.
+          compression-level: 9 # Uses the highest compression level for the artifact.
+          path: |
+            ./${{ inputs.desktop_package_name }}/build/compose/binaries/main-release/exe/*.exe
+            ./${{ inputs.desktop_package_name }}/build/compose/binaries/main-release/msi/*.msi
+
+      - name: Upload Linux App
+        if: matrix.os == 'ubuntu-latest'
+        uses: actions/upload-artifact@v4
+        with:
+          name: desktop-app-${{ matrix.os }}
+          retention-days: 1
+          compression-level: 9
+          path: './${{ inputs.desktop_package_name }}/build/compose/binaries/main-release/deb/*.deb'
+
+      - name: Upload MacOS App
+        if: matrix.os == 'macos-latest'
+        uses: actions/upload-artifact@v4
+        with:
+          name: desktop-app-${{ matrix.os }}
+          retention-days: 1
+          compression-level: 9
+          path: './${{ inputs.desktop_package_name }}/build/compose/binaries/main-release/dmg/*.dmg'
+
+  # Desktop Publishing Job
+  publish_desktop:
+    name: Publish Desktop App
+    needs: [ build_desktop ]
+    if: inputs.publish_desktop
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download Desktop Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: desktop-app-*
+          path: desktop-apps
+
+      # TODO: Implement desktop store publishing
+      - name: Print `git status`
+        run: git status
+
+  # Web Build Job
+  build_web:
+    name: Build Web Application
+    runs-on: windows-latest #Indicates that this job will run on a Windows runner.
+    steps: #Defines the sequence of steps to be executed within the job.
+      #Checks out the repository code using the actions/checkout@v4 action.
+      - uses: actions/checkout@v4
+
+      # Setup Java environment
+      #Sets up the Java development environment using the actions/setup-java@v4 action.
+      - uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu' # Uses the Zulu distribution of Java.
+          java-version: 17
+
+      # Cache Gradle dependencies
+      #Caches Gradle dependencies to speed up subsequent builds.
+      - uses: actions/cache@v3
+        with:
+          path: | #Specifies the paths to cache (Gradle caches and Konan cache).
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+            ~/.konan
+          #Defines the cache key based on the runner OS and the hash of Gradle files.
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*') }}
+
+      # Build web app using Kotlin/JS
+      - name: Build Web(JS) App
+        #Executes the Gradle task jsBrowserDistribution to build the web app.
+        #This task likely produces the production-ready JavaScript files for the web application.
+        run: ./gradlew jsBrowserDistribution
+
+      # Save web app as artifact
+      #This step uploads the built web application as an artifact.
+      - name: Upload Web Artifact
+        #Utilizes the actions/upload-artifact@v4 action to upload the artifact.
+        uses: actions/upload-artifact@v4
+        with: #Configures the upload.
+          name: web-app
+          #Defines the path to the built web app files to be uploaded. This path suggests that the web app is built using
+          #Kotlin/JS and the output is placed in the productionExecutable directory. I hope this detailed explanation helps you with your documentation.
+          #Let me know if you have any other questions or need further assistance with other parts of the workflow file.
+          path: './${{ inputs.web_package_name }}/build/dist/js/productionExecutable'
+
+  # Web Publishing Job
+  publish_web:
+    name: Publish Web App
+    needs: [ build_web ]
+    if: inputs.publish_web
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    permissions:
+      id-token: write
+      pages: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: 17
+
+      - name: Download Web Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: web-app
+          path: ./web-app-content
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload static files as artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: './web-app-content'
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+  # Creates GitHub release with all built artifacts
+  github_release:
+    name: Create Github Release
+    needs: [ build_android, build_desktop, build_web, build_ios, generate_release_info ]
+    if: inputs.release_type == 'beta'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # Get all build artifacts
+      - name: Download All Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: ./all-artifacts
+
+      # Debug: Show downloaded files
+      - name: Display structure of downloaded files
+        run: ls -R ./all-artifacts
+
+      #Creates a ZIP archive of the web app build using PowerShell.
+      - name: Archive Web Build
+        shell: pwsh
+        # Executes the Compress-Archive command to create the ZIP archive.
+        run: |
+          Compress-Archive -Path './all-artifacts/web-app/*' -DestinationPath './all-artifacts/${{ inputs.web_package_name }}.zip'
+
+
+      # Get changelog for release
+      - name: Download Git Changelog
+        uses: actions/download-artifact@v4
+        with:
+          name: git-changelog
+
+      # Create GitHub pre-release with all artifacts
+      - name: Create Github Pre-Release
+        uses: softprops/action-gh-release@v2.0.8
+        with:
+          tag_name: ${{ needs.generate_release_info.outputs.version }}
+          body_path: ./all-artifacts/git-changelog/changelogGithub
+          draft: false
+          prerelease: true
+          files: |
+            ./all-artifacts/android-app/prod/release/${{ inputs.android_package_name }}-prod-release.apk
+            ./all-artifacts/android-app/demo/release/${{ inputs.android_package_name }}-demo-release.apk
+            ./all-artifacts/desktop-app-windows-latest/exe/*.exe
+            ./all-artifacts/desktop-app-windows-latest/msi/*.msi
+            ./all-artifacts/desktop-app-macos-latest/*.dmg
+            ./all-artifacts/desktop-app-ubuntu-latest/*.deb
+            ./all-artifacts/${{ inputs.web_package_name }}.zip
