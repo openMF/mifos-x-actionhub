@@ -1,52 +1,47 @@
-# Play Store Release Promotion Workflow
-# =====================================
-
-# Purpose:
-# - Automate the process of promoting beta releases to production on Google Play Store
-# - Streamline the app release management workflow
-# - Ensure consistent and reliable deployment of Android applications
-
-# Workflow Overview:
-# - Handles the transition of a beta version to full production release
-# - Uses Fastlane for deployment automation
-# - Configures necessary credentials and environments for Play Store publishing
-
-# Key Features:
-# - Reusable workflow callable from other workflows
-# - Runs on macOS runner (optimal for iOS and Android deployments)
-# - Configures Ruby and Fastlane environment
-# - Securely manages Play Store credentials
-# - Supports multiple Fastlane plugins for enhanced functionality
-
-# Prerequisites:
-# - Fastlane installed and configured
-# - Fastlane plugins:
-#   * firebase_app_distribution
-#   * increment_build_number
-# - Play Store service account credentials
-# - Existing beta version of the app ready for promotion
-
-# Deployment Process:
-# 1. Check out repository code
-# 2. Set up Ruby environment
-# 3. Install Fastlane and required plugins
-# 4. Inflate Play Store credentials
-# 5. Promote beta version to production
-
-# Security Considerations:
-# - Uses GitHub Secrets for credential management
-# - Temporary credential file created during workflow
-# - Limited number of upload retries to prevent potential issues
-
-# Workflow Characteristics:
-# - Configurable maximum upload retries
-# - Uses bundler for dependency management
-# - Supports modular deployment configuration via Fastlane
-
-# Potential Use Cases:
-# - Automated monthly app releases
-# - Continuous deployment for mobile applications
-# - Consistent app version management
+# GitHub Actions Workflow for Play Store Release Promotion
+#
+# PURPOSE:
+# This workflow automates the process of promoting a beta release
+# to the production track on Google Play Store.
+#
+# PREREQUISITES:
+# 1. Fastlane setup with Android deployment configurations
+# 2. Configured Fastlane lanes:
+#    - `promote_to_production`: Handles beta to production promotion
+#
+# REQUIRED CONFIGURATION:
+# - Secrets:
+#   PLAYSTORECREDS: Google Play Store service account JSON credentials
+#
+# INPUTS:
+# - android_package_name: Name of the Android project module
+#   (REQUIRED, must match your project's module structure)
+#
+# WORKFLOW TRIGGERS:
+# - Can be called manually or triggered by other workflows
+# - Typically used after beta testing and validation
+#
+# DEPLOYMENT PROCESS:
+# 1. Checks out repository code
+# 2. Sets up Ruby and Fastlane environment
+# 3. Inflates Play Store credentials
+# 4. Runs Fastlane lane to promote beta to production
+#
+# IMPORTANT NOTES:
+# - Requires proper Fastlane configuration in your project
+# - Ensures consistent and automated Play Store deployments
+# - Configurable retry mechanism for upload stability
+#
+# RECOMMENDED FASTLANE LANE IMPLEMENTATION:
+# ```ruby
+# lane :promote_to_production do
+#   upload_to_play_store(
+#     track: 'beta',
+#     track_promote_to: 'production',
+#     json_key: './playStorePublishServiceCredentialsFile.json'
+#   )
+# end
+# ```
 
 # GitHub Actions workflow for deploying the app to production environments
 # This workflow handles the promotion of beta releases to production on the Play Store
@@ -54,6 +49,11 @@ name: Promote Release to Play Store
 
 on:
   workflow_call:
+    inputs:
+      android_package_name:
+        description: 'Name of the Android project module'
+        type: string
+        required: true
 
 # Environment variables
 env:
