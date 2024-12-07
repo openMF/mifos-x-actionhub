@@ -217,12 +217,12 @@ jobs:
     uses: niyajali/mifos-mobile-github-actions/.github/workflows/multi-platform-build-and-publish.yaml@main
     secrets: inherit
     with:
-      release_type: ${{ inputs.release_type }}
-      target_branch: ${{ inputs.target_branch }}
       android_package_name: 'mifospay-android'
       ios_package_name: 'mifospay-ios'
       desktop_package_name: 'mifospay-desktop'
       web_package_name: 'mifospay-web'
+      release_type: ${{ inputs.release_type }}
+      target_branch: ${{ inputs.target_branch }}
       publish_android: ${{ inputs.publish_android }}
       build_ios: ${{ inputs.build_ios }}
       publish_ios: ${{ inputs.publish_ios }}
@@ -290,18 +290,34 @@ Before using this workflow, ensure you have the following:
 This workflow is designed as a reusable workflow. You'll need to call it from another workflow file. Create a workflow file (e.g., `.github/workflows/deploy.yml`) that looks like this:
 
 ```yaml
-name: Deploy Web Application
+name: Build And Deploy Web App
 
+# Trigger conditions for the workflow
 on:
-  push:
-    branches: [dev]  # Trigger on push to dev branch
-  workflow_dispatch:  # Allow manual triggering
+  pull_request:
+    branches: [ "dev" ]
+    types: [ closed ]
+  workflow_dispatch:
+
+# Concurrency settings to manage multiple workflow runs
+# This ensures orderly deployment to production environment
+concurrency:
+  group: "web-pages"
+  cancel-in-progress: false
+
+permissions:
+  contents: read  # Read repository contents
+  pages: write    # Write to GitHub Pages
+  id-token: write # Write authentication tokens
+  pull-requests: write # Write to pull requests
 
 jobs:
-  deploy:
-    uses: ./.github/workflows/publish-web-app.yml
+  build_and_deploy_web:
+    name: Build And Deploy Web App
+    uses: niyajali/mifos-mobile-github-actions/.github/workflows/build-and-deploy-site.yaml@main
+    secrets: inherit
     with:
-      web_package_name: 'your-web-module-name'
+      web_package_name: 'mifospay-web'
 ```
 
 Replace `'your-web-module-name'` with the actual name of your web module in the Gradle project.
@@ -727,6 +743,42 @@ This workflow automates the promotion of a beta release to the production enviro
 - Use version tagging and semantic versioning
 - Keep Play Store credentials secure
 
+### Example Workflow
+```yaml
+name: Promote Release to Play Store
+
+# Workflow triggers:
+# 1. Manual trigger with option to publish to Play Store
+# 2. Automatic trigger when a GitHub release is published
+on:
+  workflow_dispatch:
+    inputs:
+      publish_to_play_store:
+        required: false
+        default: false
+        description: Publish to Play Store?
+        type: boolean
+  release:
+    types: [ released ]
+
+concurrency:
+  group: "production-deploy"
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  # Job to promote app from beta to production in Play Store
+  play_promote_production:
+    name: Promote Beta to Production Play Store
+    uses: niyajali/mifos-mobile-github-actions/.github/workflows/promote-to-production.yaml@main
+    if: ${{ inputs.publish_to_play_store == true }}
+    secrets: inherit
+    with:
+      android_package_name: 'mifospay-android'
+```
+
 <div align="right">
 
 [![Back To Top](https://img.shields.io/badge/Back%20To%20Top-Blue?style=flat)](#readme-top)
@@ -800,3 +852,32 @@ This workflow automatically creates weekly version tags and triggers beta releas
 - Check GitHub Actions logs for detailed error information
 - Verify Gradle and Reckon plugin configurations
 - Ensure all required secrets and permissions are set up
+
+### Example Workflow
+```yaml
+# Workflow to automatically create weekly version tags and trigger beta releases
+# This workflow runs every Sunday at 4:00 AM UTC and can also be triggered manually
+
+name: Tag Weekly Release
+
+on:
+  # Allow manual triggering of the workflow
+  workflow_dispatch:
+  # Schedule the workflow to run weekly
+  schedule:
+    # Runs at 04:00 UTC every Sunday
+    # Cron syntax: minute hour day-of-month month day-of-week
+    - cron: '0 4 */2 * 0'
+
+concurrency:
+  group: "weekly-release"
+  cancel-in-progress: false
+
+jobs:
+  tag:
+    name: Tag Weekly Release
+    uses: niyajali/mifos-mobile-github-actions/.github/workflows/tag-weekly-release.yaml@main
+    secrets: inherit
+    with:
+      target_branch: 'dev'
+```
