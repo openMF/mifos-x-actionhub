@@ -31,7 +31,8 @@
 
 # Multi-Platform App Build and Publish Workflow
 
-> ####  _[multi_platform_build_and_publish.yaml](.github/workflows/multi-platform-build-and-publish.yaml)_ 👀️
+> \[!TIP]
+>  ####  _[multi_platform_build_and_publish.yaml](.github/workflows/multi-platform-build-and-publish.yaml)_ 👀️
 
 ## Overview
 
@@ -255,7 +256,7 @@ jobs:
 
 # Kotlin/JS Web Application GitHub Pages Deployment Workflow
 
-> \[!INFO]
+> \[!TIP]
 > #### [_build-and-deploy-site.yaml_](.github/workflows/build-and-deploy-site.yaml)
 
 ## Overview
@@ -381,7 +382,7 @@ kotlin {
 
 # Monthly Version Tagging Workflow
 
-> \[!INFO]
+> \[!TIP]
 > 
 > #### [_monthly-version-tag.yaml_](.github/workflows/monthly-version-tag.yaml)
 
@@ -526,7 +527,7 @@ jobs:
 
 # PR Check Workflow
 
-> \[!INFO]
+> \[!TIP]
 > #### [_pr_check.yml_](.github/workflows/pr-check.yaml)
 
 ## Overview
@@ -665,7 +666,7 @@ jobs:
 ---
 
 # Promote Release to Play Store Workflow
-> \[!INFO]
+> \[!TIP]
 > #### [_promote_to_production.yml_](.github/workflows/promote-to-production.yaml)
 
 ### Overview
@@ -726,7 +727,7 @@ This workflow automates the promotion of a beta release to the production enviro
 ---
 
 # Tag Weekly Release Workflow
-> \[!INFO]
+> \[!TIP]
 > #### [_tag_weekly_release.yml_](.github/workflows/tag-weekly-release.yaml)
 
 ### Overview
