@@ -226,7 +226,61 @@ end
 > \[!TIP]
 >  ####  _[multi_platform_build_and_publish.yaml](.github/workflows/multi-platform-build-and-publish.yaml)_ 👀️
 
-![multiplatform](https://github.com/user-attachments/assets/83efb5c4-040e-46ee-a350-41ff45254fd3)
+```mermaid
+flowchart TD
+    start([Manual Trigger]) --> params{Release Type & \n Distribution Options}
+    params --> gen[Generate Release Info]
+
+%% Android Flow
+    gen --> build_android[Build Android]
+    build_android --> dist_firebase[Distribute to Firebase]
+    build_android --> playstore{Distribute to \n Play Store?}
+    playstore -->|Yes| internal[Upload to Internal Track]
+    playstore -->|No| skip_play[Skip Play Store]
+    internal --> beta_check{Beta Release?}
+    beta_check -->|Yes| promote[Promote to Beta Track]
+    beta_check -->|No| skip_beta[Stay in Internal]
+
+%% iOS Flow
+    gen --> build_ios[Build iOS]
+    build_ios --> firebase_ios[Distribute to Firebase]
+    build_ios --> appstore{Distribute to \n App Store?}
+    appstore -->|Yes| dist_ios[Upload to App Store]
+    appstore -->|No| skip_ios[Skip App Store]
+
+%% Desktop Flow
+    gen --> build_desktop[Build Desktop Apps]
+    build_desktop --> windows[Windows .exe/.msi]
+    build_desktop --> macos[macOS .dmg]
+    build_desktop --> linux[Linux .deb]
+    windows & macos & linux --> desktop_dist{Distribute to \n Desktop Store?}
+    desktop_dist -->|Yes| dist_desktop[Upload to Store]
+    desktop_dist -->|No| skip_desktop[Skip Store]
+
+%% Web Flow
+    gen --> build_web[Build Web App]
+    build_web --> web_dist{Distribute Web?}
+    web_dist -->|Yes| deploy_web[Deploy to Hosting]
+    web_dist -->|No| skip_web[Skip Web Deploy]
+
+%% Release Creation
+    gen --> beta_rel{Beta Release?}
+    beta_rel -->|Yes| github_rel[Create GitHub Pre-Release]
+    beta_rel -->|No| skip_rel[Skip Release]
+
+%% Color Styling
+    classDef startNode fill:#4CAF50,color:white,stroke:#45a049;
+    classDef decisionNode fill:#2196F3,color:white,stroke:#1976D2;
+    classDef processNode fill:#FF9800,color:white,stroke:#F57C00;
+    classDef platformNode fill:#9C27B0,color:white,stroke:#7B1FA2;
+    classDef endNode fill:#795548,color:white,stroke:#6D4C41;
+
+    class start startNode;
+    class params,playstore,appstore,desktop_dist,web_dist,beta_rel decisionNode;
+    class gen,build_android,build_ios,build_desktop,build_web,dist_firebase,internal,dist_ios,windows,macos,linux,deploy_web processNode;
+    class dist_desktop,github_rel platformNode;
+    class skip_play,skip_ios,skip_desktop,skip_web,skip_rel endNode;
+```
 
 ## Overview
 
@@ -453,7 +507,50 @@ jobs:
 > \[!TIP]
 > #### [_build-and-deploy-site.yaml_](.github/workflows/build-and-deploy-site.yaml)
 
-![deploy-web-app](https://github.com/user-attachments/assets/3e12f1f1-cfd3-43c2-8689-28531253c2f0)
+```mermaid
+---
+config:
+  theme: neo-dark
+  look: neo
+  layout: dagre
+---
+flowchart TD
+%% Trigger Stage
+    A([fa:fa-code-branch Push to Dev / Manual Trigger]) --> 
+    B{{"fa:fa-server Checkout Repository"}}
+
+%% Environment Setup
+B --> C["fa:fa-coffee Setup Java Environment\n🔧 JDK Configuration"]
+
+%% Build Process
+C --> D["fa:fa-globe Build Kotlin/JS Web App\n🏗️ Compiling JavaScript"]
+
+%% GitHub Pages Configuration
+D --> E{"fa:fa-cogs Configure GitHub Pages\n⚙️ Static Site Generation"}
+
+%% Artifact Upload
+E --> F["fa:fa-upload Upload Static Web Files\n📦 Preparing Deployment Artifacts"]
+
+%% Deployment Stage
+F --> G{{"fa:fa-rocket Deploy to GitHub Pages"}}
+
+%% Deployment Outcomes
+G -->|Success| H["fa:fa-check-circle Update Deployment Environment\n✨ Environment Sync"]
+G -->|Failure| I["fa:fa-undo Rollback Deployment\n🔙 Reverting Changes"]
+
+%% Styling
+classDef triggerNode fill:#2196F3,color:white,stroke:#1565C0,stroke-width:2px;
+classDef processNode fill:#4CAF50,color:white,stroke:#2E7D32,stroke-width:2px;
+classDef decisionNode fill:#FF9800,color:white,stroke:#EF6C00,stroke-width:2px;
+classDef successNode fill:#8BC34A,color:white,stroke:#558B2F,stroke-width:2px;
+classDef failureNode fill:#F44336,color:white,stroke:#C62828,stroke-width:2px;
+
+class A triggerNode;
+class B,C,D,F processNode;
+class E,G decisionNode;
+class H successNode;
+class I failureNode;
+```
 
 ## Overview
 
@@ -598,7 +695,20 @@ kotlin {
 > 
 > #### [_monthly-version-tag.yaml_](.github/workflows/monthly-version-tag.yaml)
 
-![monthly](https://github.com/user-attachments/assets/f5d98593-38b2-43e4-bbf4-1f46b85e75a6)
+```mermaid
+flowchart TD
+    A([Workflow Starts]) --> B[Checkout Repository]
+    B --> C[Get Current Timestamp]
+    
+    C --> D[Create Version Tag]
+    D --> E[Tag Format: YYYY.MM.0]
+    
+    style A fill:#2196F3,color:white
+    style B fill:#4CAF50,color:white
+    style C fill:#FF9800,color:white
+    style D fill:#9C27B0,color:white
+    style E fill:#03A9F4,color:white
+```
 
 ## Overview
 
@@ -739,7 +849,63 @@ jobs:
 > \[!TIP]
 > #### [_pr_check.yml_](.github/workflows/pr-check.yaml)
 
-![pr-checks](https://github.com/user-attachments/assets/4fdf81ef-9636-4409-b2c6-4964614219c3)
+```mermaid
+flowchart TD
+    A([Workflow Starts]) --> B[Initial Setup]
+    B --> C{Parallel Checks}
+
+    C --> |Parallel Execution| D1[Build Logic Check]
+    C --> |Parallel Execution| D2[Spotless Code Formatting]
+    C --> |Parallel Execution| D3[Detekt Static Analysis]
+
+    D1 --> E1[Validate Build Configuration]
+    D2 --> E2[Enforce Code Style Rules]
+    D3 --> E3[Generate Detekt Reports]
+
+    E3 --> F3[Upload Detekt Reports]
+
+    C --> G[Dependency Guard]
+    G --> H{Dependency Verification}
+
+    H -->|Pass| I[Android APK Build]
+    H -->|Fail on Fork| J[Block PR]
+    H -->|Fail on Main Repo| K[Generate New Baselines]
+
+    K --> L[Auto-Commit Baseline Updates]
+
+    I --> M[Parallel Desktop App Builds]
+    M --> N1[Windows Build]
+    M --> N2[Linux Build]
+    M --> N3[MacOS Build]
+
+    N1 --> O1[Upload Windows Artifacts]
+    N2 --> O2[Upload Linux Artifacts]
+    N3 --> O3[Upload MacOS Artifacts]
+
+    style A fill:#2196F3,color:white
+    style B fill:#4CAF50,color:white
+    style C fill:#FF9800,color:white
+    style D1 fill:#9C27B0,color:white
+    style D2 fill:#673AB7,color:white
+    style D3 fill:#F44336,color:white
+    style E1 fill:#03A9F4,color:white
+    style E2 fill:#00BCD4,color:white
+    style E3 fill:#2196F3,color:white
+    style F3 fill:#4CAF50,color:white
+    style G fill:#FF5722,color:white
+    style H fill:#FFC107,color:white
+    style I fill:#795548,color:white
+    style J fill:#f44336,color:white
+    style K fill:#FF9800,color:white
+    style L fill:#9C27B0,color:white
+    style M fill:#673AB7,color:white
+    style N1 fill:#03A9F4,color:white
+    style N2 fill:#00BCD4,color:white
+    style N3 fill:#2196F3,color:white
+    style O1 fill:#4CAF50,color:white
+    style O2 fill:#8BC34A,color:white
+    style O3 fill:#CDDC39,color:white
+```
 
 ## Overview
 
@@ -890,7 +1056,23 @@ jobs:
 > \[!TIP]
 > #### [_promote_to_production.yml_](.github/workflows/promote-to-production.yaml)
 
-![promotion](https://github.com/user-attachments/assets/9b69264b-cb6a-47ef-8ea9-ca079bd8e3bf)
+```mermaid
+flowchart TD
+    A([Workflow Starts]) --> B[Checkout Repository]
+    B --> C[Configure Ruby Environment]
+
+    C --> D[Install Fastlane\nand Plugins]
+    D --> E[Inflate Play Store Secrets]
+
+    E --> F[Promote Beta to\nProduction Play Store]
+
+    style A fill:#2196F3,color:white
+    style B fill:#4CAF50,color:white
+    style C fill:#FF9800,color:white
+    style D fill:#9C27B0,color:white
+    style E fill:#FF5722,color:white
+    style F fill:#03A9F4,color:white
+```
 
 ### Overview
 This workflow automates the promotion of a beta release to the production environment on the Google Play Store.
@@ -989,7 +1171,28 @@ jobs:
 > \[!TIP]
 > #### [_tag_weekly_release.yml_](.github/workflows/tag-weekly-release.yaml)
 
-![weekly](https://github.com/user-attachments/assets/88501ddd-809b-49e0-afe8-e9170a9b5894)
+```mermaid
+flowchart TD
+    A([Workflow Starts]) --> B[Checkout Repository]
+    B --> C[Set up JDK 17]
+
+    C --> D[Tag Weekly Release\nusing Reckon]
+    D --> E{Reckon Tag Created}
+
+    E -->|Tag Successful| F[Trigger Multi-Platform\nBuild and Publish]
+    E -->|Tag Failed| G[Workflow Stops]
+
+    F --> H[Beta Release Initiated]
+
+    style A fill:#2196F3,color:white
+    style B fill:#4CAF50,color:white
+    style C fill:#FF9800,color:white
+    style D fill:#9C27B0,color:white
+    style E fill:#FF5722,color:white
+    style F fill:#03A9F4,color:white
+    style G fill:#f44336,color:white
+    style H fill:#2196F3,color:white
+```
 
 ### Overview
 This workflow automatically creates weekly version tags and triggers beta releases every Sunday at 4:00 AM UTC.
