@@ -116,6 +116,7 @@ concurrency:
 
 jobs:
   checks:
+    name: Static Analysis Check
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repository
@@ -125,6 +126,7 @@ jobs:
         uses: openMF/kmp-static-analysis-check-action@v1.0.0
 
   build_android_app:
+    name: Build Android Application
     needs: [ checks ]
     runs-on: ubuntu-latest
     steps:
@@ -137,6 +139,7 @@ jobs:
           android_package_name: ${{ inputs.android_package_name }}
 
   build_desktop_app:
+    name: Build Desktop Application
     needs: [ checks ]
     strategy:
       matrix:
