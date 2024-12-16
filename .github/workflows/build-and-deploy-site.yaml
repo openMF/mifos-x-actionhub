@@ -109,28 +109,8 @@ jobs:
       # Step 1: Check out the repository code to the runner
       - uses: actions/checkout@v4
 
-      # Step 2: Set up Java development environment
-      - uses: actions/setup-java@v4
+      - name: Build & Publish Web App
+        uses: openMF/kmp-web-publish-action@v1.0.0
+        id: deployment
         with:
-          distribution: 'zulu'  # Use Zulu distribution of OpenJDK
-          java-version: 17      # Use Java 17 version
-
-      # Step 3:Executes the Gradle task jsBrowserDistribution to Build the Kotlin/JS web application
-      - name: Build Web(JS) App
-        run: ./gradlew jsBrowserDistribution
-
-      # Step 4: Configure GitHub Pages settings
-      - name: Setup Pages
-        uses: actions/configure-pages@v5
-
-      # Step 5: Upload the built web application as an artifact to GitHub pages
-      - name: Upload static files as artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          # Path to the built web application files
-          path: './${{ inputs.web_package_name }}/build/dist/js/productionExecutable/'
-
-      # Step 6: Deploy the artifact to GitHub Pages, making the web application live.
-      - name: Deploy to GitHub Pages
-        id: deployment  # ID used for environment URL output
-        uses: actions/deploy-pages@v4
+          web_package_name: ${{ inputs.web_package_name }}

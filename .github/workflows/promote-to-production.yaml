@@ -104,33 +104,11 @@ jobs:
     name: Play Publish Production
     runs-on: macos-latest
     steps:
-      # Check out repository code
-      - uses: actions/checkout@v4
+      - name: Checkout Repository
+        uses: actions/checkout@v4
 
-      # Set up Ruby environment for Fastlane
-      - name: Configure Ruby
-        uses: ruby/setup-ruby@a2bbe5b1b236842c1cb7dd11e8e3b51e0a616acc # v1.202.0
-        with:
-          bundler-cache: true
-
-      # Install Fastlane and required plugins for deployment automation
-      - name: Install Fastlane
-        run: |
-          gem install bundler:2.2.27
-          bundle install --jobs 4 --retry 3
-          bundle exec fastlane add_plugin firebase_app_distribution
-          bundle exec fastlane add_plugin increment_build_number
-
-      - name: Inflate Secrets
-        shell: bash
-        env:
-          PLAYSTORE_CREDS: ${{ secrets.PLAYSTORECREDS }}
-        run: |
-          # Inflate PlayStore credentials
-          touch ${{ inputs.android_package_name }}/playStorePublishServiceCredentialsFile.json
-          echo $PLAYSTORE_CREDS > ${{ inputs.android_package_name }}/playStorePublishServiceCredentialsFile.json
-
-      # Use Fastlane to promote the beta version to production
       - name: Promote Beta to Production Play Store
-        run: |
-          bundle exec fastlane android promote_to_production
+        uses: openMF/kmp-publish-android-on-playstore-production-action@v1.0.0
+        with:
+          android_package_name: ${{ inputs.android_package_name }}
+          playstore_creds: ${{ secrets.PLAYSTORECREDS }}
