@@ -88,6 +88,35 @@ project-root/
 - Xcode 15+ (for iOS development)
 - Node.js 18+ (for web development)
 
+### Required Github Secrets
+
+In order to automate the build and deployment process, you need to configure the following secrets in your GitHub repository settings:
+
+| Platform          | Key Type                           | Description                                | Encoding/Format | Required |
+|-------------------|------------------------------------|--------------------------------------------|-----------------|----------|
+| Android           | `ORIGINAL_KEYSTORE_FILE`           | Base64 encoded release keystore            | Base64          | Yes      |
+| Android           | `ORIGINAL_KEYSTORE_FILE_PASSWORD`  | Keystore password                          | Plain Text      | Yes      |
+| Android           | `ORIGINAL_KEYSTORE_ALIAS`          | Keystore alias                             | Plain Text      | Yes      |
+| Android           | `ORIGINAL_KEYSTORE_ALIAS_PASSWORD` | Keystore alias password                    | Plain Text      | Yes      |
+| Android           | `UPLOAD_KEYSTORE_FILE`             | Base64 encoded release keystore for upload | Base64          | Yes      |
+| Android           | `UPLOAD_KEYSTORE_FILE_PASSWORD`    | Upload keystore password                   | Plain Text      | Yes      |
+| Android           | `UPLOAD_KEYSTORE_ALIAS`            | Upload keystore alias                      | Plain Text      | Yes      |
+| Android           | `UPLOAD_KEYSTORE_ALIAS_PASSWORD`   | Upload keystore alias password             | Plain Text      | Yes      |
+| Android           | `GOOGLESERVICES`                   | Google Services JSON content               | Base64          | Yes      |
+| Android           | `PLAYSTORECREDS`                   | Play Store service account credentials     | Base64          | Yes      |
+| Android           | `FIREBASECREDS`                    | Firebase App Distribution credentials      | Base64          | Yes      |
+| iOS               | `NOTARIZATION_APPLE_ID`            | Apple ID for app notarization              | Plain Text      | Yes      |
+| iOS               | `NOTARIZATION_PASSWORD`            | Password for notarization process          | Plain Text      | Yes      |
+| iOS               | `NOTARIZATION_TEAM_ID`             | Apple Developer Team ID                    | Plain Text      | Yes      |
+| Desktop (Windows) | `windows_signing_key`              | Signing key for Windows application        | String          | No       |
+| Desktop (Windows) | `windows_signing_password`         | Password for Windows signing key           | String          | No       |
+| Desktop (Windows) | `windows_signing_certificate`      | Certificate for Windows app signing        | String          | No       |
+| Desktop (MacOS)   | `macos_signing_key`                | Signing key for MacOS application          | String          | No       |
+| Desktop (MacOS)   | `macos_signing_password`           | Password for MacOS signing key             | String          | No       |
+| Desktop (MacOS)   | `macos_signing_certificate`        | Certificate for MacOS app signing          | String          | No       |
+| Desktop (Linux)   | `linux_signing_key`                | Signing key for Linux application          | String          | No       |
+| Desktop (Linux)   | `linux_signing_password`           | Password for Linux signing key             | String          | No       |
+| Desktop (Linux)   | `linux_signing_certificate`        | Certificate for Linux app signing          | String          | No       |
 
 ### Fastlane Setup
 
@@ -322,9 +351,9 @@ Configure the following secrets in your repository settings:
 - `UPLOAD_KEYSTORE_ALIAS`: Keystore alias
 - `UPLOAD_KEYSTORE_ALIAS_PASSWORD`: Keystore alias password
 - 
-- `GOOGLESERVICES`: Google Services JSON content
-- `PLAYSTORECREDS`: Play Store service account credentials
-- `FIREBASECREDS`: Firebase App Distribution credentials
+- `GOOGLESERVICES`: Base64 encoded Google Services JSON content
+- `PLAYSTORECREDS`: Base64 encoded Play Store service account credentials
+- `FIREBASECREDS`: Base64 encoded Firebase App Distribution credentials
 
 #### iOS Secrets
 
