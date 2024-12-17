@@ -194,6 +194,8 @@ jobs:
   build_android:
     name: Build Android Application
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
