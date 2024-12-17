@@ -99,181 +99,84 @@ on:
         type: string
         required: true
 
+      web_package_name:
+        description: 'Name of the Web project module'
+        type: string
+        required: true
+
+      ios_package_name:
+        description: 'Name of the iOS project module'
+        type: string
+        required: true
+
 # Concurrency settings to prevent multiple simultaneous workflow runs
 concurrency:
   group: build-${{ github.ref }}
   cancel-in-progress: true  # Cancels previous runs if a new one is triggered
 
 jobs:
-  # Initial setup job to prepare the environment
-  setup:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4  # Checkout repository code
-      - uses: actions/setup-java@v4  # Setup Java environment
-        with:
-          distribution: 'zulu'
-          java-version: 17
-      - uses: gradle/actions/setup-gradle@v4  # Setup Gradle build tool
-
-      # Cache Gradle dependencies and build outputs to speed up future builds
-      - name: Cache Gradle and build outputs
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.gradle/caches
-            ~/.gradle/wrapper
-            build
-          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
-          restore-keys: ${{ runner.os }}-gradle-
-
-  # Code quality checks job
   checks:
-    needs: setup  # Depends on setup job completion
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        # Define different types of checks to run in parallel
-        check: [ build_logic, spotless, detekt ]
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
-        with:
-          distribution: 'zulu'
-          java-version: 17
-      
-      # Run different checks based on matrix value
-      - name: Run ${{ matrix.check }}
-        id: run_check
-        run: |
-          if [ "${{ matrix.check }}" = "build_logic" ]; then
-            ./gradlew check -p build-logic  # Check build logic
-          elif [ "${{ matrix.check }}" = "spotless" ]; then
-            ./gradlew spotlessCheck --no-configuration-cache --no-daemon  # Check code formatting
-          elif [ "${{ matrix.check }}" = "detekt" ]; then
-            ./gradlew detekt  # Run static code analysis
-          fi
-
-      # Upload detekt analysis reports as artifacts
-      - name: Upload Detekt Reports
-        if: ${{ matrix.check == 'detekt' && steps.run_check.outcome == 'success' }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: detekt-reports
-          path: |
-            **/build/reports/detekt/detekt.md
-
-
-
-  # Dependency verification and management job
-  dependency_guard:
-    needs: setup
+    name: Static Analysis Check
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
-        with:
-          distribution: 'zulu'
-          java-version: 17
+      - name: Checkout Repository
+        uses: actions/checkout@v4
 
-      # Verify dependencies against baseline
-      - name: Check Dependency Guard
-        id: dependencyguard_verify
-        continue-on-error: true
-        run: ./gradlew :${{ inputs.android_package_name }}:dependencyGuard
+      - name: Static Analysis Check
+        uses: openMF/kmp-static-analysis-check-action@v1.0.0
 
-      # Prevent baseline updates on fork PRs
-      - name: Prevent updating Dependency Guard baselines if this is a fork
-        id: checkfork_dependencyguard
-        if: steps.dependencyguard_verify.outcome == 'failure' && github.event.pull_request.head.repo.full_name != github.repository
-        run: |
-          echo "::error::Dependency Guard failed, please update baselines with: ./gradlew dependencyGuardBaseline" && exit 1
-
-      # Generate new dependency baselines if verification fails
-      - name: Generate new Dependency Guard baselines if verification failed and it's a PR
-        id: dependencyguard_baseline
-        if: steps.dependencyguard_verify.outcome == 'failure' && github.event_name == 'pull_request'
-        run: |
-          ./gradlew :${{ inputs.android_package_name }}:dependencyGuardBaseline
-
-      # Automatically commit new baselines if generated
-      - name: Push new Dependency Guard baselines if available
-        uses: stefanzweifel/git-auto-commit-action@v5
-        if: steps.dependencyguard_baseline.outcome == 'success'
-        with:
-          file_pattern: '**/dependencies/*.txt'
-          disable_globbing: true
-          commit_message: "🤖 Updates baselines for Dependency Guard"
-
-  # Android app build job
-  build:
-    needs: [ checks, dependency_guard ]  # Requires successful checks and dependency verification
+  build_android_app:
+    name: Build Android Application
+    needs: [ checks ]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
+      - name: Checkout Repository
+        uses: actions/checkout@v4
         with:
-          distribution: 'zulu'
-          java-version: 17
+          fetch-depth: 0
 
-      # Build debug APK for demo flavor
-      - name: Build APKs
-        run: ./gradlew :${{ inputs.android_package_name }}:assembleDemoDebug
-
-      # Upload built APKs as artifacts
-      - name: Upload APKs
-        uses: actions/upload-artifact@v4
+      - name: Build Android App
+        uses: openMF/kmp-build-android-app-action@v1.0.0
         with:
-          name: Android APKs
-          path: '**/build/outputs/apk/**/*.apk'
+          android_package_name: ${{ inputs.android_package_name }}
 
-  # Desktop application build job for multiple platforms
   build_desktop_app:
-    needs: [ checks, dependency_guard ]
+    name: Build Desktop Application
+    needs: [ checks ]
     strategy:
       matrix:
-        # Build for Windows, Linux, and MacOS
-        os:
-          - windows-latest
-          - ubuntu-latest
-          - macos-latest
-
+        os: [ ubuntu-latest, macos-latest, windows-latest ]
     runs-on: ${{ matrix.os }}
-    permissions:
-      contents: write
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
-        with:
-          distribution: 'zulu'
-          java-version: 17
+      - name: Checkout Repository
+        uses: actions/checkout@v4
 
-      # Build desktop application for current OS
       - name: Build Desktop App
-        run: ./gradlew packageDistributionForCurrentOS
-
-      # Upload Windows executables and installers
-      - name: Upload Windows Apps
-        if: matrix.os == 'windows-latest'
-        uses: actions/upload-artifact@v4
+        uses: openMF/kmp-build-desktop-app-action@v1.0.0
         with:
-          name: Windows-Apps
-          path: |
-            ./${{ inputs.desktop_package_name }}/build/compose/binaries/main/exe/*.exe
-            ./${{ inputs.desktop_package_name }}/build/compose/binaries/main/msi/*.msi
+          desktop_package_name: ${{ inputs.desktop_package_name }}
+          build_type: 'Debug'
 
-      # Upload Linux package
-      - name: Upload Linux App
-        if: matrix.os == 'ubuntu-latest'
-        uses: actions/upload-artifact@v4
-        with:
-          name: Linux-App
-          path: './${{ inputs.desktop_package_name }}/build/compose/binaries/main/deb/*.deb'
+  build_web_app:
+    name: Build Web Application
+    needs: [ checks ]
+    runs-on: windows-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
 
-      # Upload MacOS package
-      - name: Upload MacOS App
-        if: matrix.os == 'macos-latest'
-        uses: actions/upload-artifact@v4
+      - name: Build Web App
+        uses: openMF/kmp-build-web-app-action@v1.0.0
         with:
-          name: MacOS-App
-          path: './${{ inputs.desktop_package_name }}/build/compose/binaries/main/dmg/*.dmg'
+          web_package_name: ${{ inputs.web_package_name }}
+
+  build_ios_app:
+    name: Build iOS App
+    needs: [ checks ]
+    runs-on: macos-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Build iOS App
+        uses: openMF/kmp-build-ios-app-action@v1.0.0

@@ -27,8 +27,6 @@
   - [Workflow Usage Example](#workflow-usage-example-1)
 - [✨ Promote Release to Play Store Workflow](#promote-release-to-play-store-workflow)
   - [Configuration Steps](#configuration-steps)
-- [✨ Tag Weekly Release Workflow](#tag-weekly-release-workflow)
-  - [Configuration Steps](#configuration-steps-1)
 
 ####
 </details>
@@ -90,6 +88,35 @@ project-root/
 - Xcode 15+ (for iOS development)
 - Node.js 18+ (for web development)
 
+### Required Github Secrets
+
+In order to automate the build and deployment process, you need to configure the following secrets in your GitHub repository settings:
+
+| Platform          | Key Type                           | Description                                | Encoding/Format | Required |
+|-------------------|------------------------------------|--------------------------------------------|-----------------|----------|
+| Android           | `ORIGINAL_KEYSTORE_FILE`           | Base64 encoded release keystore            | Base64          | Yes      |
+| Android           | `ORIGINAL_KEYSTORE_FILE_PASSWORD`  | Keystore password                          | Plain Text      | Yes      |
+| Android           | `ORIGINAL_KEYSTORE_ALIAS`          | Keystore alias                             | Plain Text      | Yes      |
+| Android           | `ORIGINAL_KEYSTORE_ALIAS_PASSWORD` | Keystore alias password                    | Plain Text      | Yes      |
+| Android           | `UPLOAD_KEYSTORE_FILE`             | Base64 encoded release keystore for upload | Base64          | Yes      |
+| Android           | `UPLOAD_KEYSTORE_FILE_PASSWORD`    | Upload keystore password                   | Plain Text      | Yes      |
+| Android           | `UPLOAD_KEYSTORE_ALIAS`            | Upload keystore alias                      | Plain Text      | Yes      |
+| Android           | `UPLOAD_KEYSTORE_ALIAS_PASSWORD`   | Upload keystore alias password             | Plain Text      | Yes      |
+| Android           | `GOOGLESERVICES`                   | Google Services JSON content               | Base64          | Yes      |
+| Android           | `PLAYSTORECREDS`                   | Play Store service account credentials     | Base64          | Yes      |
+| Android           | `FIREBASECREDS`                    | Firebase App Distribution credentials      | Base64          | Yes      |
+| iOS               | `NOTARIZATION_APPLE_ID`            | Apple ID for app notarization              | Plain Text      | Yes      |
+| iOS               | `NOTARIZATION_PASSWORD`            | Password for notarization process          | Plain Text      | Yes      |
+| iOS               | `NOTARIZATION_TEAM_ID`             | Apple Developer Team ID                    | Plain Text      | Yes      |
+| Desktop (Windows) | `windows_signing_key`              | Signing key for Windows application        | String          | No       |
+| Desktop (Windows) | `windows_signing_password`         | Password for Windows signing key           | String          | No       |
+| Desktop (Windows) | `windows_signing_certificate`      | Certificate for Windows app signing        | String          | No       |
+| Desktop (MacOS)   | `macos_signing_key`                | Signing key for MacOS application          | String          | No       |
+| Desktop (MacOS)   | `macos_signing_password`           | Password for MacOS signing key             | String          | No       |
+| Desktop (MacOS)   | `macos_signing_certificate`        | Certificate for MacOS app signing          | String          | No       |
+| Desktop (Linux)   | `linux_signing_key`                | Signing key for Linux application          | String          | No       |
+| Desktop (Linux)   | `linux_signing_password`           | Password for Linux signing key             | String          | No       |
+| Desktop (Linux)   | `linux_signing_certificate`        | Certificate for Linux app signing          | String          | No       |
 
 ### Fastlane Setup
 
@@ -324,9 +351,9 @@ Configure the following secrets in your repository settings:
 - `UPLOAD_KEYSTORE_ALIAS`: Keystore alias
 - `UPLOAD_KEYSTORE_ALIAS_PASSWORD`: Keystore alias password
 - 
-- `GOOGLESERVICES`: Google Services JSON content
-- `PLAYSTORECREDS`: Play Store service account credentials
-- `FIREBASECREDS`: Firebase App Distribution credentials
+- `GOOGLESERVICES`: Base64 encoded Google Services JSON content
+- `PLAYSTORECREDS`: Base64 encoded Play Store service account credentials
+- `FIREBASECREDS`: Base64 encoded Firebase App Distribution credentials
 
 #### iOS Secrets
 
@@ -619,7 +646,7 @@ Replace `'your-web-module-name'` with the actual name of your web module in the 
 2. Navigate to "Pages" section
 3. Under "Source", select "GitHub Actions" as the deployment method
 
-### 4. Gradle Configuration
+### 3. Gradle Configuration
 
 Ensure your `build.gradle.kts` or `build.gradle` supports JavaScript distribution:
 
@@ -851,36 +878,16 @@ jobs:
 
 ```mermaid
 flowchart TD
-    A([Workflow Starts]) --> B[Initial Setup]
-    B --> C{Parallel Checks}
-
-    C --> |Parallel Execution| D1[Build Logic Check]
-    C --> |Parallel Execution| D2[Spotless Code Formatting]
-    C --> |Parallel Execution| D3[Detekt Static Analysis]
-
-    D1 --> E1[Validate Build Configuration]
-    D2 --> E2[Enforce Code Style Rules]
-    D3 --> E3[Generate Detekt Reports]
-
-    E3 --> F3[Upload Detekt Reports]
-
-    C --> G[Dependency Guard]
-    G --> H{Dependency Verification}
-
-    H -->|Pass| I[Android APK Build]
-    H -->|Fail on Fork| J[Block PR]
-    H -->|Fail on Main Repo| K[Generate New Baselines]
-
-    K --> L[Auto-Commit Baseline Updates]
-
-    I --> M[Parallel Desktop App Builds]
-    M --> N1[Windows Build]
-    M --> N2[Linux Build]
-    M --> N3[MacOS Build]
-
-    N1 --> O1[Upload Windows Artifacts]
-    N2 --> O2[Upload Linux Artifacts]
-    N3 --> O3[Upload MacOS Artifacts]
+    A[Code Commit/PR] --> B[Static Analysis Checks]
+    B --> C[Parallel Builds]
+    C --> D1[Android App Build]
+    C --> D2[Desktop App Build]
+    C --> D3[Web App Build]
+    C --> D4[iOS App Build]
+    D1 --> E[Artifacts Generated]
+    D2 --> E
+    D3 --> E
+    D4 --> E
 
     style A fill:#2196F3,color:white
     style B fill:#4CAF50,color:white
@@ -888,161 +895,90 @@ flowchart TD
     style D1 fill:#9C27B0,color:white
     style D2 fill:#673AB7,color:white
     style D3 fill:#F44336,color:white
-    style E1 fill:#03A9F4,color:white
-    style E2 fill:#00BCD4,color:white
-    style E3 fill:#2196F3,color:white
-    style F3 fill:#4CAF50,color:white
-    style G fill:#FF5722,color:white
-    style H fill:#FFC107,color:white
-    style I fill:#795548,color:white
-    style J fill:#f44336,color:white
-    style K fill:#FF9800,color:white
-    style L fill:#9C27B0,color:white
-    style M fill:#673AB7,color:white
-    style N1 fill:#03A9F4,color:white
-    style N2 fill:#00BCD4,color:white
-    style N3 fill:#2196F3,color:white
-    style O1 fill:#4CAF50,color:white
-    style O2 fill:#8BC34A,color:white
-    style O3 fill:#CDDC39,color:white
+    style D4 fill:#03A9F4,color:white
 ```
 
 ## Overview
 
-This GitHub Actions workflow provides a robust continuous integration (CI) process for the Mobile-Wallet project, focusing on:
-- Code quality checks
-- Dependency verification
-- Multi-platform builds (Android and Desktop)
+This reusable GitHub Actions workflow provides a comprehensive Continuous Integration (CI) pipeline for multi-platform mobile and desktop applications, specifically designed for projects using Gradle and Kotlin Multiplatform (KMP).
 
-## Workflow Trigger
-
-The workflow is designed to be reusable and can be called from other workflows with specific inputs.
+## Key Features
+- Automated code quality checks
+- Dependency management and verification
+- Cross-platform builds:
+    - Android APK generation
+    - Desktop application builds (Windows, Linux, MacOS)
+    - Web application compilation
+    - iOS app build support
 
 ## Prerequisites
-
-### Project Structure
-1. Kotlin/Gradle-based multi-platform project
-2. Separate modules for:
-  - Android application
-  - Desktop application
-3. Configured code quality tools:
-  - Spotless (code formatting)
-  - Detekt (static code analysis)
-  - Dependency Guard
-
-### Required Configurations
-
-#### Build Tools
 - Java 17
 - Gradle
-- Kotlin Multiplatform (recommended)
-
-#### Code Quality Plugins
-- Spotless
-- Detekt
-- Dependency Guard
-
-## Workflow Inputs
-
-### Required Inputs
-- `android_package_name`: Name of the Android project module
-- `desktop_package_name`: Name of the Desktop project module
+- Configured build scripts for:
+    - Android module
+    - Desktop module
+    - Web module
+    - iOS module
+- Installed Gradle plugins for code quality checks
 
 ## Workflow Jobs
 
-### 1. Setup Job
-- Checks out repository
-- Sets up Java 17
-- Configures Gradle
-- Caches Gradle dependencies to optimize build performance
+### 1. Static Analysis Checks
+- Runs initial code quality verification
+- Uses custom static analysis check action
 
-### 2. Code Quality Checks
-Runs three parallel checks:
-- `build_logic`: Validates build scripts
-- `spotless`: Ensures consistent code formatting
-- `detekt`: Performs static code analysis
+### 2. Android App Build
+- Builds debug APK for the specified Android module
+- Runs on Ubuntu latest
 
-#### Outputs
-- Detekt reports uploaded as artifacts
+### 3. Desktop App Build
+- Builds desktop applications for:
+    - Windows
+    - Linux
+    - MacOS
+- Uses cross-platform build strategy
 
-### 3. Dependency Guard
-- Verifies project dependencies
-- Can automatically update dependency baselines
-- Prevents dependency updates in forked repositories
+### 4. Web Application Build
+- Compiles web application
+- Runs on Windows latest
 
-### 4. Android Build
-- Builds debug APK for demo flavor
-- Uploads built APKs as artifacts
+### 5. iOS App Build
+- Builds iOS application
+- Runs on MacOS latest
 
-### 5. Desktop Application Build
-Builds desktop applications for:
-- Windows
-- Linux
-- macOS
+## Configuration Parameters
 
-#### Outputs
-- Platform-specific executables and installers
+| Parameter              | Description                        | Type   | Required |
+|------------------------|------------------------------------|--------|----------|
+| `android_package_name` | Name of the Android project module | String | Yes      |
+| `desktop_package_name` | Name of the Desktop project module | String | Yes      |
+| `web_package_name`     | Name of the Web project module     | String | Yes      |
+| `ios_package_name`     | Name of the iOS project module     | String | Yes      |
 
-## Workflow Usage Example
+## Workflow Trigger Conditions
+- Triggered on workflow call
+- Supports concurrency management
+- Cancels previous runs if a new one is triggered
+
+## Usage Example
 
 ```yaml
 name: PR Checks
 
-# Trigger conditions for the workflow
 on:
-  push:
-    branches: [ dev ]  # Runs on pushes to dev branch
-  pull_request:       # Runs on all pull requests
-
-# Concurrency settings to prevent multiple simultaneous workflow runs
-concurrency:
-  group: pr-${{ github.ref }}
-  cancel-in-progress: true  # Cancels previous runs if a new one is triggered
-
-permissions:
-  contents: write
+  pull_request:
+    branches: [ dev, main ]
 
 jobs:
   pr_checks:
     name: PR Checks
-    uses: niyajali/mifos-mobile-github-actions/.github/workflows/pr-check.yaml@main
-    secrets: inherit
+    uses: openMF/mifos-mobile-github-actions/.github/workflows/pr-check.yaml@main
     with:
       android_package_name: 'mifospay-android'
       desktop_package_name: 'mifospay-desktop'
+      web_package_name: 'mifospay-web'
+      ios_package_name: 'mifospay-ios'
 ```
-
-## Best Practices
-
-1. Keep code formatting consistent
-2. Regularly update dependency baselines
-3. Address static code analysis warnings
-4. Maintain separate build configurations for different flavors
-
-## Troubleshooting
-
-### Common Issues
-- Gradle cache conflicts
-- Java version mismatches
-- Dependency resolution problems
-
-### Debugging Steps
-1. Clear Gradle caches
-2. Verify Java installation
-3. Check dependency configurations
-4. Review Detekt and Spotless reports
-
-## Customization
-
-### Extending the Workflow
-- Add more code quality checks
-- Implement additional build flavors
-- Customize artifact retention
-
-## Limitations
-- Requires comprehensive project setup
-- Platform-specific builds increase workflow complexity
-- Longer build times due to multiple checks and builds
 
 <div align="right">
 
@@ -1164,123 +1100,3 @@ jobs:
 [![Back To Top](https://img.shields.io/badge/Back%20To%20Top-Blue?style=flat)](#readme-top)
 
 </div>
-
----
-
-# Tag Weekly Release Workflow
-> \[!TIP]
-> #### [_tag_weekly_release.yml_](.github/workflows/tag-weekly-release.yaml)
-
-```mermaid
-flowchart TD
-    A([Workflow Starts]) --> B[Checkout Repository]
-    B --> C[Set up JDK 17]
-
-    C --> D[Tag Weekly Release\nusing Reckon]
-    D --> E{Reckon Tag Created}
-
-    E -->|Tag Successful| F[Trigger Multi-Platform\nBuild and Publish]
-    E -->|Tag Failed| G[Workflow Stops]
-
-    F --> H[Beta Release Initiated]
-
-    style A fill:#2196F3,color:white
-    style B fill:#4CAF50,color:white
-    style C fill:#FF9800,color:white
-    style D fill:#9C27B0,color:white
-    style E fill:#FF5722,color:white
-    style F fill:#03A9F4,color:white
-    style G fill:#f44336,color:white
-    style H fill:#2196F3,color:white
-```
-
-### Overview
-This workflow automatically creates weekly version tags and triggers beta releases every Sunday at 4:00 AM UTC.
-
-### Workflow Trigger
-- Scheduled run: Every Sunday at 4:00 AM UTC
-- Manual dispatch possible
-
-### Prerequisites
-1. **Java Environment**
-  - JDK 17 (Temurin distribution)
-  - Gradle with Reckon plugin for versioning
-
-2. **Tools Required**
-  - Gradle
-  - Reckon plugin for automatic versioning
-
-### Configuration Steps
-1. **Gradle Configuration**
-   Add Reckon plugin to your `build.gradle`:
-   ```groovy
-   plugins {
-     id 'org.ajoberstar.reckon' version 'x.x.x'
-   }
-
-   reckon {
-     scopeFromProp()
-     stageFromProp()
-   }
-   ```
-
-2. **GitHub Workflow Inputs**
-  - `target_branch`: Branch for release (default: 'dev')
-    - Allows specifying which branch to use for releases
-
-3. **GitHub Secrets**
-  - `GITHUB_TOKEN`: Automatically provided by GitHub Actions
-  - Enables pushing tags and triggering subsequent workflows
-
-### Workflow Process
-1. Checks out repository with full history
-2. Sets up Java 17 environment
-3. Creates and pushes a new version tag using Reckon
-  - Uses 'final' stage for production-ready releases
-4. Triggers a multi-platform build and publish workflow
-  - Passes 'beta' as the release type
-
-### Best Practices
-- Ensure your versioning strategy is consistent
-- Test Reckon configuration thoroughly
-- Review and validate auto-generated tags
-- Set up appropriate branch protection rules
-
-### Customization
-- Modify schedule using cron syntax
-- Adjust target branch as needed
-- Customize release type and versioning strategy
-
-### Troubleshooting
-- Check GitHub Actions logs for detailed error information
-- Verify Gradle and Reckon plugin configurations
-- Ensure all required secrets and permissions are set up
-
-### Example Workflow
-```yaml
-# Workflow to automatically create weekly version tags and trigger beta releases
-# This workflow runs every Sunday at 4:00 AM UTC and can also be triggered manually
-
-name: Tag Weekly Release
-
-on:
-  # Allow manual triggering of the workflow
-  workflow_dispatch:
-  # Schedule the workflow to run weekly
-  schedule:
-    # Runs at 04:00 UTC every Sunday
-    # Cron syntax: minute hour day-of-month month day-of-week
-    - cron: '0 4 */2 * 0'
-
-concurrency:
-  group: "weekly-release"
-  cancel-in-progress: false
-
-jobs:
-  tag:
-    name: Tag Weekly Release
-    uses: niyajali/mifos-mobile-github-actions/.github/workflows/tag-weekly-release.yaml@main
-    secrets: inherit
-    with:
-      target_branch: 'dev'
-```
