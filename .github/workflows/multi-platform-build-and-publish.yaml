@@ -195,7 +195,6 @@ jobs:
     name: Build Android Application
     runs-on: ubuntu-latest
     steps:
-      # Check out repository
       - name: Checkout Repository
         uses: actions/checkout@v4
         with:
