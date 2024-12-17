@@ -168,7 +168,7 @@ jobs:
       - name: Build Web App
         uses: openMF/kmp-build-web-app-action@v1.0.0
         with:
-          web_package_name: 'web'
+          web_package_name: ${{ inputs.web_package_name }}
 
   build_ios_app:
     name: Build iOS App
