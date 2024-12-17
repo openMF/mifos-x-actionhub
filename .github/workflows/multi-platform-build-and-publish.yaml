@@ -30,7 +30,7 @@
 # - google_services: Google Services configuration JSON
 # - playstore_creds: Play Store service account credentials
 # - firebase_creds: Firebase distribution credentials
-# - github_token: GitHub token for repository access
+# - token: GitHub token for repository access
 #
 # Apple-related secrets:
 # - notarization_apple_id: Apple ID for macOS app notarization
@@ -178,7 +178,7 @@ on:
       firebase_creds:
         description: 'Firebase distribution credentials'
         required: false
-      github_token:
+      token:
         description: 'Github Token'
         required: false
 
@@ -275,7 +275,7 @@ jobs:
           key_password: ${{ secrets.original_keystore_alias_password }}
           google_services: ${{ secrets.google_services }}
           firebase_creds: ${{ secrets.firebase_creds }}
-          github_token: ${{ secrets.github_token }}
+          github_token: ${{ secrets.token }}
           target_branch: ${{ inputs.target_branch }}
 
   # Publish Android app on Play Store
@@ -329,7 +329,7 @@ jobs:
         uses: openMF/kmp-publish-ios-on-firebase-action@v1.0.0
         with:
           ios_package_name: ${{ inputs.ios_package_name }}
-          github_token: ${{ secrets.github_token }}
+          github_token: ${{ secrets.token }}
           firebase_creds: ${{ secrets.firebase_creds }}
           target_branch: ${{ inputs.target_branch }}
 
@@ -449,7 +449,7 @@ jobs:
         uses: actions/github-script@v7
         id: release-notes
         with:
-          github-token: ${{ secrets.github_token }}
+          github-token: ${{ secrets.token }}
           script: |
             try {
               // Get latest release tag
