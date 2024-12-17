@@ -469,10 +469,10 @@ jobs:
           draft: false
           prerelease: true
           files: |
-            ./all-artifacts/android-app/prod/release/${{ inputs.android_package_name }}-prod-release.apk
-            ./all-artifacts/android-app/demo/release/${{ inputs.android_package_name }}-demo-release.apk
-            ./all-artifacts/desktop-app-windows-latest/exe/*.exe
-            ./all-artifacts/desktop-app-windows-latest/msi/*.msi
-            ./all-artifacts/desktop-app-macos-latest/*.dmg
-            ./all-artifacts/desktop-app-ubuntu-latest/*.deb
+            ./all-artifacts/android-app/${{ inputs.android_package_name }}/build/outputs/apk/demo/release/*.apk
+            ./all-artifacts/android-app/${{ inputs.android_package_name }}/build/outputs/apk/prod/release/*.apk
+            ./all-artifacts/desktop-app-macos-latest/${{ inputs.desktop_package_name }}/build/compose/binaries/main-release/dmg/*.dmg
+            ./all-artifacts/desktop-app-ubuntu-latest/${{ inputs.desktop_package_name }}/build/compose/binaries/main-release/deb/*.deb
+            ./all-artifacts/desktop-app-windows-latest/${{ inputs.desktop_package_name }}/build/compose/binaries/main-release/exe/*.exe
+            ./all-artifacts/desktop-app-windows-latest/${{ inputs.desktop_package_name }}/build/compose/binaries/main-release/msi/*.msi            
             ./all-artifacts/${{ inputs.web_package_name }}.zip
