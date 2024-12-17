@@ -360,7 +360,6 @@ jobs:
   # Web Publishing Job
   publish_web:
     name: Publish Web App
-    needs: [ build_web ]
     if: inputs.publish_web
     runs-on: ubuntu-latest
     environment:
