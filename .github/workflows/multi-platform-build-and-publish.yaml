@@ -203,7 +203,6 @@ jobs:
 
       - name: Build Android App
         uses: openMF/kmp-build-android-app-action@v1.0.0
-        id: build-android
         with:
           android_package_name: ${{ inputs.android_package_name }}
           build_type: 'Release'
@@ -247,11 +246,17 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Promote Android App to Production
-        uses: openMF/kmp-publish-android-on-playstore-production-action@v1.0.0
+      - name: Promote Android App to Beta or Internal
+        uses: openMF/kmp-publish-android-on-playstore-beta-action@v1.0.0
         with:
+          release_type: ${{ inputs.release_type }}
           android_package_name: ${{ inputs.android_package_name }}
+          google_services: ${{ secrets.GOOGLESERVICES }}
           playstore_creds: ${{ secrets.PLAYSTORECREDS }}
+          keystore_file: ${{ secrets.UPLOAD_KEYSTORE_FILE }}
+          keystore_password: ${{ secrets.UPLOAD_KEYSTORE_FILE_PASSWORD }}
+          key_alias: ${{ secrets.UPLOAD_KEYSTORE_ALIAS }}
+          key_password: ${{ secrets.UPLOAD_KEYSTORE_ALIAS_PASSWORD }}
 
   # iOS Build Job
   build_ios:
