@@ -268,7 +268,7 @@ jobs:
   publish_ios_app_to_firebase:
     name: Publish iOS App On Firebase
     if: inputs.publish_ios
-    needs: [ build_ios, generate_release_info ]
+    needs: [ build_ios ]
     runs-on: macos-latest
     permissions:
       contents: write
@@ -397,8 +397,6 @@ jobs:
           echo "version-code=$VC" >> $GITHUB_OUTPUT
           VERSION=`cat version.txt`
           echo "version=$VERSION" >> $GITHUB_OUTPUT
-
-
 
       - name: Generate Release Notes
         uses: actions/github-script@v7
