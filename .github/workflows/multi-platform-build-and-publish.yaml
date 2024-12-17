@@ -182,6 +182,31 @@ on:
         default: true
         description: Publish Web App
 
+      keystore_file:
+        type: string
+        description: 'Base64 encoded Android release keystore'
+      keystore_password:
+        type: string
+        description: 'Keystore password'
+      keystore_alias:
+        type: string
+        description: 'Keystore Alias'
+      keystore_alias_password:
+        type: string
+        description: 'Keystore Alias Password'
+      google_services:
+        type: string
+        description: 'Base64 Encoded Google Services configuration JSON'
+      firebase_creds:
+        type: string
+        description: 'Base64 Encoded Firebase distribution credentials'
+      playstore_creds:
+        type: string
+        description: 'Base64 Encoded Play Store service account credentials'
+      github_token:
+        type: string
+        description: 'GitHub Token for release creation'
+
 permissions:
   contents: write
 
@@ -207,11 +232,11 @@ jobs:
         with:
           android_package_name: ${{ inputs.android_package_name }}
           build_type: 'Release'
-          google_services: ${{ secrets.GOOGLESERVICES }}
-          key_store: ${{ secrets.ORIGINAL_KEYSTORE_FILE }}
-          key_store_password: ${{ secrets.ORIGINAL_KEYSTORE_FILE_PASSWORD }}
-          key_store_alias: ${{ secrets.ORIGINAL_KEYSTORE_ALIAS }}
-          key_store_alias_password: ${{ secrets.ORIGINAL_KEYSTORE_ALIAS_PASSWORD }}
+          google_services: ${{ inputs.google_services }}
+          key_store: ${{ inputs.keystore_file }}
+          key_store_password: ${{ inputs.keystore_password }}
+          key_store_alias: ${{ inputs.keystore_alias }}
+          key_store_alias_password: ${{ inputs.keystore_alias_password }}
 
   # Publish Android app on Firebase App Distribution
   publish_android_on_firebase:
@@ -228,13 +253,13 @@ jobs:
         uses: openMF/kmp-android-firebase-publish-action@v1.0.0
         with:
           android_package_name: ${{ inputs.android_package_name }}
-          keystore_file: ${{ secrets.ORIGINAL_KEYSTORE_FILE }}
-          keystore_password: ${{ secrets.ORIGINAL_KEYSTORE_FILE_PASSWORD }}
-          key_alias: ${{ secrets.ORIGINAL_KEYSTORE_ALIAS }}
-          key_password: ${{ secrets.ORIGINAL_KEYSTORE_ALIAS_PASSWORD }}
-          google_services: ${{ secrets.GOOGLESERVICES }}
-          firebase_creds: ${{ secrets.FIREBASECREDS }}
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+          keystore_file: ${{ inputs.keystore_file }}
+          keystore_password: ${{ inputs.keystore_password }}
+          key_alias: ${{ inputs.keystore_alias }}
+          key_password: ${{ inputs.keystore_alias_password  }}
+          google_services: ${{ inputs.google_services }}
+          firebase_creds: ${{ inputs.firebase_creds }}
+          github_token: ${{ inputs.github_token }}
           target_branch: ${{ inputs.target_branch }}
 
   # Publish Android app on Play Store
@@ -252,12 +277,11 @@ jobs:
         with:
           release_type: ${{ inputs.release_type }}
           android_package_name: ${{ inputs.android_package_name }}
-          google_services: ${{ secrets.GOOGLESERVICES }}
-          playstore_creds: ${{ secrets.PLAYSTORECREDS }}
-          keystore_file: ${{ secrets.UPLOAD_KEYSTORE_FILE }}
-          keystore_password: ${{ secrets.UPLOAD_KEYSTORE_FILE_PASSWORD }}
-          key_alias: ${{ secrets.UPLOAD_KEYSTORE_ALIAS }}
-          key_password: ${{ secrets.UPLOAD_KEYSTORE_ALIAS_PASSWORD }}
+          playstore_creds: ${{ inputs.playstore_creds }}
+          keystore_file: ${{ inputs.keystore_file }}
+          keystore_password: ${{ inputs.keystore_password }}
+          key_alias: ${{ inputs.keystore_alias }}
+          key_password: ${{ inputs.keystore_alias_password }}
 
   # iOS Build Job
   build_ios:
