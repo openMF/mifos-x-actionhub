@@ -1,0 +1,120 @@
+## Overview
+#
+# This reusable GitHub Actions workflow provides a comprehensive Continuous Integration (CI) pipeline
+# for multi-platform mobile and desktop applications, specifically designed for projects using Gradle and Java/Kotlin.
+#
+### Key Features
+# - Automated code quality checks
+# - Dependency management and verification
+# - Cross-platform desktop application builds (Windows, Linux, MacOS)
+# - Android APK build generation
+# - Artifact generation and storage
+#
+### Workflow Jobs
+# 1. **Setup**: Prepares the build environment
+#   - Checks out repository code
+#   - Sets up Java 17
+#   - Configures Gradle
+#   - Manages dependency caching
+#
+# 2. **Code Quality Checks**:
+#   - Build logic verification
+#   - Code formatting checks (Spotless)
+#   - Static code analysis (Detekt)
+#
+# 3. **Dependency Guard**:
+#   - Verifies dependencies against baseline
+#   - Prevents unauthorized dependency changes
+#   - Supports automatic baseline updates
+#
+# 4. **Android App Build**:
+#   - Builds debug APK for demo flavor
+#   - Uploads APK artifacts
+#
+### Prerequisites
+#   - Java 17
+#   - Gradle
+#   - Configured build scripts for:
+#       - Android module
+#       - Desktop module
+#   - Installed Gradle plugins:
+#       - Spotless
+#       - Detekt
+#       - Dependency Guard
+#
+### Configuration Parameters
+# The workflow requires two input parameters:
+#
+#   | Parameter | Description | Type | Required |
+#   |-----------|-------------|------|----------|
+#   | `android_package_name` | Name of the Android project module | String | Yes |
+#
+### Usage Example
+#   ```yaml
+# name: PR Checks
+# Trigger conditions for the workflow
+#  on:
+#    push:
+#      branches: [ dev ]  # Runs on pushes to dev branch
+#    pull_request:       # Runs on all pull requests
+#
+#  # Concurrency settings to prevent multiple simultaneous workflow runs
+#  concurrency:
+#    group: pr-${{ github.ref }}
+#    cancel-in-progress: true  # Cancels previous runs if a new one is triggered
+#
+#  permissions:
+#    contents: write
+#
+#  jobs:
+#    pr_checks:
+#      name: PR Checks
+#      uses: openMF/mifos-mobile-github-actions/.github/workflows/pr-check-android.yaml@main
+#      secrets: inherit
+#      with:
+#        android_package_name: 'mifospay-android'
+#   ```
+#
+# GitHub Actions workflow for continuous integration of Mobile-Wallet project
+# Runs on master and dev branches to ensure code quality and build stability
+name: Debug Build & PR Checks
+
+# Trigger conditions for the workflow
+on:
+  workflow_call:
+    inputs:
+      android_package_name:
+        description: 'Name of the Android project module'
+        type: string
+        required: true
+
+# Concurrency settings to prevent multiple simultaneous workflow runs
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true  # Cancels previous runs if a new one is triggered
+
+jobs:
+  checks:
+    name: Static Analysis Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Static Analysis Check
+        uses: openMF/kmp-static-analysis-check-action@v1.0.0
+
+  build_android_app:
+    name: Build Android Application
+    needs: [ checks ]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Build Android App
+        uses: openMF/kmp-build-android-app-action@v1.0.1
+        with:
+          android_package_name: ${{ inputs.android_package_name }}
