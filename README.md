@@ -458,21 +458,6 @@ on:
         default: false
         description: Publish iOS App On App Store
 
-      publish_desktop:
-        type: boolean
-        default: false
-        description: Publish Desktop Apps On App Store
-
-      publish_web:
-        type: boolean
-        default: true
-        description: Publish Web App
-
-      build_ios:
-        type: boolean
-        default: false
-        description: Build iOS App
-
 permissions:
   contents: write
   id-token: write
@@ -495,10 +480,7 @@ jobs:
       release_type: ${{ inputs.release_type }}
       target_branch: ${{ inputs.target_branch }}
       publish_android: ${{ inputs.publish_android }}
-      build_ios: ${{ inputs.build_ios }}
       publish_ios: ${{ inputs.publish_ios }}
-      publish_desktop: ${{ inputs.publish_desktop }}
-      publish_web: ${{ inputs.publish_web }}
 ```
 
 ## Important Considerations
