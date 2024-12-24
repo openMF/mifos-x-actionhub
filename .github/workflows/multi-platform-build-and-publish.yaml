@@ -114,6 +114,11 @@ on:
         default: false
         description: Publish Android App On Play Store
 
+      build_ios:
+        type: boolean
+        default: false
+        description: Build iOS App
+
       # Toggle for iOS App Store publishing
       publish_ios:
         type: boolean
@@ -273,6 +278,7 @@ jobs:
           fetch-depth: 0
 
       - name: Deploy iOS App to Firebase
+        if: inputs.build_ios
         uses: openMF/kmp-publish-ios-on-firebase-action@v1.0.0
         continue-on-error: true
         with:
