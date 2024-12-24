@@ -62,8 +62,6 @@
 # - publish_android: Enable/disable Android Play Store publishing
 # - build_ios: Enable/disable iOS build
 # - publish_ios: Enable/disable iOS App Store publishing
-# - publish_desktop: Enable/disable desktop app publishing
-# - publish_web: Enable/disable web app deployment (default: true)
 
 # USAGE:
 # 1. Ensure all required secrets are configured
@@ -116,29 +114,11 @@ on:
         default: false
         description: Publish Android App On Play Store
 
-      #  A boolean input to control the iOS build process, defaulting to false.
-      build_ios:
-        type: boolean
-        default: false
-        description: Build iOS App
-
       # Toggle for iOS App Store publishing
       publish_ios:
         type: boolean
         default: false
         description: Publish iOS App On App Store
-
-      # Toggle for Desktop app publishing (Windows/macOS/Linux)
-      publish_desktop:
-        type: boolean
-        default: false
-        description: Publish Desktop Apps On App Store
-
-      # Toggle for Web app deployment
-      publish_web:
-        type: boolean
-        default: true
-        description: Publish Web App
 
     secrets:
       # Android-related secrets
@@ -223,6 +203,7 @@ on:
       linux_signing_certificate:
         description: 'Linux app signing certificate'
         required: false
+
 permissions:
   contents: write
 
@@ -231,29 +212,6 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  # Build and publish web app
-  build_android:
-    name: Build Android Application
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Build Android App
-        uses: openMF/kmp-build-android-app-action@v1.0.0
-        with:
-          android_package_name: ${{ inputs.android_package_name }}
-          build_type: 'Release'
-          google_services: ${{ secrets.google_services }}
-          key_store: ${{ secrets.original_keystore_file }}
-          key_store_password: ${{ secrets.original_keystore_file_password }}
-          key_store_alias: ${{ secrets.original_keystore_alias }}
-          key_store_alias_password: ${{ secrets.original_keystore_alias_password }}
-
   # Publish Android app on Firebase App Distribution
   publish_android_on_firebase:
     name: Deploy Android App On Firebase
@@ -302,22 +260,9 @@ jobs:
           key_alias: ${{ secrets.upload_keystore_alias }}
           key_password: ${{ secrets.upload_keystore_alias_password }}
 
-  # iOS Build Job
-  build_ios:
-    name: Build iOS App
-    runs-on: macos-latest
-    steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
-
-      - name: Build iOS App
-        if: inputs.build_ios
-        uses: openMF/kmp-build-ios-app-action@v1.0.0
-
   # Firebase Distribution Job for iOS
   publish_ios_app_to_firebase:
     name: Publish iOS App On Firebase
-    if: inputs.publish_ios
     runs-on: macos-latest
     permissions:
       contents: write
@@ -347,27 +292,9 @@ jobs:
 
       # TODO: Implement App Store publishing
 
-  # Desktop Build Job
-  build_desktop:
-    name: Build Desktop App
-    strategy:
-      matrix:
-        os: [ ubuntu-latest, macos-latest, windows-latest ]
-    runs-on: ${{ matrix.os }}
-    steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
-
-      - name: Build Desktop App
-        uses: openMF/kmp-build-desktop-app-action@v1.0.0
-        with:
-          desktop_package_name: ${{ inputs.desktop_package_name }}
-          build_type: 'Release'
-
   # Desktop Publishing Job
   publish_desktop:
     name: Publish Desktop App
-    if: inputs.publish_desktop
     strategy:
       matrix:
         os: [ ubuntu-latest, windows-latest, macos-latest ]
@@ -387,23 +314,9 @@ jobs:
           linux_signing_password: ${{ secrets.linux_signing_password }}
           linux_signing_certificate: ${{ secrets.linux_signing_certificate }}
 
-  # Web Build Job
-  build_web:
-    name: Build Web Application
-    runs-on: windows-latest
-    steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
-
-      - name: Build Web App
-        uses: openMF/kmp-build-web-app-action@v1.0.0
-        with:
-          web_package_name: ${{ inputs.web_package_name }}
-
   # Web Publishing Job
   publish_web:
     name: Publish Web App
-    if: inputs.publish_web
     runs-on: ubuntu-latest
     environment:
       name: github-pages
@@ -424,8 +337,7 @@ jobs:
   # Creates GitHub release with all built artifacts
   github_release:
     name: Create Github Release
-    needs: [ build_android, build_desktop, build_web, build_ios ]
-    if: inputs.release_type == 'beta'
+    needs: [ publish_android_on_firebase, publish_ios_app_to_firebase, publish_desktop, publish_web ]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
