@@ -203,6 +203,7 @@ on:
       linux_signing_certificate:
         description: 'Linux app signing certificate'
         required: false
+
 permissions:
   contents: write
 
@@ -258,7 +259,6 @@ jobs:
           keystore_password: ${{ secrets.upload_keystore_file_password }}
           key_alias: ${{ secrets.upload_keystore_alias }}
           key_password: ${{ secrets.upload_keystore_alias_password }}
-
 
   # Firebase Distribution Job for iOS
   publish_ios_app_to_firebase:
@@ -337,8 +337,7 @@ jobs:
   # Creates GitHub release with all built artifacts
   github_release:
     name: Create Github Release
-    needs: [ build_android, build_desktop, build_web, build_ios ]
-    if: inputs.release_type == 'beta'
+    needs: [ publish_android_on_firebase, publish_ios_app_to_firebase, publish_desktop, publish_web ]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
