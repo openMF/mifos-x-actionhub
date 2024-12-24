@@ -269,9 +269,12 @@ jobs:
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Deploy iOS App to Firebase
         uses: openMF/kmp-publish-ios-on-firebase-action@v1.0.0
+        continue-on-error: true
         with:
           ios_package_name: ${{ inputs.ios_package_name }}
           github_token: ${{ secrets.token }}
@@ -300,7 +303,11 @@ jobs:
         os: [ ubuntu-latest, windows-latest, macos-latest ]
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
       - uses: openMF/kmp-publish-desktop-app-action@v1.0.0
         with:
           desktop_package_name: ${{ inputs.desktop_package_name }}
