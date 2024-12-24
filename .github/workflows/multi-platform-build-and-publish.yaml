@@ -114,6 +114,11 @@ on:
         default: false
         description: Publish Android App On Play Store
 
+      build_ios:
+        type: boolean
+        default: false
+        description: Build iOS App
+
       # Toggle for iOS App Store publishing
       publish_ios:
         type: boolean
@@ -269,9 +274,13 @@ jobs:
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Deploy iOS App to Firebase
+        if: inputs.build_ios
         uses: openMF/kmp-publish-ios-on-firebase-action@v1.0.0
+        continue-on-error: true
         with:
           ios_package_name: ${{ inputs.ios_package_name }}
           github_token: ${{ secrets.token }}
@@ -300,7 +309,11 @@ jobs:
         os: [ ubuntu-latest, windows-latest, macos-latest ]
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
       - uses: openMF/kmp-publish-desktop-app-action@v1.0.0
         with:
           desktop_package_name: ${{ inputs.desktop_package_name }}
