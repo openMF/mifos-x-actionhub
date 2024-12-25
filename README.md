@@ -92,31 +92,38 @@ project-root/
 
 In order to automate the build and deployment process, you need to configure the following secrets in your GitHub repository settings:
 
-| Platform          | Key Type                           | Description                                | Encoding/Format | Required |
+| Platform          | Key Name                           | Description                                | Encoding/Format | Required |
 |-------------------|------------------------------------|--------------------------------------------|-----------------|----------|
 | Android           | `ORIGINAL_KEYSTORE_FILE`           | Base64 encoded release keystore            | Base64          | Yes      |
-| Android           | `ORIGINAL_KEYSTORE_FILE_PASSWORD`  | Keystore password                          | Plain Text      | Yes      |
-| Android           | `ORIGINAL_KEYSTORE_ALIAS`          | Keystore alias                             | Plain Text      | Yes      |
-| Android           | `ORIGINAL_KEYSTORE_ALIAS_PASSWORD` | Keystore alias password                    | Plain Text      | Yes      |
+| Android           | `ORIGINAL_KEYSTORE_FILE_PASSWORD`  | Keystore password                          | String          | Yes      |
+| Android           | `ORIGINAL_KEYSTORE_ALIAS`          | Keystore alias                             | String          | Yes      |
+| Android           | `ORIGINAL_KEYSTORE_ALIAS_PASSWORD` | Keystore alias password                    | String          | Yes      |
+|                   |                                    |                                            |                 |          |
 | Android           | `UPLOAD_KEYSTORE_FILE`             | Base64 encoded release keystore for upload | Base64          | Yes      |
-| Android           | `UPLOAD_KEYSTORE_FILE_PASSWORD`    | Upload keystore password                   | Plain Text      | Yes      |
-| Android           | `UPLOAD_KEYSTORE_ALIAS`            | Upload keystore alias                      | Plain Text      | Yes      |
-| Android           | `UPLOAD_KEYSTORE_ALIAS_PASSWORD`   | Upload keystore alias password             | Plain Text      | Yes      |
-| Android           | `GOOGLESERVICES`                   | Google Services JSON content               | Base64          | Yes      |
-| Android           | `PLAYSTORECREDS`                   | Play Store service account credentials     | Base64          | Yes      |
-| Android           | `FIREBASECREDS`                    | Firebase App Distribution credentials      | Base64          | Yes      |
-| iOS               | `NOTARIZATION_APPLE_ID`            | Apple ID for app notarization              | Plain Text      | Yes      |
-| iOS               | `NOTARIZATION_PASSWORD`            | Password for notarization process          | Plain Text      | Yes      |
-| iOS               | `NOTARIZATION_TEAM_ID`             | Apple Developer Team ID                    | Plain Text      | Yes      |
-| Desktop (Windows) | `windows_signing_key`              | Signing key for Windows application        | String          | No       |
-| Desktop (Windows) | `windows_signing_password`         | Password for Windows signing key           | String          | No       |
-| Desktop (Windows) | `windows_signing_certificate`      | Certificate for Windows app signing        | String          | No       |
-| Desktop (MacOS)   | `macos_signing_key`                | Signing key for MacOS application          | String          | No       |
-| Desktop (MacOS)   | `macos_signing_password`           | Password for MacOS signing key             | String          | No       |
-| Desktop (MacOS)   | `macos_signing_certificate`        | Certificate for MacOS app signing          | String          | No       |
-| Desktop (Linux)   | `linux_signing_key`                | Signing key for Linux application          | String          | No       |
-| Desktop (Linux)   | `linux_signing_password`           | Password for Linux signing key             | String          | No       |
-| Desktop (Linux)   | `linux_signing_certificate`        | Certificate for Linux app signing          | String          | No       |
+| Android           | `UPLOAD_KEYSTORE_FILE_PASSWORD`    | Upload keystore password                   | String          | Yes      |
+| Android           | `UPLOAD_KEYSTORE_ALIAS`            | Upload keystore alias                      | String          | Yes      |
+| Android           | `UPLOAD_KEYSTORE_ALIAS_PASSWORD`   | Upload keystore alias password             | String          | Yes      |
+|                   |                                    |                                            |                 |          |
+| Google Services   | `GOOGLESERVICES`                   | Google Services JSON content               | Base64          | Yes      |
+| Play Console      | `PLAYSTORECREDS`                   | Play Store service account credentials     | Base64          | Yes      |
+| Firebase          | `FIREBASECREDS`                    | Firebase App Distribution credentials      | Base64          | Yes      |
+|                   |                                    |                                            |                 |          |
+| iOS               | `NOTARIZATION_APPLE_ID`            | Apple ID for app notarization              | String          | Yes      |
+| iOS               | `NOTARIZATION_PASSWORD`            | Password for notarization process          | String          | Yes      |
+| iOS               | `NOTARIZATION_TEAM_ID`             | Apple Developer Team ID                    | String          | Yes      |
+|                   |                                    |                                            |                 |          |
+| Desktop (Windows) | `WINDOWS_SIGNING_KEY`              | Signing key for Windows application        | String          | No       |
+| Desktop (Windows) | `WINDOWS_SIGNING_PASSWORD`         | Password for Windows signing key           | String          | No       |
+| Desktop (Windows) | `WINDOWS_SIGNING_CERTIFICATE`      | Certificate for Windows app signing        | String          | No       |
+|                   |                                    |                                            |                 |          |
+| Desktop (MacOS)   | `MACOS_SIGNING_KEY`                | Signing key for MacOS application          | String          | No       |
+| Desktop (MacOS)   | `MACOS_SIGNING_PASSWORD`           | Password for MacOS signing key             | String          | No       |
+| Desktop (MacOS)   | `MACOS_SIGNING_CERTIFICATE`        | Certificate for MacOS app signing          | String          | No       |
+|                   |                                    |                                            |                 |          |
+| Desktop (Linux)   | `LINUX_SIGNING_KEY`                | Signing key for Linux application          | String          | No       |
+| Desktop (Linux)   | `LINUX_SIGNING_PASSWORD`           | Password for Linux signing key             | String          | No       |
+| Desktop (Linux)   | `LINUX_SIGNING_CERTIFICATE`        | Certificate for Linux app signing          | String          | No       |
+
 
 ### Fastlane Setup
 
@@ -254,59 +261,86 @@ end
 >  ####  _[multi_platform_build_and_publish.yaml](.github/workflows/multi-platform-build-and-publish.yaml)_ 👀️
 
 ```mermaid
-flowchart TD
-    start([Manual Trigger]) --> params{Release Type & \n Distribution Options}
-    params --> gen[Generate Release Info]
-
-%% Android Flow
-    gen --> build_android[Build Android]
-    build_android --> dist_firebase[Distribute to Firebase]
-    build_android --> playstore{Distribute to \n Play Store?}
-    playstore -->|Yes| internal[Upload to Internal Track]
-    playstore -->|No| skip_play[Skip Play Store]
-    internal --> beta_check{Beta Release?}
-    beta_check -->|Yes| promote[Promote to Beta Track]
-    beta_check -->|No| skip_beta[Stay in Internal]
-
-%% iOS Flow
-    gen --> build_ios[Build iOS]
-    build_ios --> firebase_ios[Distribute to Firebase]
-    build_ios --> appstore{Distribute to \n App Store?}
-    appstore -->|Yes| dist_ios[Upload to App Store]
-    appstore -->|No| skip_ios[Skip App Store]
-
-%% Desktop Flow
-    gen --> build_desktop[Build Desktop Apps]
-    build_desktop --> windows[Windows .exe/.msi]
-    build_desktop --> macos[macOS .dmg]
-    build_desktop --> linux[Linux .deb]
-    windows & macos & linux --> desktop_dist{Distribute to \n Desktop Store?}
-    desktop_dist -->|Yes| dist_desktop[Upload to Store]
-    desktop_dist -->|No| skip_desktop[Skip Store]
-
-%% Web Flow
-    gen --> build_web[Build Web App]
-    build_web --> web_dist{Distribute Web?}
-    web_dist -->|Yes| deploy_web[Deploy to Hosting]
-    web_dist -->|No| skip_web[Skip Web Deploy]
-
-%% Release Creation
-    gen --> beta_rel{Beta Release?}
-    beta_rel -->|Yes| github_rel[Create GitHub Pre-Release]
-    beta_rel -->|No| skip_rel[Skip Release]
-
-%% Color Styling
-    classDef startNode fill:#4CAF50,color:white,stroke:#45a049;
-    classDef decisionNode fill:#2196F3,color:white,stroke:#1976D2;
-    classDef processNode fill:#FF9800,color:white,stroke:#F57C00;
-    classDef platformNode fill:#9C27B0,color:white,stroke:#7B1FA2;
-    classDef endNode fill:#795548,color:white,stroke:#6D4C41;
-
-    class start startNode;
-    class params,playstore,appstore,desktop_dist,web_dist,beta_rel decisionNode;
-    class gen,build_android,build_ios,build_desktop,build_web,dist_firebase,internal,dist_ios,windows,macos,linux,deploy_web processNode;
-    class dist_desktop,github_rel platformNode;
-    class skip_play,skip_ios,skip_desktop,skip_web,skip_rel endNode;
+flowchart TB
+    %% Main workflow trigger
+    Start[/"Workflow Trigger"/]
+    
+    %% Android section
+    subgraph Android["Android Pipeline"]
+        direction TB
+        A_Build["Build Android App"]
+        A_Build --> A_Firebase["Deploy to Firebase"]
+        A_Build --> A_Check{"Publish to\nPlay Store?"}
+        A_Check -->|Yes| A_Play["Publish to Play Store"]
+        A_Check -->|No| A_Skip["Skip Play Store"]
+    end
+    
+    %% iOS section
+    subgraph iOS["iOS Pipeline"]
+        direction TB
+        I_Build["Build iOS App"]
+        I_Build --> I_Firebase["Deploy to Firebase"]
+        I_Build --> I_Check{"Publish to\nApp Store?"}
+        I_Check -->|Yes| I_Store["Publish to App Store"]
+        I_Check -->|No| I_Skip["Skip App Store"]
+    end
+    
+    %% Desktop section
+    subgraph Desktop["Desktop Pipeline"]
+        direction TB
+        D_Build["Initialize Desktop Build"]
+        D_Build --> D_Win["Windows Build"]
+        D_Build --> D_Mac["macOS Build"]
+        D_Build --> D_Linux["Linux Build"]
+    end
+    
+    %% Web section
+    subgraph Web["Web Pipeline"]
+        direction TB
+        W_Build["Build Web App"]
+        W_Build --> W_Deploy["Deploy to GitHub Pages"]
+    end
+    
+    %% GitHub Release section
+    subgraph Release["Release Pipeline"]
+        direction TB
+        R_Version["Generate Version"]
+        R_Notes["Generate Release Notes"]
+        R_Artifacts["Collect Artifacts"]
+        R_Create["Create GitHub Release"]
+        
+        R_Version --> R_Notes
+        R_Notes --> R_Artifacts
+        R_Artifacts --> R_Create
+    end
+    
+    %% Main workflow connections
+    Start --> Android
+    Start --> iOS
+    Start --> Desktop
+    Start --> Web
+    
+    Android --> Release
+    iOS --> Release
+    Desktop --> Release
+    Web --> Release
+    
+    %% Styling
+    classDef trigger fill:#2C3E50,color:#fff,stroke:#2C3E50
+    classDef pipeline fill:#34495E,color:#fff,stroke:#2C3E50
+    classDef process fill:#ECF0F1,stroke:#34495E,color:#2C3E50
+    classDef conditional fill:#E74C3C,stroke:#C0392B,color:#fff
+    classDef deployment fill:#27AE60,stroke:#229954,color:#fff
+    classDef release fill:#3498DB,stroke:#2980B9,color:#fff
+    
+    class Start trigger
+    class Android,iOS,Desktop,Web pipeline
+    class A_Build,I_Build,D_Build,W_Build process
+    class A_Check,I_Check conditional
+    class A_Firebase,I_Firebase,A_Play,I_Store,W_Deploy deployment
+    class R_Version,R_Notes,R_Artifacts,R_Create release
+    class D_Win,D_Mac,D_Linux process
+    class A_Skip,I_Skip process
 ```
 
 ## Overview
@@ -430,7 +464,7 @@ The workflow supports the following configuration inputs:
 ## Workflow Usage Example
 
 ```yaml
-name: Multi-Platform(Re-Usable) App Build and Publish
+name: Multi-Platform Build and Publish
 
 on:
   workflow_dispatch:
@@ -453,6 +487,11 @@ on:
         default: false
         description: Publish Android App On Play Store
 
+      build_ios:
+        type: boolean
+        default: false
+        description: Build iOS App
+
       publish_ios:
         type: boolean
         default: false
@@ -471,16 +510,47 @@ jobs:
   multi_platform_build_and_publish:
     name: Multi-Platform Build and Publish
     uses: niyajali/mifos-mobile-github-actions/.github/workflows/multi-platform-build-and-publish.yaml@main
-    secrets: inherit
     with:
-      android_package_name: 'mifospay-android'
-      ios_package_name: 'mifospay-ios'
-      desktop_package_name: 'mifospay-desktop'
-      web_package_name: 'mifospay-web'
       release_type: ${{ inputs.release_type }}
       target_branch: ${{ inputs.target_branch }}
+      android_package_name: 'mifospay-android' # <-- Change this to your android package name
+      ios_package_name: 'mifospay-ios' # <-- Change this to your ios package name
+      desktop_package_name: 'mifospay-desktop' # <-- Change this to your desktop package name
+      web_package_name: 'mifospay-web'   # <-- Change this to your web package name
       publish_android: ${{ inputs.publish_android }}
+      build_ios: ${{ inputs.build_ios }}
       publish_ios: ${{ inputs.publish_ios }}
+    secrets:
+      original_keystore_file: ${{ secrets.ORIGINAL_KEYSTORE_FILE }}
+      original_keystore_file_password: ${{ secrets.ORIGINAL_KEYSTORE_FILE_PASSWORD }}
+      original_keystore_alias: ${{ secrets.ORIGINAL_KEYSTORE_ALIAS }}
+      original_keystore_alias_password: ${{ secrets.ORIGINAL_KEYSTORE_ALIAS_PASSWORD }}
+
+      upload_keystore_file: ${{ secrets.UPLOAD_KEYSTORE_FILE }}
+      upload_keystore_file_password: ${{ secrets.UPLOAD_KEYSTORE_FILE_PASSWORD }}
+      upload_keystore_alias: ${{ secrets.UPLOAD_KEYSTORE_ALIAS }}
+      upload_keystore_alias_password: ${{ secrets.UPLOAD_KEYSTORE_ALIAS_PASSWORD }}
+
+      notarization_apple_id: ${{ secrets.NOTARIZATION_APPLE_ID }}
+      notarization_password: ${{ secrets.NOTARIZATION_PASSWORD }}
+      notarization_team_id: ${{ secrets.NOTARIZATION_TEAM_ID }}
+
+      windows_signing_key: ${{ secrets.WINDOWS_SIGNING_KEY }}
+      windows_signing_password: ${{ secrets.WINDOWS_SIGNING_PASSWORD }}
+      windows_signing_certificate: ${{ secrets.WINDOWS_SIGNING_CERTIFICATE }}
+
+      macos_signing_key: ${{ secrets.MACOS_SIGNING_KEY }}
+      macos_signing_password: ${{ secrets.MACOS_SIGNING_PASSWORD }}
+      macos_signing_certificate: ${{ secrets.MACOS_SIGNING_CERTIFICATE }}
+
+      linux_signing_key: ${{ secrets.LINUX_SIGNING_KEY }}
+      linux_signing_password: ${{ secrets.LINUX_SIGNING_PASSWORD }}
+      linux_signing_certificate: ${{ secrets.LINUX_SIGNING_CERTIFICATE }}
+
+      google_services: ${{ secrets.GOOGLESERVICES }}
+      firebase_creds: ${{ secrets.FIREBASECREDS }}
+      playstore_creds: ${{ secrets.PLAYSTORECREDS }}
+      token: ${{ secrets.GITHUB_TOKEN }}
 ```
 
 ## Important Considerations
