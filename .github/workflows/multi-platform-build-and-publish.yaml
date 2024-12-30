@@ -62,6 +62,7 @@
 # - publish_android: Enable/disable Android Play Store publishing
 # - build_ios: Enable/disable iOS build
 # - publish_ios: Enable/disable iOS App Store publishing
+# - tester_groups: Firebase tester group for distribution
 
 # USAGE:
 # 1. Ensure all required secrets are configured
@@ -124,6 +125,11 @@ on:
         type: boolean
         default: false
         description: Publish iOS App On App Store
+
+      tester_groups:
+        type: string
+        description: 'Firebase Tester Group'
+        required: true
 
     secrets:
       # Android-related secrets
@@ -229,17 +235,17 @@ jobs:
           fetch-depth: 0
 
       - name: Publish Android App on Firebase
-        uses: openMF/kmp-android-firebase-publish-action@v1.0.0
+        uses: openMF/kmp-android-firebase-publish-action@v2.0.0
         with:
           android_package_name: ${{ inputs.android_package_name }}
           keystore_file: ${{ secrets.original_keystore_file }}
           keystore_password: ${{ secrets.original_keystore_file_password }}
-          key_alias: ${{ secrets.original_keystore_alias }}
-          key_password: ${{ secrets.original_keystore_alias_password }}
+          keystore_alias: ${{ secrets.original_keystore_alias }}
+          keystore_alias_password: ${{ secrets.original_keystore_alias_password }}
           google_services: ${{ secrets.google_services }}
           firebase_creds: ${{ secrets.firebase_creds }}
-          github_token: ${{ secrets.token }}
-          target_branch: ${{ inputs.target_branch }}
+          tester_groups: ${{ inputs.tester_groups }}
+
 
   # Publish Android app on Play Store
   publish_android_on_playstore:
@@ -262,8 +268,8 @@ jobs:
           playstore_creds: ${{ secrets.playstore_creds }}
           keystore_file: ${{ secrets.upload_keystore_file }}
           keystore_password: ${{ secrets.upload_keystore_file_password }}
-          key_alias: ${{ secrets.upload_keystore_alias }}
-          key_password: ${{ secrets.upload_keystore_alias_password }}
+          keystore_alias: ${{ secrets.upload_keystore_alias }}
+          keystore_alias_password: ${{ secrets.upload_keystore_alias_password }}
 
   # Firebase Distribution Job for iOS
   publish_ios_app_to_firebase:
@@ -283,9 +289,8 @@ jobs:
         continue-on-error: true
         with:
           ios_package_name: ${{ inputs.ios_package_name }}
-          github_token: ${{ secrets.token }}
           firebase_creds: ${{ secrets.firebase_creds }}
-          target_branch: ${{ inputs.target_branch }}
+          tester_groups: ${{ inputs.tester_groups }}
 
   # App Store Publishing Job
   publish_ios_app_to_app_center:
@@ -357,18 +362,56 @@ jobs:
         with:
           fetch-depth: 0
 
-      # Generate version number
+      # Generate Release Number
       - name: Generate Release Number
         id: rel_number
         shell: bash
-        run: |
+        run: |        
+          set +e  # Disable exit on error to handle task non-existence
           ./gradlew versionFile
-          COMMITS=`git rev-list --count HEAD`
-          TAGS=`git tag | grep -v beta | wc -l`
-          VC=$(((COMMITS+TAGS) << 1))
-          echo "version-code=$VC" >> $GITHUB_OUTPUT
-          VERSION=`cat version.txt`
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          VERSIONFILE_EXIT_CODE=$?
+          set -e  # Re-enable exit on error
+          
+          # Check if version file exists after attempting to generate it
+          if [ -f "version.txt" ]; then
+          echo "Using version from versionFile"
+          VERSION=$(cat version.txt)
+
+          # Count commits to generate version code
+          VERSION_CODE=$(($(git rev-list --count HEAD) * 10))
+
+          echo "Version from file: ${VERSION}"
+          echo "Version Code: ${VERSION_CODE}"
+
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+          echo "version-code=${VERSION_CODE}" >> $GITHUB_OUTPUT
+          exit 0
+          fi
+          
+          # Fallback to Git-based version generation
+          # Get the latest tag or use 1.0.0 as default
+          LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v1.0.0")
+          
+          # Remove 'v' prefix if present
+          LATEST_TAG=${LATEST_TAG#v}
+          
+          # Count commits since the last tag
+          COMMITS_SINCE_TAG=$(git rev-list ${LATEST_TAG}..HEAD --count)
+          
+          # Extract major, minor, patch from the latest tag
+          IFS='.' read -r MAJOR MINOR PATCH <<< "${LATEST_TAG}"
+          
+          # Increment patch version and add commits as build number
+          NEW_VERSION="${MAJOR}.${MINOR}.$((PATCH + 1))"
+          
+          # Calculate version code (can be adjusted based on your versioning needs)
+          VERSION_CODE=$(($(git rev-list --count HEAD) * 10))
+          
+          echo "Version: ${NEW_VERSION}"
+          echo "Version Code: ${VERSION_CODE}"
+          
+          echo "version=${NEW_VERSION}" >> $GITHUB_OUTPUT
+
 
       - name: Generate Release Notes
         uses: actions/github-script@v7

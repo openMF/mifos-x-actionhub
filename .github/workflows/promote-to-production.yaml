@@ -13,10 +13,6 @@
 # - Secrets:
 #   playstore_creds: Google Play Store service account JSON credentials
 #
-# INPUTS:
-# - android_package_name: Name of the Android project module
-#   (REQUIRED, must match your project's module structure)
-#
 # WORKFLOW TRIGGERS:
 # - Can be called manually or triggered by other workflows
 # - Typically used after beta testing and validation
@@ -84,11 +80,6 @@ name: Promote Release to Play Store
 
 on:
   workflow_call:
-    inputs:
-      android_package_name:
-        description: 'Name of the Android project module'
-        type: string
-        required: true
     secrets:
       playstore_creds:
         description: 'Base64 Encoded Play Console Service Key'
@@ -109,5 +100,4 @@ jobs:
       - name: Promote Beta to Production Play Store
         uses: openMF/kmp-publish-android-on-playstore-production-action@v1.0.0
         with:
-          android_package_name: ${{ inputs.android_package_name }}
           playstore_creds: ${{ secrets.playstore_creds }}

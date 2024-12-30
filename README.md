@@ -148,11 +148,89 @@ bundle add fastlane
 default_platform(:android)
 
 platform :android do
+  desc "Assemble debug APKs."
+  lane :assembleDebugApks do |options|
+    gradle(
+      tasks: ["assembleDebug"],
+    )
+  end
+
+  desc "Assemble Release APK"
+  lane :assembleReleaseApks do |options|
+    options[:storeFile] ||= "release_keystore.keystore"
+    options[:storePassword] ||= "Mifospay"
+    options[:keyAlias] ||= "key0"
+    options[:keyPassword] ||= "Mifos@123"
+
+    # Generate version
+    generateVersion = generateVersion()
+
+    buildAndSignApp(
+      taskName: "assemble",
+      buildType: "Release",
+      storeFile: options[:storeFile],
+      storePassword: options[:storePassword],
+      keyAlias: options[:keyAlias],
+      keyPassword: options[:keyPassword],
+    )
+  end
+
+  desc "Bundle Play Store release"
+  lane :bundlePlayStoreRelease do |options|
+    options[:storeFile] ||= "release_keystore.keystore"
+    options[:storePassword] ||= "Mifospay"
+    options[:keyAlias] ||= "key0"
+    options[:keyPassword] ||= "Mifos@123"
+
+    # Generate version
+    generateVersion = generateVersion()
+
+    # Generate Release Note
+    releaseNotes = generateReleaseNotes(
+      repoName: "mobile-wallet-testing",
+    )
+
+    # Write the generated release notes to default.txt
+    buildConfigPath = "metadata/android/en-GB/changelogs/default.txt"
+    File.write(buildConfigPath, releaseNotes)
+
+    buildAndSignApp(
+      taskName: "bundle",
+      buildType: "Release",
+      storeFile: options[:storeFile],
+      storePassword: options[:storePassword],
+      keyAlias: options[:keyAlias],
+      keyPassword: options[:keyPassword],
+    )
+  end
+
+  desc "Publish Release Play Store artifacts to Firebase App Distribution"
+  lane :deploy_on_firebase do |options|
+    options[:apkFile] ||= "mifospay-android/build/outputs/apk/prod/release/mifospay-android-prod-release.apk"
+    options[:serviceCredsFile] ||= "secrets/firebaseAppDistributionServiceCredentialsFile.json"
+    options[:groups] ||= "mifos-wallet-testers"
+
+    # Generate Release Note
+    releaseNotes = generateReleaseNotes(
+      repoName: "mobile-wallet-testing",
+    )
+
+    firebase_app_distribution(
+      app: "1:64530857057:android:f8d67b786db1b844",
+      android_artifact_type: "APK",
+      android_artifact_path: options[:apkFile],
+      service_credentials_file: options[:serviceCredsFile],
+      groups: options[:groups],
+      release_notes: "#{releaseNotes}",
+    )
+  end
+
   desc "Deploy internal tracks to Google Play"
-  lane :deploy_internal do
-    supply(
+  lane :deploy_internal do |options|
+    options[:aabFile] ||= "mifospay-android/build/outputs/bundle/prodRelease/mifospay-android-prod-release.aab"
+    upload_to_play_store(
       track: 'internal',
-      aab: 'mifospay-android/build/outputs/bundle/prodRelease/mifospay-android-prod-release.aab',
+      aab: options[:aabFile],
       skip_upload_metadata: true,
       skip_upload_images: true,
       skip_upload_screenshots: true,
@@ -161,7 +239,7 @@ platform :android do
 
   desc "Promote internal tracks to beta on Google Play"
   lane :promote_to_beta do
-    supply(
+    upload_to_play_store(
       track: 'internal',
       track_promote_to: 'beta',
       skip_upload_changelogs: true,
@@ -173,62 +251,134 @@ platform :android do
 
   desc "Promote beta tracks to production on Google Play"
   lane :promote_to_production do
-    supply(
+    upload_to_play_store(
       track: 'beta',
       track_promote_to: 'production',
       skip_upload_changelogs: true,
-      sync_image_upload: true,
+      skip_upload_metadata: true,
+      skip_upload_images: true,
+      skip_upload_screenshots: true,
     )
   end
 
-  desc "Upload Android application to Firebase App Distribution"
-  lane :deploy_on_firebase do
-    release = firebase_app_distribution(
-        app: "1:728434912738:android:0490c291986f0a691a1dbb",
-        service_credentials_file: "mifospay-android/firebaseAppDistributionServiceCredentialsFile.json",
-        release_notes_file: "mifospay-android/build/outputs/changelogBeta",
-        android_artifact_type: "APK",
-        android_artifact_path: "mifospay-android/build/outputs/apk/prod/release/mifospay-android-prod-release.apk",
-        groups: "mifos-wallet-testers"
+  desc "Generate artifacts for the given [build] signed with the provided [keystore] and credentials."
+  private_lane :buildAndSignApp do |options|
+    # Get the project root directory
+    project_dir = File.expand_path('..', Dir.pwd)
+
+    # Construct the absolute path to the keystore
+    keystore_path = File.join(project_dir, 'keystores', options[:storeFile])
+
+    # Check if keystore exists
+    unless File.exist?(keystore_path)
+      UI.error "Keystore file not found at: #{keystore_path}"
+      UI.error "Please ensure the keystore file exists at the correct location"
+      exit 1  # Exit with error code 1
+    end
+
+    gradle(
+      task: options[:taskName],
+      build_type: options[:buildType],
+      properties: {
+        "android.injected.signing.store.file" => keystore_path,
+        "android.injected.signing.store.password" => options[:storePassword],
+        "android.injected.signing.key.alias" => options[:keyAlias],
+        "android.injected.signing.key.password" => options[:keyPassword],
+      },
+      print_command: false,
     )
+  end
+
+  desc "Generate Version"
+  lane :generateVersion do
+    # Generate version file
+    gradle(tasks: ["versionFile"])
+
+    # Set version from file
+    ENV['VERSION'] = File.read("../version.txt").strip
+
+    # Calculate and set version code
+    commit_count = `git rev-list --count HEAD`.to_i
+    tag_count = `git tag | grep -v beta | wc -l`.to_i
+    ENV['VERSION_CODE'] = ((commit_count + tag_count) << 1).to_s
+
+    UI.success("Set VERSION=#{ENV['VERSION']} VERSION_CODE=#{ENV['VERSION_CODE']}")
+  end
+
+  desc "Generate release notes"
+  lane :generateReleaseNotes do |options|
+    branchName = `git rev-parse --abbrev-ref HEAD`.chomp()
+    releaseNotes = changelog_from_git_commits(
+      commits_count: 1,
+    )
+    releaseNotes
   end
 
 end
-
 
 platform :ios do
-    desc "Build iOS application"
-    lane :build_ios do
-        build_ios_app(
-            project: "mifospay-ios/iosApp.xcodeproj/project.pbxproj",
-            # Set configuration to debug for now
-            configuration: "Debug",
-            output_directory: "mifospay-ios/",
-            output_name: "mifospay-ios-app"
-        )
-    end
+  desc "Build iOS application"
+  lane :build_ios do |options|
+    # Set default configuration if not provided
+    options[:configuration] ||= "Debug"
 
-    desc "Upload iOS application to Firebase App Distribution"
-    lane :deploy_on_firebase do
-        increment_build_number(
-          xcodeproj: "mifospay-ios/iosApp.xcodeproj/project.pbxproj"
-        )
+    # automatic code signing
+    update_code_signing_settings(
+      use_automatic_signing: true,
+      path: "mifospay-ios/iosApp.xcodeproj"
+    )
+    build_ios_app(
+      project: "mifospay-ios/iosApp.xcodeproj",
+      scheme: "iosApp",
+      # Set configuration to debug for now
+      configuration: options[:configuration],
+      skip_codesigning: "true",
+      output_directory: "mifospay-ios/build",
+      skip_archive: "true"
+    )
+  end
 
-        build_ios_app(
-            project: "mifospay-ios/iosApp.xcodeproj/project.pbxproj",
-            # Set configuration to debug for now
-            configuration: "Debug",
-        )
-        release = firebase_app_distribution(
-            app: "1:728434912738:ios:86a7badfaed88b841a1dbb",
-            service_credentials_file: "mifospay-android/firebaseAppDistributionServiceCredentialsFile.json",
-            release_notes_file: "mifospay-android/build/outputs/changelogBeta",
-            groups: "mifos-wallet-testers"
-        )
+  lane :increment_version do |options|
+    options[:serviceCredsFile] ||= "secrets/firebaseAppDistributionServiceCredentialsFile.json"
 
-    end
+    latest_release = firebase_app_distribution_get_latest_release(
+      app: "1:728434912738:ios:86a7badfaed88b841a1dbb",
+      service_credentials_file: options[:serviceCredsFile]
+    )
+    increment_build_number(
+      xcodeproj: "mifospay-ios/iosApp.xcodeproj",
+      build_number: latest_release[:buildVersion].to_i + 1
+    )
+  end
+
+  desc "Upload iOS application to Firebase App Distribution"
+  lane :deploy_on_firebase do |options|
+    options[:serviceCredsFile] ||= "secrets/firebaseAppDistributionServiceCredentialsFile.json"
+    options[:groups] ||= "mifos-wallet-testers"
+
+    increment_version()
+    build_ios()
+    releaseNotes = generateReleaseNotes(
+      repoName: "mobile-wallet-testing",
+    )
+    release = firebase_app_distribution(
+      app: "1:728434912738:ios:86a7badfaed88b841a1dbb",
+      service_credentials_file: options[:serviceCredsFile],
+      release_notes_file: "#{releaseNotes}",
+      groups: options[:groups]
+    )
+
+  end
+
+  desc "Generate release notes"
+  lane :generateReleaseNotes do |options|
+    branchName = `git rev-parse --abbrev-ref HEAD`.chomp()
+    releaseNotes = changelog_from_git_commits(
+      commits_count: 1,
+    )
+    releaseNotes
+  end
 end
-
 ```
 
 ### Code Quality Checks
@@ -509,7 +659,7 @@ concurrency:
 jobs:
   multi_platform_build_and_publish:
     name: Multi-Platform Build and Publish
-    uses: niyajali/mifos-mobile-github-actions/.github/workflows/multi-platform-build-and-publish.yaml@main
+    uses: openMF/mifos-mobile-github-actions/.github/workflows/multi-platform-build-and-publish.yaml@main
     with:
       release_type: ${{ inputs.release_type }}
       target_branch: ${{ inputs.target_branch }}
@@ -520,6 +670,7 @@ jobs:
       publish_android: ${{ inputs.publish_android }}
       build_ios: ${{ inputs.build_ios }}
       publish_ios: ${{ inputs.publish_ios }}
+      tester_groups: 'mifos-wallet-testers'
     secrets:
       original_keystore_file: ${{ secrets.ORIGINAL_KEYSTORE_FILE }}
       original_keystore_file_password: ${{ secrets.ORIGINAL_KEYSTORE_FILE_PASSWORD }}
@@ -682,7 +833,7 @@ permissions:
 jobs:
   build_and_deploy_web:
     name: Build And Deploy Web App
-    uses: niyajali/mifos-mobile-github-actions/.github/workflows/build-and-deploy-site.yaml@main
+    uses: openMF/mifos-mobile-github-actions/.github/workflows/build-and-deploy-site.yaml@main
     secrets: inherit
     with:
       web_package_name: 'mifospay-web'
@@ -838,7 +989,7 @@ concurrency:
 jobs:
   monthly_release:
     name: Tag Monthly Release
-    uses: niyajali/mifos-mobile-github-actions/.github/workflows/monthly-version-tag.yaml@main
+    uses: openMF/mifos-mobile-github-actions/.github/workflows/monthly-version-tag.yaml@main
     secrets: inherit
 ```
 
@@ -1140,7 +1291,7 @@ jobs:
   # Job to promote app from beta to production in Play Store
   play_promote_production:
     name: Promote Beta to Production Play Store
-    uses: niyajali/mifos-mobile-github-actions/.github/workflows/promote-to-production.yaml@main
+    uses: openMF/mifos-mobile-github-actions/.github/workflows/promote-to-production.yaml@main
     if: ${{ inputs.publish_to_play_store == true }}
     secrets: inherit
     with:
