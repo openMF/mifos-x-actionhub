@@ -136,7 +136,7 @@ jobs:
           fetch-depth: 0
 
       - name: Build Android App
-        uses: openMF/kmp-build-android-app-action@v1.0.0
+        uses: openMF/kmp-build-android-app-action@v1.0.1
         with:
           android_package_name: ${{ inputs.android_package_name }}
 
