@@ -146,6 +146,29 @@ jobs:
           firebase_creds: ${{ secrets.firebase_creds }}
           tester_groups: ${{ inputs.tester_groups }}
 
+  # Publish Android app on Play Store
+  publish_android_on_playstore:
+    name: Publish Android App On Play Store
+    runs-on: macos-latest
+    steps:
+      # Check out caller repository
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Promote Android App to Beta or Internal
+        uses: openMF/kmp-publish-android-on-playstore-beta-action@v1.0.0
+        with:
+          release_type: ${{ inputs.release_type }}
+          android_package_name: ${{ inputs.android_package_name }}
+          google_services: ${{ secrets.google_services }}
+          playstore_creds: ${{ secrets.playstore_creds }}
+          keystore_file: ${{ secrets.upload_keystore_file }}
+          keystore_password: ${{ secrets.upload_keystore_file_password }}
+          keystore_alias: ${{ secrets.upload_keystore_alias }}
+          keystore_alias_password: ${{ secrets.upload_keystore_alias_password }}
+
   # Creates GitHub release with all built artifacts
   github_release:
     name: Create Github Release
