@@ -279,13 +279,6 @@ jobs:
       - name: Display structure of downloaded files
         run: ls -R ./all-artifacts
 
-      #Creates a ZIP archive of the web app build using PowerShell.
-      - name: Archive Web Build
-        shell: pwsh
-        # Executes the Compress-Archive command to create the ZIP archive.
-        run: |
-          Compress-Archive -Path './all-artifacts/web-app/*' -DestinationPath './all-artifacts/${{ inputs.web_package_name }}.zip'
-
       # Create GitHub pre-release with all artifacts
       - name: Create Github Pre-Release
         uses: softprops/action-gh-release@v2.0.8
