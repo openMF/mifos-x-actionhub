@@ -229,7 +229,7 @@ jobs:
           fetch-depth: 0
 
       - name: Publish Android App on Firebase
-        uses: openMF/kmp-android-firebase-publish-action@v2.0.0
+        uses: openMF/kmp-android-firebase-publish-action@v1.0.0
         with:
           android_package_name: ${{ inputs.android_package_name }}
           keystore_file: ${{ secrets.original_keystore_file }}
@@ -239,7 +239,6 @@ jobs:
           google_services: ${{ secrets.google_services }}
           firebase_creds: ${{ secrets.firebase_creds }}
           tester_groups: ${{ inputs.tester_groups }}
-
 
   # Publish Android app on Play Store
   publish_android_on_playstore:
@@ -349,101 +348,36 @@ jobs:
   github_release:
     name: Create Github Release
     needs: [ publish_android_on_firebase, publish_ios_app_to_firebase, publish_desktop, publish_web ]
-    runs-on: ubuntu-latest
+    runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      # Generate Release Number
-      - name: Generate Release Number
-        id: rel_number
-        shell: bash
-        run: |        
-          set +e  # Disable exit on error to handle task non-existence
-          ./gradlew versionFile
-          VERSIONFILE_EXIT_CODE=$?
-          set -e  # Re-enable exit on error
-          
-          # Check if version file exists after attempting to generate it
-          if [ -f "version.txt" ]; then
-          echo "Using version from versionFile"
-          VERSION=$(cat version.txt)
-
-          # Count commits to generate version code
-          VERSION_CODE=$(($(git rev-list --count HEAD) * 10))
-
-          echo "Version from file: ${VERSION}"
-          echo "Version Code: ${VERSION_CODE}"
-
-          echo "version=${VERSION}" >> $GITHUB_OUTPUT
-          echo "version-code=${VERSION_CODE}" >> $GITHUB_OUTPUT
-          exit 0
-          fi
-          
-          # Fallback to Git-based version generation
-          # Get the latest tag or use 1.0.0 as default
-          LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v1.0.0")
-          
-          # Remove 'v' prefix if present
-          LATEST_TAG=${LATEST_TAG#v}
-          
-          # Count commits since the last tag
-          COMMITS_SINCE_TAG=$(git rev-list ${LATEST_TAG}..HEAD --count)
-          
-          # Extract major, minor, patch from the latest tag
-          IFS='.' read -r MAJOR MINOR PATCH <<< "${LATEST_TAG}"
-          
-          # Increment patch version and add commits as build number
-          NEW_VERSION="${MAJOR}.${MINOR}.$((PATCH + 1))"
-          
-          # Calculate version code (can be adjusted based on your versioning needs)
-          VERSION_CODE=$(($(git rev-list --count HEAD) * 10))
-          
-          echo "Version: ${NEW_VERSION}"
-          echo "Version Code: ${VERSION_CODE}"
-          
-          echo "version=${NEW_VERSION}" >> $GITHUB_OUTPUT
-
-
-      - name: Generate Release Notes
-        uses: actions/github-script@v7
-        id: release-notes
+      # Setup Ruby for Fastlane automation
+      - name: Configure Ruby
+        uses: ruby/setup-ruby@a2bbe5b1b236842c1cb7dd11e8e3b51e0a616acc # v1.202.0
         with:
-          github-token: ${{ secrets.token }}
-          script: |
-            try {
-              // Get latest release tag
-              const latestRelease = await github.rest.repos.getLatestRelease({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-              });
-              const previousTag = latestRelease.data.tag_name;
+          bundler-cache: true
 
-              // Generate release notes
-              const params = {
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                tag_name: '${{ steps.rel_number.outputs.version }}',
-                target_commitish: '${{ inputs.target_branch }}'
-              };
+      # Install Fastlane and required plugins for deployment automation
+      - name: Install Fastlane
+        run: |
+          gem install bundler:2.2.27
+          bundle install --jobs 4 --retry 3
+          bundle exec fastlane add_plugin firebase_app_distribution
+          bundle exec fastlane add_plugin increment_build_number
 
-              const { data } = await github.rest.repos.generateReleaseNotes(params);
-              const changelog = data.body.replaceAll('`', '\'').replaceAll('"', '\'');
-
-              // Write changelog files
-              const fs = require('fs');
-              fs.writeFileSync('changelogGithub', changelog);
-
-              // Generate beta changelog
-              const { execSync } = require('child_process');
-              execSync('git log --format="* %s" HEAD^..HEAD > changelogBeta');
-
-              return changelog;
-            } catch (error) {
-              console.error('Error generating release notes:', error);
-              return '';
-            }
+      - name: Build Android App
+        uses: openMF/kmp-build-android-app-action@v2.0.0
+        with:
+          build_type: 'Release'
+          android_package_name: ${{ inputs.android_package_name }}
+          google_services: ${{ secrets.google_services }}
+          keystore_file: ${{ secrets.original_keystore_file }}
+          keystore_password: ${{ secrets.original_keystore_file_password }}
+          keystore_alias: ${{ secrets.original_keystore_alias }}
+          keystore_alias_password: ${{ secrets.original_keystore_alias_password }}
 
       # Get all build artifacts
       - name: Download All Artifacts
@@ -462,12 +396,28 @@ jobs:
         run: |
           Compress-Archive -Path './all-artifacts/web-app/*' -DestinationPath './all-artifacts/${{ inputs.web_package_name }}.zip'
 
+      # Generate Version
+      - name: Generate Version
+        id: rel_number
+        run: bundle exec fastlane android generateVersion
+
+      - name: Generate Release Notes
+        id: release_notes
+        run: |
+          echo "RELEASE_NOTES<<EOF" >> $GITHUB_ENV
+          bundle exec fastlane android generateFullReleaseNote >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
+
+      - name: Create Release Notes File
+        run: |
+          echo "${{ env.RELEASE_NOTES }}" > release_notes
+
       # Create GitHub pre-release with all artifacts
       - name: Create Github Pre-Release
         uses: softprops/action-gh-release@v2.0.8
         with:
           tag_name: ${{ steps.rel_number.outputs.version }}
-          body_path: ./changelogGithub
+          body_path: release_notes
           draft: false
           prerelease: true
           files: |
