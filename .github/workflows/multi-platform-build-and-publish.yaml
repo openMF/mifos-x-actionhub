@@ -399,7 +399,8 @@ jobs:
       # Generate Version
       - name: Generate Version
         id: rel_number
-        run: bundle exec fastlane android generateVersion
+        run: |
+          echo "version=$(bundle exec fastlane android generateVersion | grep VERSION= | cut -d'=' -f2)" >> $GITHUB_OUTPUT
 
       - name: Generate Release Notes
         id: release_notes
