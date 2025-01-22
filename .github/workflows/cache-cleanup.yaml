@@ -5,40 +5,71 @@ on:
       cleanup_pr:
         required: true
         type: boolean
-        description: 'Name of the workflow to monitor'
+        description: 'Clean up PR specific cache'
         default: false
       cleanup_all:
         required: true
         type: boolean
-        description: 'Name of the workflow to monitor'
+        description: 'Clean up all repository cache'
         default: false
-
+    secrets:
+      token:
+        required: true
+        description: 'GitHub token for API access'
 
 jobs:
+  get_pr:
+    if: inputs.cleanup_pr
+    runs-on: ubuntu-latest
+    outputs:
+      pr_number: ${{ steps.get_pr.outputs.number }}
+    steps:
+      - name: Get Last Closed PR Number
+        id: get_pr
+        run: |
+          # Get the last closed/merged PR number
+          LAST_PR=$(gh pr list \
+            --repo $REPO \
+            --state closed \
+            --limit 1 \
+            --json number \
+            --jq '.[0].number')
+          echo "number=${LAST_PR}" >> $GITHUB_OUTPUT
+        env:
+          REPO: ${{ github.repository }}
+          GH_TOKEN: ${{ secrets.token }}
+
   cleanup_pr:
+    needs: get_pr
     name: Cleanup PR Cache
     if: inputs.cleanup_pr
     runs-on: ubuntu-latest
     steps:
       - name: Cleanup PR Cache
         run: |
-          gh extension install actions/gh-actions-cache
+          BRANCH="refs/pull/${{ needs.get_pr.outputs.pr_number }}/merge"
+          echo "Fetching list of cache keys for PR #${{ needs.get_pr.outputs.pr_number }}"
+          
+          # List caches for the PR branch
+          CACHE_KEYS=$(gh cache list -R $REPO -B $BRANCH | cut -f 1)
+          
+          if [ -z "$CACHE_KEYS" ]; then
+            echo "No caches found for this PR"
+            exit 0
+          fi
 
-          echo "Fetching list of cache keys"
-          cacheKeysForPR=$(gh actions-cache list -R $REPO -B $BRANCH -L 100 | cut -f 1 )
-
-          ## Setting this to not fail the workflow while deleting cache keys.
-          set +e
-          echo "Deleting caches..."
-          for cacheKey in $cacheKeysForPR
-          do
-              gh actions-cache delete $cacheKey -R $REPO -B $BRANCH --confirm
+          echo "Found caches, proceeding with cleanup..."
+          
+          # Delete each cache
+          for KEY in $CACHE_KEYS; do
+            gh cache delete $KEY -R $REPO -B $BRANCH --confirm
+            echo "Deleted cache: $KEY"
           done
-          echo "Done"
+          
+          echo "Cache cleanup complete"
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REPO: ${{ github.repository }}
-          BRANCH: refs/pull/${{ github.event.pull_request.number }}/merge
+          GH_TOKEN: ${{ secrets.token }}
 
   cleanup_all:
     name: Cleanup All Caches
@@ -47,9 +78,9 @@ jobs:
     steps:
       - name: Cleanup All Caches
         run: |
-          echo "Deleting all caches..."          
-          gh cache delete --all
-          echo "Done"
+          echo "Cleaning all repository caches..."
+          gh cache delete --all -R $REPO --confirm
+          echo "All caches cleaned up"
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REPO: ${{ github.repository }}
+          GH_TOKEN: ${{ secrets.token }}
