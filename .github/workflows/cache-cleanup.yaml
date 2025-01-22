@@ -62,7 +62,7 @@ jobs:
           
           # Delete each cache
           for KEY in $CACHE_KEYS; do
-            gh cache delete $KEY -R $REPO -B $BRANCH --confirm
+            gh cache delete $KEY -R $REPO -B $BRANCH
             echo "Deleted cache: $KEY"
           done
           
@@ -79,7 +79,7 @@ jobs:
       - name: Cleanup All Caches
         run: |
           echo "Cleaning all repository caches..."
-          gh cache delete --all -R $REPO --confirm
+          gh cache delete --all -R $REPO
           echo "All caches cleaned up"
         env:
           REPO: ${{ github.repository }}
