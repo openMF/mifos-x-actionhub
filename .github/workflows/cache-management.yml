@@ -1,0 +1,77 @@
+name: Cache Management
+on:
+  workflow_call:
+    inputs:
+      workflow-name:
+        required: true
+        type: string
+        description: 'Name of the workflow to monitor'
+      repository:
+        required: true
+        type: string
+        description: 'Repository name in format owner/repo'
+    outputs:
+      cache-cleared:
+        description: "Whether cache was cleared"
+        value: ${{ jobs.check_cache.outputs.cache-cleared }}
+    secrets:
+      GITHUB_TOKEN:
+        required: true
+        description: 'GitHub token for API access'
+
+jobs:
+  check_cache:
+    runs-on: ubuntu-latest
+    outputs:
+      cache-cleared: ${{ steps.cache-status.outputs.cache_cleared }}
+    steps:
+      - name: Install jq
+        run: sudo apt-get install jq -y
+
+      - name: Check Cache Usage
+        id: cache-status
+        run: |
+          # Get total cache size in bytes using jq
+          CACHE_USAGE=$(gh cache list -R ${{ inputs.repository }} --json sizeInBytes | jq '[.[].sizeInBytes] | add')
+          CACHE_LIMIT=10737418240  # 10GB in bytes
+          
+          echo "Current cache usage: $CACHE_USAGE bytes"
+          
+          if [ "$CACHE_USAGE" -ge "$CACHE_LIMIT" ]; then
+            echo "Cache is full, clearing all caches..."
+            gh cache delete --all -R ${{ inputs.repository }}
+            echo "cache_cleared=true" >> $GITHUB_OUTPUT
+          else
+            echo "Cache is under limit"
+            echo "cache_cleared=false" >> $GITHUB_OUTPUT
+          fi
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  handle_failure:
+    if: failure()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install jq
+        run: sudo apt-get install jq -y
+
+      - name: Check for Cache Issues
+        id: check-cache
+        run: |
+          # Get the run ID of the failed workflow
+          RUN_ID=$(gh run list --workflow="${{ inputs.workflow-name }}" -R ${{ inputs.repository }} --json databaseId --jq '.[0].databaseId')
+          
+          # Check if failure is cache-related
+          ERROR_LOG=$(gh run view $RUN_ID -R ${{ inputs.repository }} --json jobs --jq '.jobs[].steps[].conclusion')
+          if echo "$ERROR_LOG" | grep -iE "cache|disk space|no space left"; then
+            echo "Cache-related failure detected, clearing cache..."
+            gh cache delete --all -R ${{ inputs.repository }}
+          
+            # Trigger workflow again
+            gh workflow run ${{ inputs.workflow-name }} -R ${{ inputs.repository }} --ref ${{ github.ref }}
+          else
+            echo "Failure was not cache-related"
+            exit 1
+          fi
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
