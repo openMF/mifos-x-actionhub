@@ -179,9 +179,7 @@ jobs:
   build_ios_app:
     name: Build iOS App
     needs: [ checks ]
-    runs-on: macos-latest.
-    env:
-      MATCH_GIT_BASIC_AUTHORIZATION: ${{ secrets.MATCH_GIT_BASIC_AUTHORIZATION }}
+    runs-on: macos-latest
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
