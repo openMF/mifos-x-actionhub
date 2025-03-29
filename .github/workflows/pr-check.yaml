@@ -115,6 +115,16 @@ on:
         required: false  
         default: true
 
+      match_git_authorization_token:
+        description: 'Github token for Fastlane Match repo access'
+        type: string
+        required: true
+
+      match_password:
+        description: 'Passphrase for Fastlane Match repo access'
+        type: string
+        required: true
+
 # Concurrency settings to prevent multiple simultaneous workflow runs
 concurrency:
   group: build-${{ github.ref }}
@@ -187,3 +197,6 @@ jobs:
       - name: Build iOS App
         if: ${{ inputs.build_ios }}
         uses: openMF/kmp-build-ios-app-action@v1.0.1
+        with:
+          match_git_authorization_token: ${{ inputs.match_git_authorization_token }} # [Added] Forward Match Git auth token to action
+          match_password: ${{ inputs.match_password }} # [Added] Forward Match Git password to action
