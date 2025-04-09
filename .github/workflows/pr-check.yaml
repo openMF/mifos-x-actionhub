@@ -116,7 +116,7 @@ on:
         default: true
 
     secrets:
-      MATCH_GIT_AUTHORIZATION_TOKEN:
+      MATCH_GIT_BASIC_AUTHORIZATION:
         description: 'Base64-encoded GitHub token used by Fastlane Match to authenticate and clone the certificates/profiles repository securely'
         required: true
 
@@ -201,6 +201,6 @@ jobs:
         if: ${{ inputs.build_ios }}
         uses: openMF/kmp-build-ios-app-action@v1.0.1
         with:
-          match_git_authorization_token: ${{ inputs.match_git_authorization_token }} # Forward Match Git auth token to action
-          match_password: ${{ inputs.match_password }} # Forward Match Git password to action
+          match_git_basic_authorization: ${{ secrets.MATCH_GIT_BASIC_AUTHORIZATION }} # Forward Match Git auth token to action
+          match_password: ${{ secrets.MATCH_PASSWORD }} # Forward Match Git password to action
           keychain_password: ${{ secrets.KEYCHAIN_PASSWORD }} # Forward keychain password to action
