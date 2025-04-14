@@ -115,6 +115,31 @@ on:
         required: false  
         default: true
 
+      keychain_name:
+        description: 'Name of the keychain to use for signing'
+        type: string
+        required: true
+
+      match_type:
+        description: 'Specifies the type of provisioning profile to use for code signing (e.g., adhoc, appstore, development)'
+        type: string
+        required: true
+
+      export_method:
+        description: 'Defines how the app should be packaged for distribution (e.g., ad-hoc, app-store, development)'
+        type: string
+        required: true
+
+      app_identifier:
+        description: 'The bundle identifier used to uniquely identify your iOS application'
+        type: string
+        required: true
+
+      provisioning_profile_name:
+        description: 'Name of the Provisioning profile to use for code signing'
+        type: string
+        required: true
+
     secrets:
       MATCH_GIT_BASIC_AUTHORIZATION:
         description: 'Base64-encoded GitHub token used by Fastlane Match to authenticate and clone the certificates/profiles repository securely'
@@ -199,8 +224,13 @@ jobs:
 
       - name: Build iOS App
         if: ${{ inputs.build_ios }}
-        uses: openMF/kmp-build-ios-app-action@v1.0.1
+        uses: openMF/mifos-x-actionhub-build-ios-app@v1.0.1
         with:
-          match_git_basic_authorization: ${{ secrets.MATCH_GIT_BASIC_AUTHORIZATION }} # Forward Match Git auth token to action
-          match_password: ${{ secrets.MATCH_PASSWORD }} # Forward Match Git password to action
-          keychain_password: ${{ secrets.KEYCHAIN_PASSWORD }} # Forward keychain password to action
+          match_git_basic_authorization: ${{ secrets.MATCH_GIT_BASIC_AUTHORIZATION }}
+          match_password: ${{ secrets.MATCH_PASSWORD }}
+          keychain_name: ${{ inputs.keychain_name }}
+          keychain_password: ${{ secrets.KEYCHAIN_PASSWORD }}
+          match_type: ${{ inputs.match_type }}
+          export_method: ${{ inputs.export_method }}
+          app_identifier: ${{ inputs.app_identifier }}
+          provisioning_profile_name: ${{ inputs.provisioning_profile_name }}
