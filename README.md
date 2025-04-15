@@ -111,6 +111,9 @@ In order to automate the build and deployment process, you need to configure the
 | iOS               | `NOTARIZATION_APPLE_ID`            | Apple ID for app notarization              | String          | Yes      |
 | iOS               | `NOTARIZATION_PASSWORD`            | Password for notarization process          | String          | Yes      |
 | iOS               | `NOTARIZATION_TEAM_ID`             | Apple Developer Team ID                    | String          | Yes      |
+| iOS               | `MATCH_GIT_BASIC_AUTHORIZATION`    | Base64-encoded Git authorization header for Match repository access | String          | Yes      |
+| iOS               | `MATCH_PASSWORD`                   | Password to decrypt the provisioning profiles and certificates used by Match | String          | Yes      |
+| iOS               | `KEYCHAIN_PASSWORD`                | Password used to unlock the keychain during the code signing process | String          | Yes      |
 |                   |                                    |                                            |                 |          |
 | Desktop (Windows) | `WINDOWS_SIGNING_KEY`              | Signing key for Windows application        | String          | No       |
 | Desktop (Windows) | `WINDOWS_SIGNING_PASSWORD`         | Password for Windows signing key           | String          | No       |
@@ -321,20 +324,48 @@ platform :ios do
   lane :build_ios do |options|
     # Set default configuration if not provided
     options[:configuration] ||= "Debug"
+    match_git_basic_authorization = options[:match_git_basic_authorization] || "dGhpc2lzYXJhbmRvbWJhc2U2NGdpdHRva2VuCg=="
+    match_password = options[:match_password] || "V!r3y$7gqBqL#5vN8uZw"
+    match_type = options[:match_type] || "adhoc"
+    keychain_name = options[:keychain_name] || "ci-signing.keychain"
+    keychain_password = options[:keychain_password] || "Lx9!Ew74qzKa#MkY"
+    export_method = options[:export_method] || "ad-hoc"
+    app_identifier = options[:app_identifier] || "com.example.9af3c1d2"
+    provisioning_profile_name = options[:provisioning_profile_name] || "match AdHoc com.example.9af3c1d2"
 
-    # automatic code signing
-    update_code_signing_settings(
-      use_automatic_signing: true,
-      path: "mifospay-ios/iosApp.xcodeproj"
+    create_keychain(
+        name: keychain_name,
+        password: keychain_password,
+        default_keychain: true,
+        unlock: true,
+        timeout: 3600,
+        add_to_search_list: true
     )
+
+    # Use match to fetch the provisioning profile and certificate
+    match(
+        type: match_type,
+        app_identifier: app_identifier,
+        readonly: true, # Use readonly mode to avoid creating new profiles on CI
+        git_basic_authorization: match_git_basic_authorization,
+        keychain_name: keychain_name,
+        keychain_password: keychain_password
+    )
+
     build_ios_app(
-      project: "mifospay-ios/iosApp.xcodeproj",
-      scheme: "iosApp",
-      # Set configuration to debug for now
-      configuration: options[:configuration],
-      skip_codesigning: "true",
-      output_directory: "mifospay-ios/build",
-      skip_archive: "true"
+        project: ios_config[:project_path],
+        scheme: ios_config[:scheme],
+        configuration: options[:configuration],
+        output_directory: ios_config[:output_directory],
+        output_name: ios_config[:output_name],
+        export_method: export_method,
+        clean: true,
+        skip_codesigning: false,
+        export_options: {
+          provisioningProfiles: {
+            app_identifier => provisioning_profile_name
+          }
+        }
     )
   end
 
@@ -345,10 +376,15 @@ platform :ios do
       app: "1:728434912738:ios:86a7badfaed88b841a1dbb",
       service_credentials_file: options[:serviceCredsFile]
     )
-    increment_build_number(
-      xcodeproj: "mifospay-ios/iosApp.xcodeproj",
-      build_number: latest_release[:buildVersion].to_i + 1
-    )
+
+    if latest_release
+        increment_build_number(
+          xcodeproj: ios_config[:project_path],
+          build_number: latest_release[:buildVersion].to_i + 1
+        )
+    else
+        UI.important("⚠️ No existing Firebase release found. Skipping build number increment.")
+    end
   end
 
   desc "Upload iOS application to Firebase App Distribution"
@@ -529,12 +565,12 @@ Configure the following secrets in your repository settings:
 - `ORIGINAL_KEYSTORE_FILE_PASSWORD`: Keystore password
 - `ORIGINAL_KEYSTORE_ALIAS`: Keystore alias
 - `ORIGINAL_KEYSTORE_ALIAS_PASSWORD`: Keystore alias password
-- 
+-
 - `UPLOAD_KEYSTORE_FILE`: Base64 encoded release keystore
 - `UPLOAD_KEYSTORE_FILE_PASSWORD`: Keystore password
 - `UPLOAD_KEYSTORE_ALIAS`: Keystore alias
 - `UPLOAD_KEYSTORE_ALIAS_PASSWORD`: Keystore alias password
-- 
+-
 - `GOOGLESERVICES`: Base64 encoded Google Services JSON content
 - `PLAYSTORECREDS`: Base64 encoded Play Store service account credentials
 - `FIREBASECREDS`: Base64 encoded Firebase App Distribution credentials
@@ -545,6 +581,10 @@ Configure the following secrets in your repository settings:
   - `NOTARIZATION_APPLE_ID`
   - `NOTARIZATION_PASSWORD`
   - `NOTARIZATION_TEAM_ID`
+- Fastlane Match Credentials:
+  - `MATCH_GIT_BASIC_AUTHORIZATION`
+  - `MATCH_PASSWORD`
+  - `KEYCHAIN_PASSWORD`
 
 ## Workflow Inputs
 
@@ -659,7 +699,7 @@ concurrency:
 jobs:
   multi_platform_build_and_publish:
     name: Multi-Platform Build and Publish
-    uses: openMF/mifos-mobile-github-actions/.github/workflows/multi-platform-build-and-publish.yaml@main
+    uses: openMF/mifos-x-actionhub/.github/workflows/multi-platform-build-and-publish.yaml@main
     with:
       release_type: ${{ inputs.release_type }}
       target_branch: ${{ inputs.target_branch }}
@@ -833,7 +873,7 @@ permissions:
 jobs:
   build_and_deploy_web:
     name: Build And Deploy Web App
-    uses: openMF/mifos-mobile-github-actions/.github/workflows/build-and-deploy-site.yaml@main
+    uses: openMF/mifos-x-actionhub/.github/workflows/build-and-deploy-site.yaml@main
     secrets: inherit
     with:
       web_package_name: 'mifospay-web'
@@ -922,7 +962,7 @@ kotlin {
 # Monthly Version Tagging Workflow
 
 > \[!TIP]
-> 
+>
 > #### [_monthly-version-tag.yaml_](.github/workflows/monthly-version-tag.yaml)
 
 ```mermaid
@@ -989,7 +1029,7 @@ concurrency:
 jobs:
   monthly_release:
     name: Tag Monthly Release
-    uses: openMF/mifos-mobile-github-actions/.github/workflows/monthly-version-tag.yaml@main
+    uses: openMF/mifos-x-actionhub/.github/workflows/monthly-version-tag.yaml@main
     secrets: inherit
 ```
 
@@ -1109,19 +1149,19 @@ This reusable GitHub Actions workflow provides a comprehensive Continuous Integr
 - Automated code quality checks
 - Dependency management and verification
 - Cross-platform builds:
-    - Android APK generation
-    - Desktop application builds (Windows, Linux, MacOS)
-    - Web application compilation
-    - iOS app build support
+  - Android APK generation
+  - Desktop application builds (Windows, Linux, MacOS)
+  - Web application compilation
+  - iOS app build support
 
 ## Prerequisites
 - Java 17
 - Gradle
 - Configured build scripts for:
-    - Android module
-    - Desktop module
-    - Web module
-    - iOS module
+  - Android module
+  - Desktop module
+  - Web module
+  - iOS module
 - Installed Gradle plugins for code quality checks
 
 ## Workflow Jobs
@@ -1136,9 +1176,9 @@ This reusable GitHub Actions workflow provides a comprehensive Continuous Integr
 
 ### 3. Desktop App Build
 - Builds desktop applications for:
-    - Windows
-    - Linux
-    - MacOS
+  - Windows
+  - Linux
+  - MacOS
 - Uses cross-platform build strategy
 
 ### 4. Web Application Build
@@ -1175,12 +1215,22 @@ on:
 jobs:
   pr_checks:
     name: PR Checks
-    uses: openMF/mifos-mobile-github-actions/.github/workflows/pr-check.yaml@main
+    uses: openMF/mifos-x-actionhub/.github/workflows/pr-check.yaml@main
     with:
       android_package_name: 'mifospay-android'
       desktop_package_name: 'mifospay-desktop'
       web_package_name: 'mifospay-web'
       ios_package_name: 'mifospay-ios'
+      build_ios: true # <-- Change to 'false' if you don't want to build iOS
+      keychain_name: 'ci-signing.keychain'
+      match_type: 'adhoc'
+      export_method: 'ad-hoc'
+      app_identifier: 'org.mifos.kmp.template'
+      provisioning_profile_name: 'match AdHoc org.mifos.kmp.template'
+    secrets:
+      MATCH_GIT_BASIC_AUTHORIZATION: ${{ secrets.MATCH_GIT_BASIC_AUTHORIZATION }}
+      MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
+      KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
 ```
 
 <div align="right">
@@ -1221,18 +1271,18 @@ This workflow automates the promotion of a beta release to the production enviro
 
 ### Prerequisites
 1. **Ruby Environment**
-  - Requires Ruby setup (uses `ruby/setup-ruby` action)
-  - Bundler version 2.2.27
-  - Fastlane installed with specific plugins
+- Requires Ruby setup (uses `ruby/setup-ruby` action)
+- Bundler version 2.2.27
+- Fastlane installed with specific plugins
 
 2. **Required Plugins**
-  - `firebase_app_distribution`
-  - `increment_build_number`
+- `firebase_app_distribution`
+- `increment_build_number`
 
 ### Configuration Steps
 1. **Repository Setup**
-  - Ensure your repository is properly structured for Android app deployment
-  - Have a `Fastfile` configured with `promote_to_production` lane
+- Ensure your repository is properly structured for Android app deployment
+- Have a `Fastfile` configured with `promote_to_production` lane
 
 2. **Fastlane Configuration**
    Create a `Fastfile` in your `fastlane` directory with a `promote_to_production` lane:
@@ -1248,10 +1298,10 @@ This workflow automates the promotion of a beta release to the production enviro
    ```
 
 3. **GitHub Secrets**
-  - Ensure you have Play Store credentials configured in your repository secrets
-  - Typically includes:
-    - `$PLAYSTORE_CREDS`: Google Play Service Account JSON
-    - Other authentication credentials as needed
+- Ensure you have Play Store credentials configured in your repository secrets
+- Typically includes:
+  - `$PLAYSTORE_CREDS`: Google Play Service Account JSON
+  - Other authentication credentials as needed
 
 ### Workflow Parameters
 - No direct input parameters
@@ -1291,7 +1341,7 @@ jobs:
   # Job to promote app from beta to production in Play Store
   play_promote_production:
     name: Promote Beta to Production Play Store
-    uses: openMF/mifos-mobile-github-actions/.github/workflows/promote-to-production.yaml@main
+    uses: openMF/mifos-x-actionhub/.github/workflows/promote-to-production.yaml@main
     if: ${{ inputs.publish_to_play_store == true }}
     secrets: inherit
     with:
