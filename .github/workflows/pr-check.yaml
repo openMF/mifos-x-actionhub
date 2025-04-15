@@ -118,27 +118,32 @@ on:
       keychain_name:
         description: 'Name of the keychain to use for signing'
         type: string
-        required: true
+        required: false
+        default: 'ci-signing.keychain'
 
       match_type:
         description: 'Specifies the type of provisioning profile to use for code signing (e.g., adhoc, appstore, development)'
         type: string
-        required: true
+        required: false
+        default: 'adhoc'
 
       export_method:
         description: 'Defines how the app should be packaged for distribution (e.g., ad-hoc, app-store, development)'
         type: string
-        required: true
+        required: false
+        default: 'ad-hoc'
 
       app_identifier:
         description: 'The bundle identifier used to uniquely identify your iOS application'
         type: string
-        required: true
+        required: false
+        default: 'org.mifos.kmp.template'
 
       provisioning_profile_name:
         description: 'Name of the Provisioning profile to use for code signing'
         type: string
-        required: true
+        required: false
+        default: 'match AdHoc org.mifos.kmp.template'
 
     secrets:
       MATCH_GIT_BASIC_AUTHORIZATION:
