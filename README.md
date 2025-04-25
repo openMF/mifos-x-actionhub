@@ -92,40 +92,42 @@ project-root/
 
 In order to automate the build and deployment process, you need to configure the following secrets in your GitHub repository settings:
 
-| Platform          | Key Name                           | Description                                | Encoding/Format | Required |
-|-------------------|------------------------------------|--------------------------------------------|-----------------|----------|
-| Android           | `ORIGINAL_KEYSTORE_FILE`           | Base64 encoded release keystore            | Base64          | Yes      |
-| Android           | `ORIGINAL_KEYSTORE_FILE_PASSWORD`  | Keystore password                          | String          | Yes      |
-| Android           | `ORIGINAL_KEYSTORE_ALIAS`          | Keystore alias                             | String          | Yes      |
-| Android           | `ORIGINAL_KEYSTORE_ALIAS_PASSWORD` | Keystore alias password                    | String          | Yes      |
-|                   |                                    |                                            |                 |          |
-| Android           | `UPLOAD_KEYSTORE_FILE`             | Base64 encoded release keystore for upload | Base64          | Yes      |
-| Android           | `UPLOAD_KEYSTORE_FILE_PASSWORD`    | Upload keystore password                   | String          | Yes      |
-| Android           | `UPLOAD_KEYSTORE_ALIAS`            | Upload keystore alias                      | String          | Yes      |
-| Android           | `UPLOAD_KEYSTORE_ALIAS_PASSWORD`   | Upload keystore alias password             | String          | Yes      |
-|                   |                                    |                                            |                 |          |
-| Google Services   | `GOOGLESERVICES`                   | Google Services JSON content               | Base64          | Yes      |
-| Play Console      | `PLAYSTORECREDS`                   | Play Store service account credentials     | Base64          | Yes      |
-| Firebase          | `FIREBASECREDS`                    | Firebase App Distribution credentials      | Base64          | Yes      |
-|                   |                                    |                                            |                 |          |
-| iOS               | `NOTARIZATION_APPLE_ID`            | Apple ID for app notarization              | String          | Yes      |
-| iOS               | `NOTARIZATION_PASSWORD`            | Password for notarization process          | String          | Yes      |
-| iOS               | `NOTARIZATION_TEAM_ID`             | Apple Developer Team ID                    | String          | Yes      |
-| iOS               | `MATCH_GIT_BASIC_AUTHORIZATION`    | Base64-encoded Git authorization header for Match repository access | String          | Yes      |
+| Platform          | Key Name                           | Description                                                                  | Encoding/Format | Required |
+|-------------------|------------------------------------|------------------------------------------------------------------------------|-----------------|----------|
+| Android           | `ORIGINAL_KEYSTORE_FILE`           | Base64 encoded release keystore                                              | Base64          | Yes      |
+| Android           | `ORIGINAL_KEYSTORE_FILE_PASSWORD`  | Keystore password                                                            | String          | Yes      |
+| Android           | `ORIGINAL_KEYSTORE_ALIAS`          | Keystore alias                                                               | String          | Yes      |
+| Android           | `ORIGINAL_KEYSTORE_ALIAS_PASSWORD` | Keystore alias password                                                      | String          | Yes      |
+|                   |                                    |                                                                              |                 |          |
+| Android           | `UPLOAD_KEYSTORE_FILE`             | Base64 encoded release keystore for upload                                   | Base64          | Yes      |
+| Android           | `UPLOAD_KEYSTORE_FILE_PASSWORD`    | Upload keystore password                                                     | String          | Yes      |
+| Android           | `UPLOAD_KEYSTORE_ALIAS`            | Upload keystore alias                                                        | String          | Yes      |
+| Android           | `UPLOAD_KEYSTORE_ALIAS_PASSWORD`   | Upload keystore alias password                                               | String          | Yes      |
+|                   |                                    |                                                                              |                 |          |
+| Google Services   | `GOOGLESERVICES`                   | Google Services JSON content                                                 | Base64          | Yes      |
+| Play Console      | `PLAYSTORECREDS`                   | Play Store service account credentials                                       | Base64          | Yes      |
+| Firebase          | `FIREBASECREDS`                    | Firebase App Distribution credentials                                        | Base64          | Yes      |
+|                   |                                    |                                                                              |                 |          |
+| iOS               | `NOTARIZATION_APPLE_ID`            | Apple ID for app notarization                                                | String          | Yes      |
+| iOS               | `NOTARIZATION_PASSWORD`            | Password for notarization process                                            | String          | Yes      |
+| iOS               | `NOTARIZATION_TEAM_ID`             | Apple Developer Team ID                                                      | String          | Yes      |
+| iOS               | `APPSTORE_KEY_ID`             | App Store Connect API key ID                                                 | String          | Yes      |
+| iOS               | `APPSTORE_ISSUER_ID`             | App Store Connect issuer ID                                                  | String          | Yes      |
+| iOS               | `APPSTORE_AUTH_KEY`             | Base64-encoded App Store Connect API key content                             | String          | Yes      |
+| iOS               | `MATCH_SSH_PRIVATE_KEY`    | Base64-encoded SSH private key for Match repository access                   | String          | Yes      |
 | iOS               | `MATCH_PASSWORD`                   | Password to decrypt the provisioning profiles and certificates used by Match | String          | Yes      |
-| iOS               | `KEYCHAIN_PASSWORD`                | Password used to unlock the keychain during the code signing process | String          | Yes      |
-|                   |                                    |                                            |                 |          |
-| Desktop (Windows) | `WINDOWS_SIGNING_KEY`              | Signing key for Windows application        | String          | No       |
-| Desktop (Windows) | `WINDOWS_SIGNING_PASSWORD`         | Password for Windows signing key           | String          | No       |
-| Desktop (Windows) | `WINDOWS_SIGNING_CERTIFICATE`      | Certificate for Windows app signing        | String          | No       |
-|                   |                                    |                                            |                 |          |
-| Desktop (MacOS)   | `MACOS_SIGNING_KEY`                | Signing key for MacOS application          | String          | No       |
-| Desktop (MacOS)   | `MACOS_SIGNING_PASSWORD`           | Password for MacOS signing key             | String          | No       |
-| Desktop (MacOS)   | `MACOS_SIGNING_CERTIFICATE`        | Certificate for MacOS app signing          | String          | No       |
-|                   |                                    |                                            |                 |          |
-| Desktop (Linux)   | `LINUX_SIGNING_KEY`                | Signing key for Linux application          | String          | No       |
-| Desktop (Linux)   | `LINUX_SIGNING_PASSWORD`           | Password for Linux signing key             | String          | No       |
-| Desktop (Linux)   | `LINUX_SIGNING_CERTIFICATE`        | Certificate for Linux app signing          | String          | No       |
+|                   |                                    |                                                                              |                 |          |
+| Desktop (Windows) | `WINDOWS_SIGNING_KEY`              | Signing key for Windows application                                          | String          | No       |
+| Desktop (Windows) | `WINDOWS_SIGNING_PASSWORD`         | Password for Windows signing key                                             | String          | No       |
+| Desktop (Windows) | `WINDOWS_SIGNING_CERTIFICATE`      | Certificate for Windows app signing                                          | String          | No       |
+|                   |                                    |                                                                              |                 |          |
+| Desktop (MacOS)   | `MACOS_SIGNING_KEY`                | Signing key for MacOS application                                            | String          | No       |
+| Desktop (MacOS)   | `MACOS_SIGNING_PASSWORD`           | Password for MacOS signing key                                               | String          | No       |
+| Desktop (MacOS)   | `MACOS_SIGNING_CERTIFICATE`        | Certificate for MacOS app signing                                            | String          | No       |
+|                   |                                    |                                                                              |                 |          |
+| Desktop (Linux)   | `LINUX_SIGNING_KEY`                | Signing key for Linux application                                            | String          | No       |
+| Desktop (Linux)   | `LINUX_SIGNING_PASSWORD`           | Password for Linux signing key                                               | String          | No       |
+| Desktop (Linux)   | `LINUX_SIGNING_CERTIFICATE`        | Certificate for Linux app signing                                            | String          | No       |
 
 
 ### Fastlane Setup
@@ -320,99 +322,151 @@ platform :android do
 end
 
 platform :ios do
-  desc "Build iOS application"
-  lane :build_ios do |options|
-    # Set default configuration if not provided
-    options[:configuration] ||= "Debug"
-    match_git_basic_authorization = options[:match_git_basic_authorization] || "dGhpc2lzYXJhbmRvbWJhc2U2NGdpdHRva2VuCg=="
-    match_password = options[:match_password] || "V!r3y$7gqBqL#5vN8uZw"
-    match_type = options[:match_type] || "adhoc"
-    keychain_name = options[:keychain_name] || "ci-signing.keychain"
-    keychain_password = options[:keychain_password] || "Lx9!Ew74qzKa#MkY"
-    export_method = options[:export_method] || "ad-hoc"
-    app_identifier = options[:app_identifier] || "com.example.9af3c1d2"
-    provisioning_profile_name = options[:provisioning_profile_name] || "match AdHoc com.example.9af3c1d2"
 
-    create_keychain(
-        name: keychain_name,
-        password: keychain_password,
-        default_keychain: true,
-        unlock: true,
-        timeout: 3600,
-        add_to_search_list: true
-    )
+  #############################
+  # Shared Private Lane Helpers
+  #############################
 
-    # Use match to fetch the provisioning profile and certificate
-    match(
-        type: match_type,
-        app_identifier: app_identifier,
-        readonly: true, # Use readonly mode to avoid creating new profiles on CI
-        git_basic_authorization: match_git_basic_authorization,
-        keychain_name: keychain_name,
-        keychain_password: keychain_password
-    )
-
-    build_ios_app(
-        project: ios_config[:project_path],
-        scheme: ios_config[:scheme],
-        configuration: options[:configuration],
-        output_directory: ios_config[:output_directory],
-        output_name: ios_config[:output_name],
-        export_method: export_method,
-        clean: true,
-        skip_codesigning: false,
-        export_options: {
-          provisioningProfiles: {
-            app_identifier => provisioning_profile_name
-          }
-        }
-    )
+  private_lane :setup_ci_if_needed do
+      unless ENV['CI']
+          UI.message("🖥️ Running locally, skipping CI-specific setup.")
+      else
+          setup_ci(
+            provider: "circleci"
+          )
+      end
   end
 
+  private_lane :load_api_key do |options|
+      app_store_connect_api_key(
+        key_id: options[:appstore_key_id] || "HA469T6757",
+        issuer_id: options[:appstore_issuer_id] || "8er9e361-9603-4c3e-b147-be3b1o816099",
+        key_filepath: options[:key_filepath] || "./secrets/Auth_Key.p8"
+      )
+  end
+
+  private_lane :fetch_certificates_with_match do |options|
+      match(
+        type: options[:match_type] || "adhoc",
+        app_identifier: options[:app_identifier] || "com.example.9af3c1d2",
+        readonly: true,
+        git_url: options[:git_url] || "git@github.com:openMF/ios-provisioning-profile.git",
+        git_branch: options[:git_branch] || "master",
+        git_private_key: options[:git_private_key] || "./secrets/match_ci_key"
+      )
+  end
+
+  private_lane :build_ios_project do |options|
+      app_identifier = options[:app_identifier] || "com.example.9af3c1d2"
+      provisioning_profile_name = options[:provisioning_profile_name] || "match AdHoc com.example.9af3c1d2"
+
+      build_ios_app(
+        scheme: "iosApp",
+        project: "cmp-ios/iosApp.xcodeproj",
+        output_name: "iosApp.ipa",
+        output_directory: "cmp-ios/build",
+        export_options: {
+            provisioningProfiles: {
+                app_identifier => provisioning_profile_name
+            }
+        },
+        xcargs: "CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY=\"Apple Distribution\" DEVELOPMENT_TEAM=L432S2FZP5 PROVISIONING_PROFILE_SPECIFIER=\"#{provisioning_profile_name}\""
+      )
+  end
+
+  ###################
+  # Main Public lanes
+  ###################
+
+  desc "Build Ios application"
+  lane :build_ios do |options|
+      setup_ci_if_needed
+      fetch_certificates_with_match(options)
+      build_ios_project(options)
+  end
+
+  desc "Increment build number from latest Firebase release"
   lane :increment_version do |options|
-    options[:serviceCredsFile] ||= "secrets/firebaseAppDistributionServiceCredentialsFile.json"
+  service_file = options[:serviceCredsFile] || "./secrets/firebaseAppDistributionServiceCredentialsFile.json"
 
     latest_release = firebase_app_distribution_get_latest_release(
-      app: "1:728434912738:ios:86a7badfaed88b841a1dbb",
-      service_credentials_file: options[:serviceCredsFile]
+      app: options[:firebase_app_id] || "1:728434912738:ios:1d81f8e53ca7a6f31a1dbb",
+      service_credentials_file: service_file
     )
 
     if latest_release
-        increment_build_number(
-          xcodeproj: ios_config[:project_path],
-          build_number: latest_release[:buildVersion].to_i + 1
-        )
+      increment_build_number(
+        xcodeproj: "cmp-ios/iosApp.xcodeproj",
+        build_number: latest_release[:buildVersion].to_i + 1
+      )
     else
-        UI.important("⚠️ No existing Firebase release found. Skipping build number increment.")
+      UI.important("⚠️ No existing Firebase release found. Skipping build number increment.")
     end
   end
 
-  desc "Upload iOS application to Firebase App Distribution"
-  lane :deploy_on_firebase do |options|
-    options[:serviceCredsFile] ||= "secrets/firebaseAppDistributionServiceCredentialsFile.json"
-    options[:groups] ||= "mifos-wallet-testers"
-
-    increment_version()
-    build_ios()
-    releaseNotes = generateReleaseNotes(
-      repoName: "mobile-wallet-testing",
-    )
-    release = firebase_app_distribution(
-      app: "1:728434912738:ios:86a7badfaed88b841a1dbb",
-      service_credentials_file: options[:serviceCredsFile],
-      release_notes_file: "#{releaseNotes}",
-      groups: options[:groups]
-    )
-
-  end
-
   desc "Generate release notes"
-  lane :generateReleaseNotes do |options|
+  lane :generateReleaseNote do
     branchName = `git rev-parse --abbrev-ref HEAD`.chomp()
     releaseNotes = changelog_from_git_commits(
       commits_count: 1,
     )
     releaseNotes
+  end
+
+  desc "Upload iOS application to Firebase App Distribution"
+  lane :deploy_on_firebase do |options|
+  service_file = options[:serviceCredsFile] || "./secrets/firebaseAppDistributionServiceCredentialsFile.json"
+  groups = options[:groups] || "mifos-mobile-testers"
+  firebase_app_id = options[:firebase_app_id] ||= "1:728434912738:ios:1d81f8e53ca7a6f31a1dbb"
+
+    increment_version(serviceCredsFile: service_file)
+
+    build_ios(
+        options.merge(
+            match_type: "adhoc",
+            provisioning_profile_name: "match AdHoc com.example.9af3c1d2"
+        )
+    )
+
+    releaseNotes = generateReleaseNote()
+
+    firebase_app_distribution(
+      app: firebase_app_id,
+      service_credentials_file: service_file,,
+      release_notes: releaseNotes,
+      groups: groups
+    )
+  end
+
+  desc "Upload beta build to TestFlight"
+  lane :beta do |options|
+
+      setup_ci_if_needed
+      load_api_key(options)
+      fetch_certificates_with_match(
+        options.merge(match_type: "appstore")
+      )
+
+      latest_build_number = latest_testflight_build_number(
+        app_identifier: options[:app_identifier] || "com.example.9af3c1d2",
+        api_key: Actions.lane_context[SharedValues::APP_STORE_CONNECT_API_KEY]
+      )
+
+      increment_build_number(
+        xcodeproj: ios_config[:project_path],
+        build_number: latest_build_number + 1
+      )
+
+      build_ios_project(
+        options.merge(
+            provisioning_profile_name: "match AppStore com.example.9af3c1d2"
+        )
+      )
+
+      pilot(
+        api_key: Actions.lane_context[SharedValues::APP_STORE_CONNECT_API_KEY],
+        skip_waiting_for_build_processing: true
+      )
   end
 end
 ```
@@ -582,9 +636,12 @@ Configure the following secrets in your repository settings:
   - `NOTARIZATION_PASSWORD`
   - `NOTARIZATION_TEAM_ID`
 - Fastlane Match Credentials:
-  - `MATCH_GIT_BASIC_AUTHORIZATION`
+  - `MATCH_SSH_PRIVATE_KEY`
   - `MATCH_PASSWORD`
-  - `KEYCHAIN_PASSWORD`
+- App Store Connect API Credentials:
+  - `APPSTORE_KEY_ID`
+  - `APPSTORE_ISSUER_ID`
+  - `APPSTORE_AUTH_KEY`
 
 ## Workflow Inputs
 
@@ -609,8 +666,8 @@ The workflow supports the following configuration inputs:
 ### Publishing Toggles
 
 - `publish_android`: Publish to Play Store (Default: `false`)
-- `build_ios`: Build iOS App (Default: `false`)
-- `publish_ios`: Publish to App Store (Default: `false`)
+- `distribute_ios_firebase`: Distribute iOS App via Firebase App Distribution (Default: `false`)
+- `distribute_ios_testflight`: Distribute iOS App via TestFlight (Default: `false`)
 - `publish_desktop`: Publish Desktop Apps (Default: `false`)
 - `publish_web`: Publish Web App (Default: `true`)
 
@@ -677,15 +734,15 @@ on:
         default: false
         description: Publish Android App On Play Store
 
-      build_ios:
+      distribute_ios_firebase:
         type: boolean
         default: false
-        description: Build iOS App
-
-      publish_ios:
+        description: Distribute iOS App via Firebase App Distribution
+        
+      distribute_ios_testflight:
         type: boolean
         default: false
-        description: Publish iOS App On App Store
+        description: Distribute iOS App via TestFlight (App Store Connect)
 
 permissions:
   contents: write
@@ -707,9 +764,15 @@ jobs:
       ios_package_name: 'mifospay-ios' # <-- Change this to your ios package name
       desktop_package_name: 'mifospay-desktop' # <-- Change this to your desktop package name
       web_package_name: 'mifospay-web'   # <-- Change this to your web package name
+      app_identifier: 'org.mifos.kmp.template'
+      git_url: 'git@github.com:openMF/ios-provisioning-profile.git'
+      git_branch: 'master'
+      match_type: 'adhoc'
+      provisioning_profile_name: 'match AdHoc org.mifos.kmp.template'
+      firebase_app_id: '1:728434912738:ios:1d81f8e53ca7a6f31a1dbb'
       publish_android: ${{ inputs.publish_android }}
-      build_ios: ${{ inputs.build_ios }}
-      publish_ios: ${{ inputs.publish_ios }}
+      distribute_ios_firebase: ${{ inputs.distribute_ios_firebase }}
+      distribute_ios_testflight: ${{ inputs.distribute_ios_testflight }}
       tester_groups: 'mifos-wallet-testers'
     secrets:
       original_keystore_file: ${{ secrets.ORIGINAL_KEYSTORE_FILE }}
@@ -725,6 +788,11 @@ jobs:
       notarization_apple_id: ${{ secrets.NOTARIZATION_APPLE_ID }}
       notarization_password: ${{ secrets.NOTARIZATION_PASSWORD }}
       notarization_team_id: ${{ secrets.NOTARIZATION_TEAM_ID }}
+      appstore_key_id: ${{ secrets.APPSTORE_KEY_ID }}
+      appstore_issuer_id: ${{ secrets.APPSTORE_ISSUER_ID }}
+      appstore_auth_key: ${{ secrets.APPSTORE_AUTH_KEY }}
+      match_password: ${{ secrets.MATCH_PASSWORD }}
+      match_ssh_private_key: ${{ secrets.MATCH_SSH_PRIVATE_KEY }}
 
       windows_signing_key: ${{ secrets.WINDOWS_SIGNING_KEY }}
       windows_signing_password: ${{ secrets.WINDOWS_SIGNING_PASSWORD }}
@@ -1191,12 +1259,18 @@ This reusable GitHub Actions workflow provides a comprehensive Continuous Integr
 
 ## Configuration Parameters
 
-| Parameter              | Description                        | Type   | Required |
-|------------------------|------------------------------------|--------|----------|
-| `android_package_name` | Name of the Android project module | String | Yes      |
-| `desktop_package_name` | Name of the Desktop project module | String | Yes      |
-| `web_package_name`     | Name of the Web project module     | String | Yes      |
-| `ios_package_name`     | Name of the iOS project module     | String | Yes      |
+| Parameter              | Description                        | Type    | Required |
+|------------------------|------------------------------------|---------|----------|
+| `android_package_name` | Name of the Android project module | String  | Yes      |
+| `desktop_package_name` | Name of the Desktop project module | String  | Yes      |
+| `web_package_name`     | Name of the Web project module     | String  | Yes      |
+| `ios_package_name`     | Name of the iOS project module     | String  | Yes      |
+| `build_ios`     | Enable iOS build     | Boolean | No       |
+| `git_url`     | Match repository URL     | String  | Yes      |
+| `git_branch`     | Match repository branch     | String  | Yes      |
+| `match_type`     | Match type (e.g., adhoc)   | String  | Yes      |
+| `app_identifier`     | iOS app identifier    | String  | Yes      |
+| `provisioning_profile_name`     | Provisioning profile name    | String  | Yes      |
 
 ## Workflow Trigger Conditions
 - Triggered on workflow call
@@ -1228,9 +1302,8 @@ jobs:
       app_identifier: 'org.mifos.kmp.template'
       provisioning_profile_name: 'match AdHoc org.mifos.kmp.template'
     secrets:
-      MATCH_GIT_BASIC_AUTHORIZATION: ${{ secrets.MATCH_GIT_BASIC_AUTHORIZATION }}
-      MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
-      KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
+      match_ssh_private_key: ${{ secrets.MATCH_SSH_PRIVATE_KEY }}
+      match_password: ${{ secrets.MATCH_PASSWORD }}
 ```
 
 <div align="right">

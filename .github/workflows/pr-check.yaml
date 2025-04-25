@@ -115,23 +115,23 @@ on:
         required: false  
         default: true
 
-      keychain_name:
-        description: 'Name of the keychain to use for signing'
+      git_url:
+        description: 'Git URL to the private repository containing certificates and provisioning profiles for code signing (used by Fastlane Match)'
         type: string
         required: false
-        default: 'ci-signing.keychain'
+        default: 'git@github.com:openMF/ios-provisioning-profile.git'
+
+      git_branch:
+        description: 'Branch name inside the certificates repository that Fastlane Match should use to fetch signing assets'
+        type: string
+        required: false
+        default: 'master'
 
       match_type:
         description: 'Specifies the type of provisioning profile to use for code signing (e.g., adhoc, appstore, development)'
         type: string
         required: false
         default: 'adhoc'
-
-      export_method:
-        description: 'Defines how the app should be packaged for distribution (e.g., ad-hoc, app-store, development)'
-        type: string
-        required: false
-        default: 'ad-hoc'
 
       app_identifier:
         description: 'The bundle identifier used to uniquely identify your iOS application'
@@ -146,16 +146,12 @@ on:
         default: 'match AdHoc org.mifos.kmp.template'
 
     secrets:
-      MATCH_GIT_BASIC_AUTHORIZATION:
-        description: 'Base64-encoded GitHub token used by Fastlane Match to authenticate and clone the certificates/profiles repository securely'
+      match_ssh_private_key:
+        description: 'SSH private key for accessing the certificates repository'
         required: true
 
-      MATCH_PASSWORD:
+      match_password:
         description: 'Encryption passphrase used by Fastlane Match to decrypt the signing certificates and provisioning profiles stored in the remote repository'
-        required: true
-
-      KEYCHAIN_PASSWORD:
-        description: 'Password used to create and unlock a temporary keychain during the CI build, allowing codesigning without user interaction'
         required: true
 
 # Concurrency settings to prevent multiple simultaneous workflow runs
@@ -229,13 +225,12 @@ jobs:
 
       - name: Build iOS App
         if: ${{ inputs.build_ios }}
-        uses: openMF/mifos-x-actionhub-build-ios-app@v1.0.1
+        uses: openMF/mifos-x-actionhub-build-ios-app@main
         with:
-          match_git_basic_authorization: ${{ secrets.MATCH_GIT_BASIC_AUTHORIZATION }}
-          match_password: ${{ secrets.MATCH_PASSWORD }}
-          keychain_name: ${{ inputs.keychain_name }}
-          keychain_password: ${{ secrets.KEYCHAIN_PASSWORD }}
+          match_ssh_private_key: ${{ secrets.match_ssh_private_key}}
+          match_password: ${{ secrets.match_password }}
+          git_url: ${{ inputs.git_url }}
+          git_branch: ${{ inputs.git_branch }}
           match_type: ${{ inputs.match_type }}
-          export_method: ${{ inputs.export_method }}
           app_identifier: ${{ inputs.app_identifier }}
           provisioning_profile_name: ${{ inputs.provisioning_profile_name }}
