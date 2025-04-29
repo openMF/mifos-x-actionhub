@@ -447,13 +447,18 @@ platform :ios do
         options.merge(match_type: "appstore")
       )
 
+      increment_version_number(
+        xcodeproj: "cmp-ios/iosApp.xcodeproj",
+        version_number: "1.0.0"
+      )
+
       latest_build_number = latest_testflight_build_number(
         app_identifier: options[:app_identifier] || "com.example.9af3c1d2",
         api_key: Actions.lane_context[SharedValues::APP_STORE_CONNECT_API_KEY]
       )
 
       increment_build_number(
-        xcodeproj: ios_config[:project_path],
+        xcodeproj: "cmp-ios/iosApp.xcodeproj",
         build_number: latest_build_number + 1
       )
 
@@ -466,6 +471,46 @@ platform :ios do
       pilot(
         api_key: Actions.lane_context[SharedValues::APP_STORE_CONNECT_API_KEY],
         skip_waiting_for_build_processing: true
+      )
+  end
+  
+  desc "Upload iOS Application to AppStore"
+  lane :release do |options|
+
+      setup_ci_if_needed
+      load_api_key(options)
+      fetch_certificates_with_match(
+        options.merge(match_type: "appstore")
+      )
+
+      increment_version_number(
+        xcodeproj: "cmp-ios/iosApp.xcodeproj",
+        version_number: "1.0.0"
+      )
+
+      latest_build_number = latest_testflight_build_number(
+        app_identifier: options[:app_identifier] || "com.example.9af3c1d2",
+        api_key: Actions.lane_context[SharedValues::APP_STORE_CONNECT_API_KEY]
+      )
+
+      increment_build_number(
+        xcodeproj: "cmp-ios/iosApp.xcodeproj",
+        build_number: latest_build_number + 1
+      )
+
+      build_ios_project(
+        options.merge(
+            provisioning_profile_name: "match AppStore com.example.9af3c1d2"
+        )
+      )
+
+      deliver(
+        metadata_path: options[:metadata_path] || "./fastlane/metadata",
+        automatic_release: false,
+        api_key: Actions.lane_context[SharedValues::APP_STORE_CONNECT_API_KEY],
+        skip_app_version_update: true,
+        force: true,
+        precheck_include_in_app_purchases: false
       )
   end
 end
@@ -668,6 +713,7 @@ The workflow supports the following configuration inputs:
 - `publish_android`: Publish to Play Store (Default: `false`)
 - `distribute_ios_firebase`: Distribute iOS App via Firebase App Distribution (Default: `false`)
 - `distribute_ios_testflight`: Distribute iOS App via TestFlight (Default: `false`)
+- `distribute_ios_appstore`: Distribute iOS App to Appstore (Default: `false`)
 - `publish_desktop`: Publish Desktop Apps (Default: `false`)
 - `publish_web`: Publish Web App (Default: `true`)
 
@@ -744,6 +790,11 @@ on:
         default: false
         description: Distribute iOS App via TestFlight (App Store Connect)
 
+      distribute_ios_appstore:
+        type: boolean
+        default: false
+        description: Distribute iOS App to Appstore  
+
 permissions:
   contents: write
   id-token: write
@@ -770,6 +821,7 @@ jobs:
       match_type: 'adhoc'
       provisioning_profile_name: 'match AdHoc org.mifos.kmp.template'
       firebase_app_id: '1:728434912738:ios:1d81f8e53ca7a6f31a1dbb'
+      metadata_path: './fastlane/metadata'
       publish_android: ${{ inputs.publish_android }}
       distribute_ios_firebase: ${{ inputs.distribute_ios_firebase }}
       distribute_ios_testflight: ${{ inputs.distribute_ios_testflight }}

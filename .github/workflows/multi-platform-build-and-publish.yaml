@@ -121,6 +121,12 @@ on:
         default: false
         description: Distribute iOS App via TestFlight (App Store Connect)
 
+      # Toggle for uploading iOS app to Appstore
+      distribute_ios_appstore:
+        type: boolean
+        default: false
+        description: Distribute iOS App to Appstore
+
       tester_groups:
         type: string
         description: 'Firebase Tester Group'
@@ -154,6 +160,11 @@ on:
       firebase_app_id:
         type: string
         description: 'Firebase App ID'
+        required: true
+
+      metadata_path:
+        type: string
+        description: 'Path to the metadata directory containing information about the app (e.g., app name, description, screenshots, etc.)'
         required: true
 
     secrets:
@@ -313,7 +324,7 @@ jobs:
   publish_ios_app_to_firebase:
     name: Publish iOS App On Firebase
     if: inputs.distribute_ios_firebase
-    runs-on: macos-14
+    runs-on: macos-latest
     permissions:
       contents: write
     steps:
@@ -347,7 +358,7 @@ jobs:
   publish_ios_app_to_testflight:
     name: Publish iOS App On App Center
     if: inputs.distribute_ios_testflight
-    runs-on: macos-14
+    runs-on: macos-latest
     steps:
       - name: Set Xcode version 16.2
         uses: maxim-lobanov/setup-xcode@v1
@@ -365,6 +376,35 @@ jobs:
           git_branch: ${{ inputs.git_branch }}
           match_type: ${{ inputs.match_type }}
           provisioning_profile_name: ${{ inputs.provisioning_profile_name }}
+          appstore_key_id: ${{ secrets.appstore_key_id }}
+          appstore_issuer_id: ${{ secrets.appstore_issuer_id }}
+          appstore_auth_key: ${{ secrets.appstore_auth_key }}
+          match_password: ${{ secrets.match_password }}
+          match_ssh_private_key: ${{ secrets.match_ssh_private_key }}
+
+  # Appstore Publishing Job
+  publish_ios_app_to_appstore:
+    name: Publish iOS App On App Store
+    if: inputs.distribute_ios_appstore
+    runs-on: macos-latest
+    steps:
+      - name: Set Xcode version 16.2
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: '16.2'
+
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Deploy iOS App to App Store
+        uses: openMF/mifos-x-actionhub-publish-ios-on-appstore@v1.0.0
+        with:
+          app_identifier: ${{ inputs.app_identifier }}
+          git_url: ${{ inputs.git_url }}
+          git_branch: ${{ inputs.git_branch }}
+          match_type: ${{ inputs.match_type }}
+          provisioning_profile_name: ${{ inputs.provisioning_profile_name }}
+          metadata_path: ${{ inputs.metadata_path }}
           appstore_key_id: ${{ secrets.appstore_key_id }}
           appstore_issuer_id: ${{ secrets.appstore_issuer_id }}
           appstore_auth_key: ${{ secrets.appstore_auth_key }}
