@@ -341,7 +341,8 @@ platform :ios do
       app_store_connect_api_key(
         key_id: options[:appstore_key_id] || "HA469T6757",
         issuer_id: options[:appstore_issuer_id] || "8er9e361-9603-4c3e-b147-be3b1o816099",
-        key_filepath: options[:key_filepath] || "./secrets/Auth_Key.p8"
+        key_filepath: options[:key_filepath] || "./secrets/Auth_Key.p8",
+        duration: 1200
       )
   end
 
@@ -352,7 +353,9 @@ platform :ios do
         readonly: true,
         git_url: options[:git_url] || "git@github.com:openMF/ios-provisioning-profile.git",
         git_branch: options[:git_branch] || "master",
-        git_private_key: options[:git_private_key] || "./secrets/match_ci_key"
+        git_private_key: options[:git_private_key] || "./secrets/match_ci_key",
+        force_for_new_devices: true,
+        api_key: Actions.lane_context[SharedValues::APP_STORE_CONNECT_API_KEY]
       )
   end
 
@@ -380,9 +383,27 @@ platform :ios do
 
   desc "Build Ios application"
   lane :build_ios do |options|
-      setup_ci_if_needed
-      fetch_certificates_with_match(options)
-      build_ios_project(options)
+    options[:scheme] ||= "iosApp"
+    options[:project_path] ||= "cmp-ios/iosApp.xcodeproj"
+    options[:output_name] ||= "iosApp.ipa"
+    options[:output_directory] ||= "cmp-ios/build"
+
+    build_ios_app(
+      scheme: options[:scheme],
+      project: options[:project_path],
+      output_name: options[:output_name],
+      output_directory: options[:output_directory],
+      skip_codesigning: true,
+      skip_archive: true
+    )
+  end
+
+  desc "Build Signed Ios application"
+  lane :build_signed_ios do |options|
+    setup_ci_if_needed
+    load_api_key(options)
+    fetch_certificates_with_match(options)
+    build_ios_project(options)
   end
 
   desc "Increment build number from latest Firebase release"
@@ -421,7 +442,7 @@ platform :ios do
 
     increment_version(serviceCredsFile: service_file)
 
-    build_ios(
+    build_signed_ios(
         options.merge(
             match_type: "adhoc",
             provisioning_profile_name: "match AdHoc com.example.9af3c1d2"
@@ -497,20 +518,50 @@ platform :ios do
         xcodeproj: "cmp-ios/iosApp.xcodeproj",
         build_number: latest_build_number + 1
       )
+      
+      update_plist(
+        plist_path: "cmp-ios/iosApp/Info.plist",
+        block: proc do |plist|
+          plist['NSContactsUsageDescription'] = 'This app requires access to your contacts to enable autofill and collaboration features.'
+          plist['NSLocationWhenInUseUsageDescription'] = 'This app does not use your location to suggest services near you.'
+          plist['NSBluetoothAlwaysUsageDescription'] = 'This app does not use Bluetooth to communicate with nearby devices.'
+        end
+      )
 
       build_ios_project(
         options.merge(
             provisioning_profile_name: "match AppStore com.example.9af3c1d2"
         )
       )
-
+      
       deliver(
         metadata_path: options[:metadata_path] || "./fastlane/metadata",
-        automatic_release: false,
+        submit_for_review: true,
+        automatic_release: true,
         api_key: Actions.lane_context[SharedValues::APP_STORE_CONNECT_API_KEY],
         skip_app_version_update: true,
         force: true,
-        precheck_include_in_app_purchases: false
+        precheck_include_in_app_purchases: false,
+        overwrite_screenshots: true,
+        app_rating_config_path: options[:app_rating_config_path] || "./fastlane/age_rating.json",
+        submission_information: {
+          add_id_info_uses_idfa: false,
+          add_id_info_limits_tracking: false,
+          add_id_info_serves_ads: false,
+          add_id_info_tracks_action: false,
+          add_id_info_tracks_install: false,
+          content_rights_has_rights: true,
+          content_rights_contains_third_party_content: false,
+          export_compliance_platform: 'ios',
+          export_compliance_compliance_required: false,
+          export_compliance_encryption_updated: false,
+          export_compliance_app_type: nil,
+          export_compliance_uses_encryption: false,
+          export_compliance_is_exempt: true,
+          export_compliance_contains_third_party_cryptography: false,
+          export_compliance_contains_proprietary_cryptography: false,
+          export_compliance_available_on_french_store: true
+        }
       )
   end
 end
@@ -1317,12 +1368,7 @@ This reusable GitHub Actions workflow provides a comprehensive Continuous Integr
 | `desktop_package_name` | Name of the Desktop project module | String  | Yes      |
 | `web_package_name`     | Name of the Web project module     | String  | Yes      |
 | `ios_package_name`     | Name of the iOS project module     | String  | Yes      |
-| `build_ios`     | Enable iOS build     | Boolean | No       |
-| `git_url`     | Match repository URL     | String  | Yes      |
-| `git_branch`     | Match repository branch     | String  | Yes      |
-| `match_type`     | Match type (e.g., adhoc)   | String  | Yes      |
-| `app_identifier`     | iOS app identifier    | String  | Yes      |
-| `provisioning_profile_name`     | Provisioning profile name    | String  | Yes      |
+| `build_ios`            | Enable iOS build                   | Boolean | No       |
 
 ## Workflow Trigger Conditions
 - Triggered on workflow call
@@ -1348,14 +1394,6 @@ jobs:
       web_package_name: 'mifospay-web'
       ios_package_name: 'mifospay-ios'
       build_ios: true # <-- Change to 'false' if you don't want to build iOS
-      keychain_name: 'ci-signing.keychain'
-      match_type: 'adhoc'
-      export_method: 'ad-hoc'
-      app_identifier: 'org.mifos.kmp.template'
-      provisioning_profile_name: 'match AdHoc org.mifos.kmp.template'
-    secrets:
-      match_ssh_private_key: ${{ secrets.MATCH_SSH_PRIVATE_KEY }}
-      match_password: ${{ secrets.MATCH_PASSWORD }}
 ```
 
 <div align="right">

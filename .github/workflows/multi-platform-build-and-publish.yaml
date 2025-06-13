@@ -36,6 +36,11 @@
 # - notarization_apple_id: Apple ID for macOS app notarization
 # - notarization_password: Notarization password
 # - notarization_team_id: Apple developer team ID
+# - appstore_key_id: Key ID from App Store Connect API Key
+# - appstore_issuer_id: Issuer ID from App Store Connect API Key
+# - appstore_auth_key: Base64-encoded contents of the .p8 auth key file
+# - match_password: Password used to encrypt/decrypt the certificates repository used by match
+# - match_ssh_private_key: SSH private key for accessing the certificates repository
 #
 # Windows signing secrets:
 # - windows_signing_key: Windows app signing key
@@ -328,10 +333,10 @@ jobs:
     permissions:
       contents: write
     steps:
-      - name: Set Xcode version 16.2
+      - name: Set latest Xcode version
         uses: maxim-lobanov/setup-xcode@v1
         with:
-          xcode-version: '16.2'
+          xcode-version: latest-stable
 
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -339,7 +344,7 @@ jobs:
           fetch-depth: 0
 
       - name: Deploy iOS App to Firebase
-        uses: openMF/kmp-publish-ios-on-firebase-action@v1.0.0
+        uses: openMF/kmp-publish-ios-on-firebase-action@v1.0.2
         continue-on-error: true
         with:
           app_identifier: ${{ inputs.app_identifier }}
@@ -347,6 +352,9 @@ jobs:
           git_branch: ${{ inputs.git_branch }}
           match_type: ${{ inputs.match_type }}
           provisioning_profile_name: ${{ inputs.provisioning_profile_name }}
+          appstore_key_id: ${{ secrets.appstore_key_id }}
+          appstore_issuer_id: ${{ secrets.appstore_issuer_id }}
+          appstore_auth_key: ${{ secrets.appstore_auth_key }}
           match_password: ${{ secrets.match_password }}
           match_ssh_private_key: ${{ secrets.match_ssh_private_key }}
           ios_package_name: ${{ inputs.ios_package_name }}
@@ -360,16 +368,16 @@ jobs:
     if: inputs.distribute_ios_testflight
     runs-on: macos-latest
     steps:
-      - name: Set Xcode version 16.2
+      - name: Set latest Xcode version
         uses: maxim-lobanov/setup-xcode@v1
         with:
-          xcode-version: '16.2'
+          xcode-version: latest-stable
 
       - name: Checkout Repository
         uses: actions/checkout@v4
 
       - name: Deploy iOS app to TestFlight
-        uses: openMF/mifos-x-actionhub-publish-ios-on-appstore-production@main
+        uses: openMF/mifos-x-actionhub-publish-ios-on-appstore-production@v1.0.0
         with:
           app_identifier: ${{ inputs.app_identifier }}
           git_url: ${{ inputs.git_url }}
@@ -388,10 +396,10 @@ jobs:
     if: inputs.distribute_ios_appstore
     runs-on: macos-latest
     steps:
-      - name: Set Xcode version 16.2
+      - name: Set latest Xcode version
         uses: maxim-lobanov/setup-xcode@v1
         with:
-          xcode-version: '16.2'
+          xcode-version: latest-stable
 
       - name: Checkout Repository
         uses: actions/checkout@v4

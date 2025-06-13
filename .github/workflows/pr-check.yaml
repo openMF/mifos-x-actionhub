@@ -115,45 +115,6 @@ on:
         required: false  
         default: true
 
-      git_url:
-        description: 'Git URL to the private repository containing certificates and provisioning profiles for code signing (used by Fastlane Match)'
-        type: string
-        required: false
-        default: 'git@github.com:openMF/ios-provisioning-profile.git'
-
-      git_branch:
-        description: 'Branch name inside the certificates repository that Fastlane Match should use to fetch signing assets'
-        type: string
-        required: false
-        default: 'master'
-
-      match_type:
-        description: 'Specifies the type of provisioning profile to use for code signing (e.g., adhoc, appstore, development)'
-        type: string
-        required: false
-        default: 'adhoc'
-
-      app_identifier:
-        description: 'The bundle identifier used to uniquely identify your iOS application'
-        type: string
-        required: false
-        default: 'org.mifos.kmp.template'
-
-      provisioning_profile_name:
-        description: 'Name of the Provisioning profile to use for code signing'
-        type: string
-        required: false
-        default: 'match AdHoc org.mifos.kmp.template'
-
-    secrets:
-      match_ssh_private_key:
-        description: 'SSH private key for accessing the certificates repository'
-        required: true
-
-      match_password:
-        description: 'Encryption passphrase used by Fastlane Match to decrypt the signing certificates and provisioning profiles stored in the remote repository'
-        required: true
-
 # Concurrency settings to prevent multiple simultaneous workflow runs
 concurrency:
   group: build-${{ github.ref }}
@@ -223,14 +184,11 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
+      - name: Setup latest Xcode version
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+
       - name: Build iOS App
         if: ${{ inputs.build_ios }}
-        uses: openMF/mifos-x-actionhub-build-ios-app@main
-        with:
-          match_ssh_private_key: ${{ secrets.match_ssh_private_key}}
-          match_password: ${{ secrets.match_password }}
-          git_url: ${{ inputs.git_url }}
-          git_branch: ${{ inputs.git_branch }}
-          match_type: ${{ inputs.match_type }}
-          app_identifier: ${{ inputs.app_identifier }}
-          provisioning_profile_name: ${{ inputs.provisioning_profile_name }}
+        uses: openMF/mifos-x-actionhub-build-ios-app@v1.0.2
