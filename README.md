@@ -873,6 +873,8 @@ jobs:
       provisioning_profile_name: 'match AdHoc org.mifos.kmp.template'
       firebase_app_id: '1:728434912738:ios:1d81f8e53ca7a6f31a1dbb'
       metadata_path: './fastlane/metadata'
+      use_cocoapods: true
+      shared_module: ':cmp-shared'
       publish_android: ${{ inputs.publish_android }}
       distribute_ios_firebase: ${{ inputs.distribute_ios_firebase }}
       distribute_ios_testflight: ${{ inputs.distribute_ios_testflight }}
@@ -1369,6 +1371,8 @@ This reusable GitHub Actions workflow provides a comprehensive Continuous Integr
 | `web_package_name`     | Name of the Web project module     | String  | Yes      |
 | `ios_package_name`     | Name of the iOS project module     | String  | Yes      |
 | `build_ios`            | Enable iOS build                   | Boolean | No       |
+| `use_cocoapods`        | Whether to use CocoaPods for integrating the shared module into the iOS app                  | String  | Yes      |
+| `shared_module`        | Gradle path to the shared Kotlin Multiplatform module used in the iOS app (e.g., :cmp-shared, :shared)                   | String  | Yes      |
 
 ## Workflow Trigger Conditions
 - Triggered on workflow call
@@ -1387,13 +1391,15 @@ on:
 jobs:
   pr_checks:
     name: PR Checks
-    uses: openMF/mifos-x-actionhub/.github/workflows/pr-check.yaml@main
+    uses: openMF/mifos-x-actionhub/.github/workflows/pr-check.yaml@v1.0.3
     with:
-      android_package_name: 'mifospay-android'
-      desktop_package_name: 'mifospay-desktop'
-      web_package_name: 'mifospay-web'
-      ios_package_name: 'mifospay-ios'
+      android_package_name: 'cmp-android'
+      desktop_package_name: 'cmp-desktop'
+      web_package_name: 'cmp-web'
+      ios_package_name: 'cmp-ios'
       build_ios: true # <-- Change to 'false' if you don't want to build iOS
+      use_cocoapods: true
+      shared_module: ':cmp-shared'
 ```
 
 <div align="right">
