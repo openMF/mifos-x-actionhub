@@ -172,6 +172,23 @@ on:
         description: 'Path to the metadata directory containing information about the app (e.g., app name, description, screenshots, etc.)'
         required: true
 
+      use_cocoapods:
+        description: >
+          Indicates whether to use CocoaPods integration for the iOS build.
+          Set to `true` if your project integrates the Kotlin Multiplatform shared module
+          into the iOS app using CocoaPods (e.g., via a `.podspec` file and `pod install`).
+        type: boolean
+        required: true
+
+      shared_module:
+        description: >
+          The Gradle path to the Kotlin Multiplatform shared module used in the iOS target.
+          This is the module that will be compiled as a framework and optionally exposed
+          to the iOS project via CocoaPods (e.g., `:cmp-shared`).
+          It is used when generating a dummy framework for pod install to succeed.
+        type: string
+        required: true
+
     secrets:
       # Android-related secrets
       original_keystore_file:
@@ -333,15 +350,28 @@ jobs:
     permissions:
       contents: write
     steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
       - name: Set latest Xcode version
         uses: maxim-lobanov/setup-xcode@v1
         with:
           xcode-version: latest-stable
 
-      - name: Checkout Repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+      - name: Install CocoaPods
+        if: ${{ inputs.use_cocoapods }}
+        run: sudo gem install cocoapods
+
+      - name: Generate dummy framework for KMP
+        if: ${{ inputs.use_cocoapods }}
+        run: ./gradlew ${{ inputs.shared_module }}:generateDummyFramework
+
+      - name: Install CocoaPods dependencies
+        if: ${{ inputs.use_cocoapods }}
+        working-directory: ${{ inputs.ios_package_name }}
+        run: pod install
 
       - name: Deploy iOS App to Firebase
         uses: openMF/kmp-publish-ios-on-firebase-action@v1.0.2
@@ -368,13 +398,26 @@ jobs:
     if: inputs.distribute_ios_testflight
     runs-on: macos-latest
     steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
       - name: Set latest Xcode version
         uses: maxim-lobanov/setup-xcode@v1
         with:
           xcode-version: latest-stable
 
-      - name: Checkout Repository
-        uses: actions/checkout@v4
+      - name: Install CocoaPods
+        if: ${{ inputs.use_cocoapods }}
+        run: sudo gem install cocoapods
+
+      - name: Generate dummy framework for KMP
+        if: ${{ inputs.use_cocoapods }}
+        run: ./gradlew ${{ inputs.shared_module }}:generateDummyFramework
+
+      - name: Install CocoaPods dependencies
+        if: ${{ inputs.use_cocoapods }}
+        working-directory: ${{ inputs.ios_package_name }}
+        run: pod install
 
       - name: Deploy iOS app to TestFlight
         uses: openMF/mifos-x-actionhub-publish-ios-on-appstore-production@v1.0.0
@@ -396,13 +439,26 @@ jobs:
     if: inputs.distribute_ios_appstore
     runs-on: macos-latest
     steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
       - name: Set latest Xcode version
         uses: maxim-lobanov/setup-xcode@v1
         with:
           xcode-version: latest-stable
 
-      - name: Checkout Repository
-        uses: actions/checkout@v4
+      - name: Install CocoaPods
+        if: ${{ inputs.use_cocoapods }}
+        run: sudo gem install cocoapods
+
+      - name: Generate dummy framework for KMP
+        if: ${{ inputs.use_cocoapods }}
+        run: ./gradlew ${{ inputs.shared_module }}:generateDummyFramework
+
+      - name: Install CocoaPods dependencies
+        if: ${{ inputs.use_cocoapods }}
+        working-directory: ${{ inputs.ios_package_name }}
+        run: pod install
 
       - name: Deploy iOS App to App Store
         uses: openMF/mifos-x-actionhub-publish-ios-on-appstore@v1.0.0

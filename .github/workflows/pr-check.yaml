@@ -75,10 +75,14 @@
 #    pr_checks:
 #      name: PR Checks
 #      uses: openMF/mifos-mobile-github-actions/.github/workflows/pr-check.yaml@main
-#      secrets: inherit
 #      with:
-#        android_package_name: 'mifospay-android'
-#        desktop_package_name: 'mifospay-desktop'
+#        android_package_name: 'cmp-android' # <-- Change Your Android Package Name
+#        desktop_package_name: 'cmp-desktop' # <-- Change Your Desktop Package Name
+#        web_package_name: 'cmp-web' # <-- Change Your Web Package Name
+#        ios_package_name: 'cmp-ios' # <-- Change Your iOS Package Name
+#        build_ios: true # <-- Change to 'false' if you don't want to build iOS
+#        use_cocoapods: true
+#        shared_module: ':cmp-shared'
 #   ```
 #
 # GitHub Actions workflow for continuous integration of Mobile-Wallet project
@@ -114,6 +118,23 @@ on:
         type: boolean
         required: false  
         default: true
+
+      use_cocoapods:
+        description: >
+          Indicates whether to use CocoaPods integration for the iOS build.
+          Set to `true` if your project integrates the Kotlin Multiplatform shared module
+          into the iOS app using CocoaPods (e.g., via a `.podspec` file and `pod install`).
+        type: boolean
+        required: true
+
+      shared_module:
+        description: >
+          The Gradle path to the Kotlin Multiplatform shared module used in the iOS target.
+          This is the module that will be compiled as a framework and optionally exposed
+          to the iOS project via CocoaPods (e.g., `:cmp-shared`).
+          It is used when generating a dummy framework for pod install to succeed.
+        type: string
+        required: true
 
 # Concurrency settings to prevent multiple simultaneous workflow runs
 concurrency:
@@ -178,6 +199,7 @@ jobs:
 
   build_ios_app:
     name: Build iOS App
+    if: ${{ inputs.build_ios }}
     needs: [ checks ]
     runs-on: macos-latest
     steps:
@@ -188,6 +210,19 @@ jobs:
         uses: maxim-lobanov/setup-xcode@v1
         with:
           xcode-version: latest-stable
+
+      - name: Install CocoaPods
+        if: ${{ inputs.use_cocoapods }}
+        run: sudo gem install cocoapods
+
+      - name: Generate dummy framework for KMP
+        if: ${{ inputs.use_cocoapods }}
+        run: ./gradlew ${{ inputs.shared_module }}:generateDummyFramework
+
+      - name: Install CocoaPods dependencies
+        if: ${{ inputs.use_cocoapods }}
+        working-directory: ${{ inputs.ios_package_name }}
+        run: pod install
 
       - name: Build iOS App
         if: ${{ inputs.build_ios }}
