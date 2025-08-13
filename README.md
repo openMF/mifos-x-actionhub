@@ -331,9 +331,7 @@ platform :ios do
       unless ENV['CI']
           UI.message("🖥️ Running locally, skipping CI-specific setup.")
       else
-          setup_ci(
-            provider: "circleci"
-          )
+          setup_ci
       end
   end
 
@@ -363,17 +361,28 @@ platform :ios do
       app_identifier = options[:app_identifier] || "com.example.9af3c1d2"
       provisioning_profile_name = options[:provisioning_profile_name] || "match AdHoc com.example.9af3c1d2"
 
+      cocoapods(
+        podfile: "cmp-ios/Podfile",
+        clean_install: true,
+        repo_update: true
+      )
+      
+      update_code_signing_settings(
+        use_automatic_signing: false,
+        path: "cmp-ios/iosApp.xcodeproj",
+        targets: "iosApp",
+        team_id: "G432R4FZP6",
+        code_sign_identity: "Apple Distribution",
+        profile_name: provisioning_profile_name,
+        bundle_identifier: "com.example.9af3c1d2"
+      )
+      
       build_ios_app(
         scheme: "iosApp",
-        project: "cmp-ios/iosApp.xcodeproj",
+        workspace: cmp-ios/iosApp.xcworkspace,
         output_name: "iosApp.ipa",
         output_directory: "cmp-ios/build",
-        export_options: {
-            provisioningProfiles: {
-                app_identifier => provisioning_profile_name
-            }
-        },
-        xcargs: "CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY=\"Apple Distribution\" DEVELOPMENT_TEAM=L432S2FZP5 PROVISIONING_PROFILE_SPECIFIER=\"#{provisioning_profile_name}\""
+        skip_codesigning: "Release"
       )
   end
 
@@ -388,6 +397,12 @@ platform :ios do
     options[:output_name] ||= "iosApp.ipa"
     options[:output_directory] ||= "cmp-ios/build"
 
+    cocoapods(
+      podfile: "cmp-ios/Podfile",
+      clean_install: true,
+      repo_update: true
+    )
+      
     build_ios_app(
       scheme: options[:scheme],
       project: options[:project_path],
@@ -858,7 +873,7 @@ concurrency:
 jobs:
   multi_platform_build_and_publish:
     name: Multi-Platform Build and Publish
-    uses: openMF/mifos-x-actionhub/.github/workflows/multi-platform-build-and-publish.yaml@v1.0.3
+    uses: openMF/mifos-x-actionhub/.github/workflows/multi-platform-build-and-publish.yaml@v1.0.4
     with:
       release_type: ${{ inputs.release_type }}
       target_branch: ${{ inputs.target_branch }}

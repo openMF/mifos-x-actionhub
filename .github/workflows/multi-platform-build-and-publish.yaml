@@ -189,6 +189,11 @@ on:
         type: string
         required: true
 
+      ci_gradle_properties_path:
+        description: 'Path to CI-specific Gradle properties file'
+        type: string
+        default: '.github/ci-gradle.properties'
+
     secrets:
       # Android-related secrets
       original_keystore_file:
@@ -355,6 +360,9 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Copy CI gradle.properties
+        run: mkdir -p ~/.gradle && cp "${{ inputs.ci_gradle_properties_path }}" ~/.gradle/gradle.properties
+
       - name: Set latest Xcode version
         uses: maxim-lobanov/setup-xcode@v1
         with:
@@ -367,11 +375,6 @@ jobs:
       - name: Generate dummy framework for KMP
         if: ${{ inputs.use_cocoapods }}
         run: ./gradlew ${{ inputs.shared_module }}:generateDummyFramework
-
-      - name: Install CocoaPods dependencies
-        if: ${{ inputs.use_cocoapods }}
-        working-directory: ${{ inputs.ios_package_name }}
-        run: pod install
 
       - name: Deploy iOS App to Firebase
         uses: openMF/kmp-publish-ios-on-firebase-action@v1.0.2
@@ -401,6 +404,9 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
+      - name: Copy CI gradle.properties
+        run: mkdir -p ~/.gradle && cp "${{ inputs.ci_gradle_properties_path }}" ~/.gradle/gradle.properties
+
       - name: Set latest Xcode version
         uses: maxim-lobanov/setup-xcode@v1
         with:
@@ -413,11 +419,6 @@ jobs:
       - name: Generate dummy framework for KMP
         if: ${{ inputs.use_cocoapods }}
         run: ./gradlew ${{ inputs.shared_module }}:generateDummyFramework
-
-      - name: Install CocoaPods dependencies
-        if: ${{ inputs.use_cocoapods }}
-        working-directory: ${{ inputs.ios_package_name }}
-        run: pod install
 
       - name: Deploy iOS app to TestFlight
         uses: openMF/mifos-x-actionhub-publish-ios-on-appstore-production@v1.0.0
@@ -442,6 +443,9 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
+      - name: Copy CI gradle.properties
+        run: mkdir -p ~/.gradle && cp "${{ inputs.ci_gradle_properties_path }}" ~/.gradle/gradle.properties
+
       - name: Set latest Xcode version
         uses: maxim-lobanov/setup-xcode@v1
         with:
@@ -454,11 +458,6 @@ jobs:
       - name: Generate dummy framework for KMP
         if: ${{ inputs.use_cocoapods }}
         run: ./gradlew ${{ inputs.shared_module }}:generateDummyFramework
-
-      - name: Install CocoaPods dependencies
-        if: ${{ inputs.use_cocoapods }}
-        working-directory: ${{ inputs.ios_package_name }}
-        run: pod install
 
       - name: Deploy iOS App to App Store
         uses: openMF/mifos-x-actionhub-publish-ios-on-appstore@v1.0.0
