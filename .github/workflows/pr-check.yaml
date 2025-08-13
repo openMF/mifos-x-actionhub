@@ -219,11 +219,6 @@ jobs:
         if: ${{ inputs.use_cocoapods }}
         run: ./gradlew ${{ inputs.shared_module }}:generateDummyFramework
 
-      - name: Install CocoaPods dependencies
-        if: ${{ inputs.use_cocoapods }}
-        working-directory: ${{ inputs.ios_package_name }}
-        run: pod install
-
       - name: Build iOS App
         if: ${{ inputs.build_ios }}
         uses: openMF/mifos-x-actionhub-build-ios-app@v1.0.2
