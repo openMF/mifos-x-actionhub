@@ -194,6 +194,11 @@ on:
         type: string
         default: '.github/ci-gradle.properties'
 
+      compose_resources_dir:
+        description: 'Path to Compose resources directory'
+        type: string
+        default: 'cmp-shared/build/compose/cocoapods/compose-resources'
+
     secrets:
       # Android-related secrets
       original_keystore_file:
@@ -372,6 +377,9 @@ jobs:
         if: ${{ inputs.use_cocoapods }}
         run: sudo gem install cocoapods
 
+      - name: Prepare compose resources directory
+        run: mkdir -p "${{ inputs.compose_resources_dir }}"
+
       - name: Generate dummy framework for KMP
         if: ${{ inputs.use_cocoapods }}
         run: ./gradlew ${{ inputs.shared_module }}:generateDummyFramework
@@ -416,6 +424,9 @@ jobs:
         if: ${{ inputs.use_cocoapods }}
         run: sudo gem install cocoapods
 
+      - name: Prepare compose resources directory
+        run: mkdir -p "${{ inputs.compose_resources_dir }}"
+
       - name: Generate dummy framework for KMP
         if: ${{ inputs.use_cocoapods }}
         run: ./gradlew ${{ inputs.shared_module }}:generateDummyFramework
@@ -454,6 +465,9 @@ jobs:
       - name: Install CocoaPods
         if: ${{ inputs.use_cocoapods }}
         run: sudo gem install cocoapods
+
+      - name: Prepare compose resources directory
+        run: mkdir -p "${{ inputs.compose_resources_dir }}"
 
       - name: Generate dummy framework for KMP
         if: ${{ inputs.use_cocoapods }}
