@@ -378,7 +378,7 @@ jobs:
         run: sudo gem install cocoapods
 
       - name: Prepare compose resources directory
-        run: mkdir -p "${{ inputs.compose_resources_dir }}"
+        run: mkdir -p ${{ inputs.compose_resources_dir }}
 
       - name: Generate dummy framework for KMP
         if: ${{ inputs.use_cocoapods }}
@@ -425,7 +425,7 @@ jobs:
         run: sudo gem install cocoapods
 
       - name: Prepare compose resources directory
-        run: mkdir -p "${{ inputs.compose_resources_dir }}"
+        run: mkdir -p ${{ inputs.compose_resources_dir }}
 
       - name: Generate dummy framework for KMP
         if: ${{ inputs.use_cocoapods }}
@@ -467,7 +467,7 @@ jobs:
         run: sudo gem install cocoapods
 
       - name: Prepare compose resources directory
-        run: mkdir -p "${{ inputs.compose_resources_dir }}"
+        run: mkdir -p ${{ inputs.compose_resources_dir }}
 
       - name: Generate dummy framework for KMP
         if: ${{ inputs.use_cocoapods }}

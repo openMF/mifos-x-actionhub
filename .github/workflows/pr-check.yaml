@@ -136,6 +136,11 @@ on:
         type: string
         required: true
 
+      compose_resources_dir:
+        description: 'Path to Compose resources directory'
+        type: string
+        default: 'cmp-shared/build/compose/cocoapods/compose-resources'
+
 # Concurrency settings to prevent multiple simultaneous workflow runs
 concurrency:
   group: build-${{ github.ref }}
@@ -214,6 +219,9 @@ jobs:
       - name: Install CocoaPods
         if: ${{ inputs.use_cocoapods }}
         run: sudo gem install cocoapods
+
+      - name: Prepare compose resources directory
+        run: mkdir -p ${{ inputs.compose_resources_dir }}
 
       - name: Generate dummy framework for KMP
         if: ${{ inputs.use_cocoapods }}
