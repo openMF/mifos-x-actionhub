@@ -873,14 +873,14 @@ concurrency:
 jobs:
   multi_platform_build_and_publish:
     name: Multi-Platform Build and Publish
-    uses: openMF/mifos-x-actionhub/.github/workflows/multi-platform-build-and-publish.yaml@v1.0.4
+    uses: openMF/mifos-x-actionhub/.github/workflows/multi-platform-build-and-publish.yaml@v1.0.5
     with:
       release_type: ${{ inputs.release_type }}
       target_branch: ${{ inputs.target_branch }}
-      android_package_name: 'mifospay-android' # <-- Change this to your android package name
-      ios_package_name: 'mifospay-ios' # <-- Change this to your ios package name
-      desktop_package_name: 'mifospay-desktop' # <-- Change this to your desktop package name
-      web_package_name: 'mifospay-web'   # <-- Change this to your web package name
+      android_package_name: 'cmp-android' # <-- Change this to your android package name
+      ios_package_name: 'cmp-ios' # <-- Change this to your ios package name
+      desktop_package_name: 'cmp-desktop' # <-- Change this to your desktop package name
+      web_package_name: 'cmp-web'   # <-- Change this to your web package name
       app_identifier: 'org.mifos.kmp.template'
       git_url: 'git@github.com:openMF/ios-provisioning-profile.git'
       git_branch: 'master'
