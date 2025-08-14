@@ -405,7 +405,7 @@ jobs:
 
   # Testflight Publishing Job
   publish_ios_app_to_testflight:
-    name: Publish iOS App On App Center
+    name: Publish iOS App On TestFlight
     if: inputs.distribute_ios_testflight
     runs-on: macos-latest
     steps:
