@@ -1343,7 +1343,7 @@ This reusable GitHub Actions workflow provides a comprehensive Continuous Integr
   - iOS app build support
 
 ## Prerequisites
-- Java 17
+- Java (configurable, defaults to 17)
 - Gradle
 - Configured build scripts for:
   - Android module
@@ -1386,8 +1386,10 @@ This reusable GitHub Actions workflow provides a comprehensive Continuous Integr
 | `web_package_name`     | Name of the Web project module     | String  | Yes      |
 | `ios_package_name`     | Name of the iOS project module     | String  | Yes      |
 | `build_ios`            | Enable iOS build                   | Boolean | No       |
-| `use_cocoapods`        | Whether to use CocoaPods for integrating the shared module into the iOS app                  | String  | Yes      |
-| `shared_module`        | Gradle path to the shared Kotlin Multiplatform module used in the iOS app (e.g., :cmp-shared, :shared)                   | String  | Yes      |
+| `use_cocoapods`        | Whether to use CocoaPods for integrating the shared module into the iOS app                  | Boolean | Yes      |
+| `shared_module`        | Gradle path to the shared Kotlin Multiplatform module used in the iOS app (e.g., :cmp-shared, :shared)                   | String  | Required **if `build_ios` = true**      |
+| `use_cocoapods`       | Whether to use CocoaPods for integrating the shared module into the iOS app | Boolean| Required **if `build_ios` = true** |
+| `java-version`        | Java version to use (e.g., 17, 21)                                          | String | No       |
 
 ## Workflow Trigger Conditions
 - Triggered on workflow call
@@ -1406,7 +1408,7 @@ on:
 jobs:
   pr_checks:
     name: PR Checks
-    uses: openMF/mifos-x-actionhub/.github/workflows/pr-check.yaml@v1.0.3
+    uses: openMF/mifos-x-actionhub/.github/workflows/pr-check.yaml@v1.0.4
     with:
       android_package_name: 'cmp-android'
       desktop_package_name: 'cmp-desktop'
@@ -1415,6 +1417,7 @@ jobs:
       build_ios: true # <-- Change to 'false' if you don't want to build iOS
       use_cocoapods: true
       shared_module: ':cmp-shared'
+      java-version: '21' # <-- Set according to the JDK your project uses (default is 17)
 ```
 
 <div align="right">
