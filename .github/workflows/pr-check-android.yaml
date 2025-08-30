@@ -13,7 +13,7 @@
 ### Workflow Jobs
 # 1. **Setup**: Prepares the build environment
 #   - Checks out repository code
-#   - Sets up Java 17
+#   - Sets up Java (default is 17, but can be any version)
 #   - Configures Gradle
 #   - Manages dependency caching
 #
@@ -32,7 +32,7 @@
 #   - Uploads APK artifacts
 #
 ### Prerequisites
-#   - Java 17
+#   - Java (configurable; defaults to 17)
 #   - Gradle
 #   - Configured build scripts for:
 #       - Android module
@@ -69,7 +69,7 @@
 #  jobs:
 #    pr_checks:
 #      name: PR Checks
-#      uses: openMF/mifos-mobile-github-actions/.github/workflows/pr-check-android.yaml@main
+#      uses: openMF/mifos-x-actionhub/.github/workflows/pr-check-android.yaml@v1.0.5
 #      secrets: inherit
 #      with:
 #        android_package_name: 'mifospay-android'
@@ -87,6 +87,11 @@ on:
         description: 'Name of the Android project module'
         type: string
         required: true
+      java-version:
+        description: 'Java version to use (e.g., 17, 21)'
+        type: string
+        required: false
+        default: '17'
 
 # Concurrency settings to prevent multiple simultaneous workflow runs
 concurrency:
@@ -102,7 +107,9 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Static Analysis Check
-        uses: openMF/kmp-static-analysis-check-action@v1.0.0
+        uses: openMF/mifos-x-actionhub-static-analysis-check@v1.0.1
+        with:
+          java-version: ${{ inputs.java-version }}
 
   build_android_app:
     name: Build Android Application
@@ -115,6 +122,7 @@ jobs:
           fetch-depth: 0
 
       - name: Build Android App
-        uses: openMF/kmp-build-android-app-action@v1.0.1
+        uses: openMF/mifos-x-actionhub-build-android-app@v1.0.2
         with:
           android_package_name: ${{ inputs.android_package_name }}
+          java-version: ${ inputs.java-version}

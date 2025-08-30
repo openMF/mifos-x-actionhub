@@ -875,6 +875,7 @@ jobs:
     name: Multi-Platform Build and Publish
     uses: openMF/mifos-x-actionhub/.github/workflows/multi-platform-build-and-publish.yaml@v1.0.5
     with:
+      java-version: 21
       release_type: ${{ inputs.release_type }}
       target_branch: ${{ inputs.target_branch }}
       android_package_name: 'cmp-android' # <-- Change this to your android package name
@@ -1026,7 +1027,7 @@ Before using this workflow, ensure you have the following:
 
 ### Build Configuration
 
-- Use Java 17
+- Configurable java version (default 17)
 - Kotlin/JS project with a web module
 - Gradle wrapper in the project root
 
@@ -1061,10 +1062,11 @@ permissions:
 jobs:
   build_and_deploy_web:
     name: Build And Deploy Web App
-    uses: openMF/mifos-x-actionhub/.github/workflows/build-and-deploy-site.yaml@main
+    uses: openMF/mifos-x-actionhub/.github/workflows/build-and-deploy-site.yaml@v1.0.5
     secrets: inherit
     with:
       web_package_name: 'mifospay-web'
+      java-version: 21
 ```
 
 Replace `'your-web-module-name'` with the actual name of your web module in the Gradle project.
@@ -1217,7 +1219,7 @@ concurrency:
 jobs:
   monthly_release:
     name: Tag Monthly Release
-    uses: openMF/mifos-x-actionhub/.github/workflows/monthly-version-tag.yaml@main
+    uses: openMF/mifos-x-actionhub/.github/workflows/monthly-version-tag.yaml@v1.0.5
     secrets: inherit
 ```
 
@@ -1408,7 +1410,7 @@ on:
 jobs:
   pr_checks:
     name: PR Checks
-    uses: openMF/mifos-x-actionhub/.github/workflows/pr-check.yaml@v1.0.4
+    uses: openMF/mifos-x-actionhub/.github/workflows/pr-check.yaml@v1.0.5
     with:
       android_package_name: 'cmp-android'
       desktop_package_name: 'cmp-desktop'
@@ -1528,7 +1530,7 @@ jobs:
   # Job to promote app from beta to production in Play Store
   play_promote_production:
     name: Promote Beta to Production Play Store
-    uses: openMF/mifos-x-actionhub/.github/workflows/promote-to-production.yaml@main
+    uses: openMF/mifos-x-actionhub/.github/workflows/promote-to-production.yaml@v1.0.5
     if: ${{ inputs.publish_to_play_store == true }}
     secrets: inherit
     with:

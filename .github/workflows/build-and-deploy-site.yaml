@@ -61,7 +61,7 @@
 # jobs:
 #   build_and_deploy_web:
 #     name: Build And Deploy Web App
-#     uses: openMF/mifos-mobile-github-actions/.github/workflows/build-and-deploy-site.yaml@main
+#     uses: openMF/mifos-x-actionhub/.github/workflows/build-and-deploy-site.yaml@v1.0.5
 #     secrets: inherit
 #     with:
 #       web_package_name: 'mifospay-web'
@@ -79,6 +79,11 @@ on:
         description: 'Name of the Web project module'
         type: string
         required: true
+      java-version:
+        description: 'Java version to use (e.g., 17, 21).'
+        required: false
+        default: '17'
+        type: string
 
 # Concurrency settings to manage multiple workflow runs
 # This ensures orderly deployment to production environment
@@ -110,7 +115,8 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Build & Publish Web App
-        uses: openMF/kmp-web-publish-action@v1.0.0
+        uses: openMF/mifos-x-actionhub-web-publish@v1.0.1
         id: deployment
         with:
           web_package_name: ${{ inputs.web_package_name }}
+          java-version: ${ inputs.java-version }
