@@ -53,6 +53,12 @@ name: Android App Build and Publish
 on:
   workflow_call:
     inputs:
+      java-version:
+        description: 'Java version to use (e.g., 17, 21).'
+        required: false
+        default: '17'
+        type: string
+
       release_type:
         type: string
         default: 'internal'
@@ -135,7 +141,7 @@ jobs:
           fetch-depth: 0
 
       - name: Publish Android App on Firebase
-        uses: openMF/kmp-android-firebase-publish-action@v1.0.0
+        uses: openMF/mifos-x-actionhub-android-firebase-publish@v1.0.0
         with:
           android_package_name: ${{ inputs.android_package_name }}
           keystore_file: ${{ secrets.original_keystore_file }}
@@ -158,7 +164,7 @@ jobs:
           fetch-depth: 0
 
       - name: Promote Android App to Beta or Internal
-        uses: openMF/kmp-publish-android-on-playstore-beta-action@v1.0.0
+        uses: openMF/mifos-x-actionhub-publish-android-on-playstore-beta@v1.0.0
         with:
           release_type: ${{ inputs.release_type }}
           android_package_name: ${{ inputs.android_package_name }}
@@ -209,7 +215,7 @@ jobs:
           bundle exec fastlane add_plugin increment_build_number
 
       - name: Build Android App
-        uses: openMF/kmp-build-android-app-action@v2.0.0
+        uses: openMF/mifos-x-actionhub-build-android-app@v1.0.2
         with:
           build_type: 'Release'
           android_package_name: ${{ inputs.android_package_name }}
@@ -218,6 +224,7 @@ jobs:
           keystore_password: ${{ secrets.original_keystore_file_password }}
           keystore_alias: ${{ secrets.original_keystore_alias }}
           keystore_alias_password: ${{ secrets.original_keystore_alias_password }}
+          java-version: ${ inputs.java-version}
 
       # Get all build artifacts
       - name: Download All Artifacts
