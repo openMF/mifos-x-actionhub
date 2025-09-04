@@ -119,4 +119,4 @@ jobs:
         id: deployment
         with:
           web_package_name: ${{ inputs.web_package_name }}
-          java-version: ${ inputs.java-version }
+          java-version: ${{ inputs.java-version }}

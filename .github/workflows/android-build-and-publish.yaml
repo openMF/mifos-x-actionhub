@@ -187,7 +187,7 @@ jobs:
       - uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
-          java-version: 17
+          java-version: ${{ inputs.java-version }}
       - uses: gradle/actions/setup-gradle@v4
 
       - name: Cache Gradle and build outputs
@@ -224,7 +224,7 @@ jobs:
           keystore_password: ${{ secrets.original_keystore_file_password }}
           keystore_alias: ${{ secrets.original_keystore_alias }}
           keystore_alias_password: ${{ secrets.original_keystore_alias_password }}
-          java-version: ${ inputs.java-version}
+          java-version: ${{ inputs.java-version }}
 
       # Get all build artifacts
       - name: Download All Artifacts

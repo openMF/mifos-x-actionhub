@@ -186,7 +186,7 @@ jobs:
         uses: openMF/mifos-x-actionhub-build-android-app@v1.0.2
         with:
           android_package_name: ${{ inputs.android_package_name }}
-          java-version: ${ inputs.java-version}
+          java-version: ${{ inputs.java-version }}
 
   build_desktop_app:
     name: Build Desktop Application
@@ -200,11 +200,11 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Build Desktop App
-        uses: openMF/mifos-x-actionhub-build-desktop-app@v1.0.1
+        uses: openMF/mifos-x-actionhub-build-desktop-app-kmp@v1.0.1
         with:
           desktop_package_name: ${{ inputs.desktop_package_name }}
           build_type: 'Debug'
-          java-version: ${ inputs.java-version}
+          java-version: ${{ inputs.java-version }}
 
   build_web_app:
     name: Build Web Application
@@ -215,10 +215,10 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Build Web App
-        uses: openMF/mifos-x-actionhub-build-web-app@v1.0.1
+        uses: openMF/mifos-x-actionhub-build-web-app-kmp@v1.0.1
         with:
           web_package_name: ${{ inputs.web_package_name }}
-          java-version: ${ inputs.java-version}
+          java-version: ${{ inputs.java-version }}
 
   build_ios_app:
     name: Build iOS App

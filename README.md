@@ -1103,7 +1103,7 @@ kotlin {
 
 ### Environment
 
-- Runs on Windows with Java 17
+- Java version is configurable via java-version (default 17).
 - Uses Zulu OpenJDK distribution
 
 ### Deployment Steps
@@ -1138,7 +1138,7 @@ kotlin {
 
 - Tested with:
   - GitHub Actions: v4-v5
-  - Java: 17
+  - configurable (java-version input; default 17)
   - Kotlin/JS: Latest versions
 
 <div align="right">
