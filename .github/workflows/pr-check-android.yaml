@@ -125,4 +125,4 @@ jobs:
         uses: openMF/mifos-x-actionhub-build-android-app@v1.0.2
         with:
           android_package_name: ${{ inputs.android_package_name }}
-          java-version: ${ inputs.java-version}
+          java-version: ${{ inputs.java-version }}
