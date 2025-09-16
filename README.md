@@ -117,6 +117,13 @@ In order to automate the build and deployment process, you need to configure the
 | iOS               | `MATCH_SSH_PRIVATE_KEY`    | Base64-encoded SSH private key for Match repository access                   | String          | Yes      |
 | iOS               | `MATCH_PASSWORD`                   | Password to decrypt the provisioning profiles and certificates used by Match | String          | Yes      |
 |                   |                                    |                                                                              |                 |          |
+| macOS             | `KEYCHAIN_PASSWORD`                   | Password for the temporary signing keychain                                 | String | Yes      |
+| macOS             | `CERTIFICATES_PASSWORD`               | Password used to import signing certificates into the keychain              | String | Yes      |
+| macOS             | `MAC_APP_DISTRIBUTION_CERTIFICATE_B64` | Base64-encoded macOS App Distribution certificate (.p12)                    | String | Yes      |
+| macOS             | `MAC_INSTALLER_DISTRIBUTION_CERTIFICATE_B64` | Base64-encoded macOS Installer Distribution certificate (.p12)       | String | Yes      |
+| macOS             | `MAC_EMBEDDED_PROVISION_B64`          | Base64-encoded embedded provisioning profile (.provisionprofile)            | String | Yes      |
+| macOS             | `MAC_RUNTIME_PROVISION_B64`           | Base64-encoded runtime provisioning profile (.provisionprofile)             | String | Yes      |
+|                   |                                    |                                                                              |                 |          |
 | Desktop (Windows) | `WINDOWS_SIGNING_KEY`              | Signing key for Windows application                                          | String          | No       |
 | Desktop (Windows) | `WINDOWS_SIGNING_PASSWORD`         | Password for Windows signing key                                             | String          | No       |
 | Desktop (Windows) | `WINDOWS_SIGNING_CERTIFICATE`      | Certificate for Windows app signing                                          | String          | No       |
@@ -550,6 +557,7 @@ platform :ios do
       )
       
       deliver(
+        screenshots_path: "./fastlane/screenshots_ios",
         metadata_path: options[:metadata_path] || "./fastlane/metadata",
         submit_for_review: true,
         automatic_release: true,
@@ -754,6 +762,25 @@ Configure the following secrets in your repository settings:
   - `APPSTORE_ISSUER_ID`
   - `APPSTORE_AUTH_KEY`
 
+#### macOS Secrets
+
+- Keychain & Certificates:
+  - `KEYCHAIN_PASSWORD`: Password for temporary signing keychain
+  - `CERTIFICATES_PASSWORD`: Password used to import certificates into keychain
+
+- macOS Signing Certificates (Base64 encoded):
+  - `MAC_APP_DISTRIBUTION_CERTIFICATE_B64`: App Distribution certificate (.p12)
+  - `MAC_INSTALLER_DISTRIBUTION_CERTIFICATE_B64`: Installer Distribution certificate (.p12)
+
+- Provisioning Profiles (Base64 encoded):
+  - `MAC_EMBEDDED_PROVISION_B64`: Embedded provisioning profile (.provisionprofile)
+  - `MAC_RUNTIME_PROVISION_B64`: Runtime provisioning profile (.provisionprofile)
+
+- App Store Connect API (reused from iOS):
+  - `APPSTORE_KEY_ID`
+  - `APPSTORE_ISSUER_ID`
+  - `APPSTORE_AUTH_KEY`
+
 ## Workflow Inputs
 
 The workflow supports the following configuration inputs:
@@ -776,12 +803,38 @@ The workflow supports the following configuration inputs:
 
 ### Publishing Toggles
 
-- `publish_android`: Publish to Play Store (Default: `false`)
 - `distribute_ios_firebase`: Distribute iOS App via Firebase App Distribution (Default: `false`)
 - `distribute_ios_testflight`: Distribute iOS App via TestFlight (Default: `false`)
 - `distribute_ios_appstore`: Distribute iOS App to Appstore (Default: `false`)
-- `publish_desktop`: Publish Desktop Apps (Default: `false`)
-- `publish_web`: Publish Web App (Default: `true`)
+- `distribute_macos_testflight`: Distribute macOS App via TestFlight (Default: `false`)
+- `distribute_macos_appstore`: Distribute macOS App to Appstore (Default: `false`)
+- `distribute_desktop_external`: Distribute Desktop App builds outside official stores (Default: `true`)
+
+### Signing & Certificates
+
+- `app_identifier`: The unique bundle identifier for the iOS application
+- `macos_app_identifier`: The unique bundle identifier for the macOS application
+- `git_url`: Git URL for certificates & provisioning profiles (Fastlane Match)
+- `git_branch`: Branch inside certificates repo for Match
+- `match_type`: Type of provisioning profile (adhoc, appstore, development)
+- `provisioning_profile_name`: Provisioning profile name to use for code signing
+- `metadata_path`: Path to metadata directory (app name, description, screenshots, etc.) for App Store submission
+
+### Firebase
+
+- `firebase_app_id`: Firebase App ID for iOS distribution
+- `tester_groups`: Firebase tester groups for internal/beta distribution
+
+### Build System
+
+- `use_cocoapods`: Whether to integrate Kotlin Multiplatform with CocoaPods (true/false)
+- `shared_module`: Gradle path to the KMP shared module (e.g., `:cmp-shared`)
+- `ci_gradle_properties_path`: Path to CI-specific Gradle properties (default: `.github/ci-gradle.properties`)
+- `compose_resources_dir`: Path to Compose resources directory (default: `cmp-shared/build/compose/cocoapods/compose-resources`)
+- `java-version`: Java version to use (default: `17`)
+- `xcode-version`: Xcode version to use (default: `16.4`)
+- `cmp_desktop_dir`: Path to the KMP desktop project used for macOS builds (default: `cmp-desktop`)
+- `keychain_name`: Temporary keychain name used for macOS signing (default: `signing.keychain-db`)
 
 ## Workflow Jobs
 
@@ -804,6 +857,12 @@ The workflow supports the following configuration inputs:
 - Builds iOS application
 - Uploads to Firebase App Distribution
 - Prepares for App Store submission
+
+#### macOS
+
+- Builds macOS application
+- Optionally distributes to TestFlight
+- Optionally publishes to App Store
 
 #### Desktop
 
@@ -873,9 +932,10 @@ concurrency:
 jobs:
   multi_platform_build_and_publish:
     name: Multi-Platform Build and Publish
-    uses: openMF/mifos-x-actionhub/.github/workflows/multi-platform-build-and-publish.yaml@v1.0.5
+    uses: openMF/mifos-x-actionhub/.github/workflows/multi-platform-build-and-publish.yaml@v1.0.6
     with:
       java-version: 21
+      xcode-version: '16.4'
       release_type: ${{ inputs.release_type }}
       target_branch: ${{ inputs.target_branch }}
       android_package_name: 'cmp-android' # <-- Change this to your android package name
@@ -1062,7 +1122,7 @@ permissions:
 jobs:
   build_and_deploy_web:
     name: Build And Deploy Web App
-    uses: openMF/mifos-x-actionhub/.github/workflows/build-and-deploy-site.yaml@v1.0.5
+    uses: openMF/mifos-x-actionhub/.github/workflows/build-and-deploy-site.yaml@v1.0.6
     secrets: inherit
     with:
       web_package_name: 'mifospay-web'
@@ -1219,7 +1279,7 @@ concurrency:
 jobs:
   monthly_release:
     name: Tag Monthly Release
-    uses: openMF/mifos-x-actionhub/.github/workflows/monthly-version-tag.yaml@v1.0.5
+    uses: openMF/mifos-x-actionhub/.github/workflows/monthly-version-tag.yaml@v1.0.6
     secrets: inherit
 ```
 
@@ -1381,17 +1441,18 @@ This reusable GitHub Actions workflow provides a comprehensive Continuous Integr
 
 ## Configuration Parameters
 
-| Parameter              | Description                        | Type    | Required |
-|------------------------|------------------------------------|---------|----------|
-| `android_package_name` | Name of the Android project module | String  | Yes      |
-| `desktop_package_name` | Name of the Desktop project module | String  | Yes      |
-| `web_package_name`     | Name of the Web project module     | String  | Yes      |
-| `ios_package_name`     | Name of the iOS project module     | String  | Yes      |
-| `build_ios`            | Enable iOS build                   | Boolean | No       |
-| `use_cocoapods`        | Whether to use CocoaPods for integrating the shared module into the iOS app                  | Boolean | Yes      |
-| `shared_module`        | Gradle path to the shared Kotlin Multiplatform module used in the iOS app (e.g., :cmp-shared, :shared)                   | String  | Required **if `build_ios` = true**      |
-| `use_cocoapods`       | Whether to use CocoaPods for integrating the shared module into the iOS app | Boolean| Required **if `build_ios` = true** |
-| `java-version`        | Java version to use (e.g., 17, 21)                                          | String | No       |
+| Parameter              | Description                                                                                            | Type    | Required |
+|------------------------|--------------------------------------------------------------------------------------------------------|---------|----------|
+| `android_package_name` | Name of the Android project module                                                                     | String  | Yes      |
+| `desktop_package_name` | Name of the Desktop project module                                                                     | String  | Yes      |
+| `web_package_name`     | Name of the Web project module                                                                         | String  | Yes      |
+| `ios_package_name`     | Name of the iOS project module                                                                         | String  | Yes      |
+| `build_ios`            | Enable iOS build                                                                                       | Boolean | No       |
+| `use_cocoapods`        | Whether to use CocoaPods for integrating the shared module into the iOS app                            | Boolean | Yes      |
+| `shared_module`        | Gradle path to the shared Kotlin Multiplatform module used in the iOS app (e.g., :cmp-shared, :shared) | String  | Required **if `build_ios` = true**      |
+| `use_cocoapods`        | Whether to use CocoaPods for integrating the shared module into the iOS app                            | Boolean| Required **if `build_ios` = true** |
+| `java-version`         | Java version to use (e.g., 17, 21)                                                                     | String | No       |
+| `xcode-version`        | Xcode version to use (e.g., 16.4)                                                                      | String | No       |
 
 ## Workflow Trigger Conditions
 - Triggered on workflow call
@@ -1410,7 +1471,7 @@ on:
 jobs:
   pr_checks:
     name: PR Checks
-    uses: openMF/mifos-x-actionhub/.github/workflows/pr-check.yaml@v1.0.5
+    uses: openMF/mifos-x-actionhub/.github/workflows/pr-check.yaml@v1.0.6
     with:
       android_package_name: 'cmp-android'
       desktop_package_name: 'cmp-desktop'
@@ -1420,6 +1481,7 @@ jobs:
       use_cocoapods: true
       shared_module: ':cmp-shared'
       java-version: '21' # <-- Set according to the JDK your project uses (default is 17)
+      xcode-version: '16.4'
 ```
 
 <div align="right">
@@ -1530,7 +1592,7 @@ jobs:
   # Job to promote app from beta to production in Play Store
   play_promote_production:
     name: Promote Beta to Production Play Store
-    uses: openMF/mifos-x-actionhub/.github/workflows/promote-to-production.yaml@v1.0.5
+    uses: openMF/mifos-x-actionhub/.github/workflows/promote-to-production.yaml@v1.0.6
     if: ${{ inputs.publish_to_play_store == true }}
     secrets: inherit
     with:

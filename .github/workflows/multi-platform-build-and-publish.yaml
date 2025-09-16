@@ -90,6 +90,12 @@ on:
         default: '17'
         type: string
 
+      xcode-version:
+        description: 'Xcode version to use (e.g., 16.4).'
+        required: false
+        default: '16.4'
+        type: string
+
       release_type:
         type: string
         default: 'internal'
@@ -137,6 +143,16 @@ on:
         type: boolean
         default: false
         description: Distribute iOS App to Appstore
+
+      distribute_macos_testflight:
+        type: boolean
+        default: false
+        description: Distribute macOS App via TestFlight (App Store Connect)
+
+      distribute_macos_appstore:
+        type: boolean
+        default: false
+        description: Distribute macOS App to Appstore
 
       tester_groups:
         type: string
@@ -205,6 +221,22 @@ on:
         type: string
         default: 'cmp-shared/build/compose/cocoapods/compose-resources'
 
+      macos_app_identifier:
+        description: 'Bundle identifier for the macOS app'
+        type: string
+        required: true
+
+      cmp_desktop_dir:
+        description: 'Path to the Compose/KMP desktop project used for macOS build'
+        type: string
+        default: 'cmp-desktop'
+
+      keychain_name:
+        description: 'Temporary keychain name for codesigning (optional)'
+        type: string
+        default: 'signing.keychain-db'
+
+
     secrets:
       # Android-related secrets
       original_keystore_file:
@@ -271,6 +303,31 @@ on:
         required: true
       match_ssh_private_key:
         description: 'SSH private key for accessing the certificates repository'
+        required: true
+
+      # macOS related secrets
+      keychain_password:
+        description: 'Password for the temporary signing keychain'
+        required: true
+
+      certificates_password:
+        description: 'Password used to import signing certificates to the keychain'
+        required: true
+
+      mac_app_distribution_certificate_b64:
+        description: 'Base64 App Distribution certificate (.p12) for macOS'
+        required: true
+
+      mac_installer_distribution_certificate_b64:
+        description: 'Base64 Installer Distribution certificate (.p12) for macOS'
+        required: true
+
+      mac_embedded_provision_b64:
+        description: 'Base64 embedded provisioning profile (.provisionprofile) for macOS'
+        required: true
+
+      mac_runtime_provision_b64:
+        description: 'Base64 runtime provisioning profile (.provisionprofile) for macOS'
         required: true
 
       # Desktop signing secrets
@@ -377,7 +434,7 @@ jobs:
       - name: Set latest Xcode version
         uses: maxim-lobanov/setup-xcode@v1
         with:
-          xcode-version: latest-stable
+          xcode-version: ${{ inputs.xcode-version }}
 
       - name: Install CocoaPods
         if: ${{ inputs.use_cocoapods }}
@@ -424,7 +481,7 @@ jobs:
       - name: Set latest Xcode version
         uses: maxim-lobanov/setup-xcode@v1
         with:
-          xcode-version: latest-stable
+          xcode-version: ${{ inputs.xcode-version }}
 
       - name: Install CocoaPods
         if: ${{ inputs.use_cocoapods }}
@@ -466,7 +523,7 @@ jobs:
       - name: Set latest Xcode version
         uses: maxim-lobanov/setup-xcode@v1
         with:
-          xcode-version: latest-stable
+          xcode-version: ${{ inputs.xcode-version }}
 
       - name: Install CocoaPods
         if: ${{ inputs.use_cocoapods }}
@@ -494,8 +551,58 @@ jobs:
           match_password: ${{ secrets.match_password }}
           match_ssh_private_key: ${{ secrets.match_ssh_private_key }}
 
-  # Desktop Publishing Job
-  publish_desktop:
+  publish_macos_app_to_testflight:
+    name: Publish macOS App On TestFlight
+    if: inputs.distribute_macos_testflight
+    runs-on: macos-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Upload macOS to TestFlight
+        uses: openMF/mifos-x-actionhub-publish-macos-on-appstore-testflight-kmp@v1.0.0
+        with:
+          app_identifier: ${{ inputs.macos_app_identifier }}
+          cmp_desktop_dir: ${{ inputs.cmp_desktop_dir }}
+          keychain_name: ${{ inputs.keychain_name }}
+          java_version: ${{ inputs.java-version }}
+          keychain_password: ${{ secrets.keychain_password }}
+          certificates_password: ${{ secrets.certificates_password }}
+          mac_app_distribution_certificate_b64: ${{ secrets.mac_app_distribution_certificate_b64 }}
+          mac_installer_distribution_certificate_b64: ${{ secrets.mac_installer_distribution_certificate_b64 }}
+          mac_embedded_provision_b64: ${{ secrets.mac_embedded_provision_b64 }}
+          mac_runtime_provision_b64: ${{ secrets.mac_runtime_provision_b64 }}
+          appstore_key_id: ${{ secrets.appstore_key_id }}
+          appstore_issuer_id: ${{ secrets.appstore_issuer_id }}
+          appstore_auth_key_b64: ${{ secrets.appstore_auth_key }}
+
+  publish_macos_app_to_appstore:
+    name: Publish macOS App On App Store
+    if: inputs.distribute_macos_appstore
+    runs-on: macos-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Submit macOS App to App Store
+        uses: openMF/mifos-x-actionhub-publish-macos-on-appstore-kmp@v1.0.0
+        with:
+          app_identifier: ${{ inputs.macos_app_identifier }}
+          cmp_desktop_dir: ${{ inputs.cmp_desktop_dir }}
+          keychain_name: ${{ inputs.keychain_name }}
+          java_version: ${{ inputs.java-version }}
+          keychain_password: ${{ secrets.keychain_password }}
+          certificates_password: ${{ secrets.certificates_password }}
+          mac_app_distribution_certificate_b64: ${{ secrets.mac_app_distribution_certificate_b64 }}
+          mac_installer_distribution_certificate_b64: ${{ secrets.mac_installer_distribution_certificate_b64 }}
+          mac_embedded_provision_b64: ${{ secrets.mac_embedded_provision_b64 }}
+          mac_runtime_provision_b64: ${{ secrets.mac_runtime_provision_b64 }}
+          appstore_key_id: ${{ secrets.appstore_key_id }}
+          appstore_issuer_id: ${{ secrets.appstore_issuer_id }}
+          appstore_auth_key_b64: ${{ secrets.appstore_auth_key }}
+
+  # Desktop Publishing Job (Distribute desktop app builds outside official stores)
+  publish_desktop_external:
     name: Publish Desktop App
     strategy:
       matrix:
@@ -545,7 +652,7 @@ jobs:
   # Creates GitHub release with all built artifacts
   github_release:
     name: Create Github Release
-    needs: [ publish_android_on_firebase, publish_ios_app_to_firebase, publish_desktop, publish_web ]
+    needs: [ publish_android_on_firebase, publish_ios_app_to_firebase, publish_desktop_external, publish_web ]
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4

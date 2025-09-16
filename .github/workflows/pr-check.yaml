@@ -59,6 +59,7 @@
 #   | `use_cocoapods` | Whether to use CocoaPods for integrating the shared module into the iOS app | Boolean | Required **if `build_ios` = true** |
 #   | `shared_module` | Gradle path to the shared Kotlin Multiplatform module used in the iOS app (e.g., :cmp-shared, :shared) | String | Required **if `build_ios` = true** |
 #   | `java-version` | Java version to use (e.g., 17, 21) | String | No |
+#   | `xcode-version`| Xcode version to use (e.g., 16.4) | String | No       |
 #
 ### Usage Example
 #   ```yaml
@@ -80,7 +81,7 @@
 #  jobs:
 #    pr_checks:
 #      name: PR Checks
-#      uses: openMF/mifos-x-actionhub/.github/workflows/pr-check.yaml@v1.0.5
+#      uses: openMF/mifos-x-actionhub/.github/workflows/pr-check.yaml@v1.0.6
 #      with:
 #        android_package_name: 'cmp-android' # <-- Change Your Android Package Name
 #        desktop_package_name: 'cmp-desktop' # <-- Change Your Desktop Package Name
@@ -105,6 +106,12 @@ on:
         type: string
         required: false
         default: '17'
+
+      xcode-version:
+        description: 'Xcode version to use (e.g., 16.4).'
+        required: false
+        default: '16.4'
+        type: string
 
       android_package_name:
         description: 'Name of the Android project module'
@@ -232,7 +239,7 @@ jobs:
       - name: Setup latest Xcode version
         uses: maxim-lobanov/setup-xcode@v1
         with:
-          xcode-version: latest-stable
+          xcode-version: ${{ inputs.xcode-version }}
 
       - name: Install CocoaPods
         if: ${{ inputs.use_cocoapods }}
