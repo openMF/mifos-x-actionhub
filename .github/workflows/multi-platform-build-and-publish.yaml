@@ -161,7 +161,7 @@ on:
 
       app_identifier:
         type: string
-        description: 'The unique bundle identifier for the iOS application'
+        description: 'The unique bundle identifier for the iOS and macOS application'
         required: true
 
       git_url:
@@ -220,11 +220,6 @@ on:
         description: 'Path to Compose resources directory'
         type: string
         default: 'cmp-shared/build/compose/cocoapods/compose-resources'
-
-      macos_app_identifier:
-        description: 'Bundle identifier for the macOS app'
-        type: string
-        required: true
 
       cmp_desktop_dir:
         description: 'Path to the Compose/KMP desktop project used for macOS build'
@@ -562,7 +557,7 @@ jobs:
       - name: Upload macOS to TestFlight
         uses: openMF/mifos-x-actionhub-publish-macos-on-appstore-testflight-kmp@v1.0.0
         with:
-          app_identifier: ${{ inputs.macos_app_identifier }}
+          app_identifier: ${{ inputs.app_identifier }}
           cmp_desktop_dir: ${{ inputs.cmp_desktop_dir }}
           keychain_name: ${{ inputs.keychain_name }}
           java_version: ${{ inputs.java-version }}
@@ -587,7 +582,7 @@ jobs:
       - name: Submit macOS App to App Store
         uses: openMF/mifos-x-actionhub-publish-macos-on-appstore-kmp@v1.0.0
         with:
-          app_identifier: ${{ inputs.macos_app_identifier }}
+          app_identifier: ${{ inputs.app_identifier }}
           cmp_desktop_dir: ${{ inputs.cmp_desktop_dir }}
           keychain_name: ${{ inputs.keychain_name }}
           java_version: ${{ inputs.java-version }}

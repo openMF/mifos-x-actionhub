@@ -812,8 +812,7 @@ The workflow supports the following configuration inputs:
 
 ### Signing & Certificates
 
-- `app_identifier`: The unique bundle identifier for the iOS application
-- `macos_app_identifier`: The unique bundle identifier for the macOS application
+- `app_identifier`: The unique bundle identifier for the iOS and macOS application
 - `git_url`: Git URL for certificates & provisioning profiles (Fastlane Match)
 - `git_branch`: Branch inside certificates repo for Match
 - `match_type`: Type of provisioning profile (adhoc, appstore, development)
