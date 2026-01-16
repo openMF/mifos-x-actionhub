@@ -64,9 +64,17 @@
 # - ios_package_name: Name of iOS module
 # - desktop_package_name: Name of desktop module
 # - web_package_name: Name of web module
-# - build_ios: Enable/disable iOS build
-# - publish_ios: Enable/disable iOS App Store publishing
-# - tester_groups: Firebase tester group for distribution
+# - distribute_ios_firebase: Enable/disable Firebase distribution
+# - distribute_ios_testflight: Enable/disable TestFlight distribution
+# - distribute_ios_appstore: Enable/disable App Store distribution
+# - tester_groups: Firebase tester group (optional - reads from config)
+#
+# iOS Configuration (v2.0.0+):
+# iOS deployment configuration is now read from fastlane-config/project_config.rb
+# instead of being passed as workflow inputs. This eliminates duplication and
+# provides a single source of truth. The following values are extracted automatically:
+# - app_identifier, git_url, git_branch, match_type, provisioning_profile_name, firebase_app_id
+# See: docs/GITHUB_ACTIONS_IOS_MIGRATION.md for migration details
 
 # USAGE:
 # 1. Ensure all required secrets are configured
@@ -156,43 +164,26 @@ on:
 
       tester_groups:
         type: string
-        description: 'Firebase Tester Group'
-        required: true
+        description: 'Firebase Tester Group (optional - reads from project_config.rb if not provided)'
+        required: false
 
-      app_identifier:
-        type: string
-        description: 'The unique bundle identifier for the iOS and macOS application'
-        required: true
-
-      git_url:
-        type: string
-        description: 'Git URL to the private repository containing certificates and provisioning profiles for code signing (used by Fastlane Match)'
-        required: true
-
-      git_branch:
-        type: string
-        description: 'Branch name inside the certificates repository that Fastlane Match should use to fetch signing assets'
-        required: true
-
-      match_type:
-        type: string
-        description: 'Type of provisioning profile to fetch using Match (e.g., adhoc, appstore, development)'
-        required: true
-
-      provisioning_profile_name:
-        type: string
-        description: 'Name of the provisioning profile to use for code signing (e.g., match AdHoc com.example.app or match AppStore com.example.app)'
-        required: true
-
-      firebase_app_id:
-        type: string
-        description: 'Firebase App ID'
-        required: true
+      # iOS Configuration (v2.0.0) - Extracted from project_config.rb
+      # The following iOS configuration values are now read from fastlane-config/project_config.rb:
+      # - app_identifier (from IOS[:app_identifier])
+      # - git_url (from IOS_SHARED[:code_signing][:match_git_url])
+      # - git_branch (from IOS_SHARED[:code_signing][:match_git_branch])
+      # - match_type (from IOS_SHARED[:code_signing][:match_type])
+      # - provisioning_profile_name (from IOS_SHARED[:code_signing][:provisioning_profiles])
+      # - firebase_app_id (from IOS[:firebase][:app_id])
+      #
+      # This eliminates duplication and ensures a single source of truth.
+      # See docs/GITHUB_ACTIONS_IOS_MIGRATION.md for details.
 
       metadata_path:
         type: string
         description: 'Path to the metadata directory containing information about the app (e.g., app name, description, screenshots, etc.)'
-        required: true
+        required: false
+        default: './fastlane/metadata'
 
       use_cocoapods:
         description: >
@@ -443,21 +434,17 @@ jobs:
         run: ./gradlew ${{ inputs.shared_module }}:generateDummyFramework
 
       - name: Deploy iOS App to Firebase
-        uses: openMF/mifos-x-actionhub-publish-ios-on-firebase@v1.0.2
+        uses: openMF/mifos-x-actionhub-publish-ios-on-firebase@v1.0.3
         continue-on-error: true
         with:
-          app_identifier: ${{ inputs.app_identifier }}
-          git_url: ${{ inputs.git_url }}
-          git_branch: ${{ inputs.git_branch }}
-          match_type: ${{ inputs.match_type }}
-          provisioning_profile_name: ${{ inputs.provisioning_profile_name }}
+          ios_package_name: ${{ inputs.ios_package_name }}
+          # Configuration read from fastlane-config/project_config.rb
+          # Only secrets and optional overrides passed explicitly:
           appstore_key_id: ${{ secrets.appstore_key_id }}
           appstore_issuer_id: ${{ secrets.appstore_issuer_id }}
           appstore_auth_key: ${{ secrets.appstore_auth_key }}
           match_password: ${{ secrets.match_password }}
           match_ssh_private_key: ${{ secrets.match_ssh_private_key }}
-          ios_package_name: ${{ inputs.ios_package_name }}
-          firebase_app_id: ${{ inputs.firebase_app_id }}
           firebase_creds: ${{ secrets.firebase_creds }}
           tester_groups: ${{ inputs.tester_groups }}
 
@@ -490,13 +477,10 @@ jobs:
         run: ./gradlew ${{ inputs.shared_module }}:generateDummyFramework
 
       - name: Deploy iOS app to TestFlight
-        uses: openMF/mifos-x-actionhub-publish-ios-on-appstore-testflight@v1.0.0
+        uses: openMF/mifos-x-actionhub-publish-ios-on-appstore-testflight@v1.0.1
         with:
-          app_identifier: ${{ inputs.app_identifier }}
-          git_url: ${{ inputs.git_url }}
-          git_branch: ${{ inputs.git_branch }}
-          match_type: ${{ inputs.match_type }}
-          provisioning_profile_name: ${{ inputs.provisioning_profile_name }}
+          # Configuration read from fastlane-config/project_config.rb
+          # Only secrets passed explicitly:
           appstore_key_id: ${{ secrets.appstore_key_id }}
           appstore_issuer_id: ${{ secrets.appstore_issuer_id }}
           appstore_auth_key: ${{ secrets.appstore_auth_key }}
@@ -532,14 +516,11 @@ jobs:
         run: ./gradlew ${{ inputs.shared_module }}:generateDummyFramework
 
       - name: Deploy iOS App to App Store
-        uses: openMF/mifos-x-actionhub-publish-ios-on-appstore@v1.0.0
+        uses: openMF/mifos-x-actionhub-publish-ios-on-appstore@v1.0.1
         with:
-          app_identifier: ${{ inputs.app_identifier }}
-          git_url: ${{ inputs.git_url }}
-          git_branch: ${{ inputs.git_branch }}
-          match_type: ${{ inputs.match_type }}
-          provisioning_profile_name: ${{ inputs.provisioning_profile_name }}
           metadata_path: ${{ inputs.metadata_path }}
+          # Configuration read from fastlane-config/project_config.rb
+          # Only secrets and optional metadata path passed explicitly:
           appstore_key_id: ${{ secrets.appstore_key_id }}
           appstore_issuer_id: ${{ secrets.appstore_issuer_id }}
           appstore_auth_key: ${{ secrets.appstore_auth_key }}
