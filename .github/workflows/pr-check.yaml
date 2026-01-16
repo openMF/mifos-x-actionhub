@@ -132,11 +132,11 @@ on:
         description: 'Name of the iOS project module'
         type: string
         required: true
-        
+
       build_ios:
         description: 'Build iOS Application'
         type: boolean
-        required: false  
+        required: false
         default: true
 
       use_cocoapods:
@@ -254,4 +254,4 @@ jobs:
 
       - name: Build iOS App
         if: ${{ inputs.build_ios }}
-        uses: openMF/mifos-x-actionhub-build-ios-app@v1.0.2
+        uses: openMF/mifos-x-actionhub-build-ios-app@v1.0.3

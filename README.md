@@ -8,38 +8,41 @@
 ![Kotlin](https://img.shields.io/badge/kotlin-%237F52FF.svg?style=for-the-badge&logo=kotlin&logoColor=white)
 ![Android](https://img.shields.io/badge/Android-3DDC84?style=for-the-badge&logo=android&logoColor=white)
 
-&copy; 2024 [Mifos Initiative](https://github.com/openMF)
+&copy; 2026 [Mifos Initiative](https://github.com/openMF)
 
 </div>
-
 
 <details>
 <summary><kbd>Table of contents</kbd></summary>
 
 #### TOC
+
 - [✨ Multi-Platform App Build and Publish Workflow](#multi-platform-app-build-and-publish-workflow)
-  - [Workflow Usage Example](#workflow-usage-example)
+    - [Workflow Usage Example](#workflow-usage-example)
 - [✨ Kotlin/JS Web Application GitHub Pages Deployment Workflow](#kotlinjs-web-application-github-pages-deployment-workflow)
-  - [Workflow Configuration](#workflow-configuration)
+    - [Workflow Configuration](#workflow-configuration)
 - [✨ Monthly Version Tagging Workflow](#monthly-version-tagging-workflow)
-  - [Workflow Configuration](#workflow-configuration-1)
+    - [Workflow Configuration](#workflow-configuration-1)
 - [✨ PR Check Workflow](#pr-check-workflow)
-  - [Workflow Usage Example](#workflow-usage-example-1)
+    - [Workflow Usage Example](#workflow-usage-example-1)
 - [✨ Promote Release to Play Store Workflow](#promote-release-to-play-store-workflow)
-  - [Configuration Steps](#configuration-steps)
+    - [Configuration Steps](#configuration-steps)
 
 ####
+
 </details>
 
 ## Kotlin Multiplatform Project Setup Guide
 
 ### Supported Platforms
+
 - Android
 - iOS
 - Desktop (Windows, macOS, Linux)
 - Web (Kotlin/JS, wasmJS)
 
 ### Recommended Project Structure
+
 ```
 project-root/
 │
@@ -81,6 +84,7 @@ project-root/
 ```
 
 ### Development Environment
+
 - JDK 17 or higher
 - Kotlin 1.9.x
 - Gradle 8.x
@@ -90,56 +94,57 @@ project-root/
 
 ### Required Github Secrets
 
-In order to automate the build and deployment process, you need to configure the following secrets in your GitHub repository settings:
+In order to automate the build and deployment process, you need to configure the following secrets
+in your GitHub repository settings:
 
-| Platform          | Key Name                           | Description                                                                  | Encoding/Format | Required |
-|-------------------|------------------------------------|------------------------------------------------------------------------------|-----------------|----------|
-| Android           | `ORIGINAL_KEYSTORE_FILE`           | Base64 encoded release keystore                                              | Base64          | Yes      |
-| Android           | `ORIGINAL_KEYSTORE_FILE_PASSWORD`  | Keystore password                                                            | String          | Yes      |
-| Android           | `ORIGINAL_KEYSTORE_ALIAS`          | Keystore alias                                                               | String          | Yes      |
-| Android           | `ORIGINAL_KEYSTORE_ALIAS_PASSWORD` | Keystore alias password                                                      | String          | Yes      |
-|                   |                                    |                                                                              |                 |          |
-| Android           | `UPLOAD_KEYSTORE_FILE`             | Base64 encoded release keystore for upload                                   | Base64          | Yes      |
-| Android           | `UPLOAD_KEYSTORE_FILE_PASSWORD`    | Upload keystore password                                                     | String          | Yes      |
-| Android           | `UPLOAD_KEYSTORE_ALIAS`            | Upload keystore alias                                                        | String          | Yes      |
-| Android           | `UPLOAD_KEYSTORE_ALIAS_PASSWORD`   | Upload keystore alias password                                               | String          | Yes      |
-|                   |                                    |                                                                              |                 |          |
-| Google Services   | `GOOGLESERVICES`                   | Google Services JSON content                                                 | Base64          | Yes      |
-| Play Console      | `PLAYSTORECREDS`                   | Play Store service account credentials                                       | Base64          | Yes      |
-| Firebase          | `FIREBASECREDS`                    | Firebase App Distribution credentials                                        | Base64          | Yes      |
-|                   |                                    |                                                                              |                 |          |
-| iOS               | `NOTARIZATION_APPLE_ID`            | Apple ID for app notarization                                                | String          | Yes      |
-| iOS               | `NOTARIZATION_PASSWORD`            | Password for notarization process                                            | String          | Yes      |
-| iOS               | `NOTARIZATION_TEAM_ID`             | Apple Developer Team ID                                                      | String          | Yes      |
-| iOS               | `APPSTORE_KEY_ID`             | App Store Connect API key ID                                                 | String          | Yes      |
-| iOS               | `APPSTORE_ISSUER_ID`             | App Store Connect issuer ID                                                  | String          | Yes      |
-| iOS               | `APPSTORE_AUTH_KEY`             | Base64-encoded App Store Connect API key content                             | String          | Yes      |
-| iOS               | `MATCH_SSH_PRIVATE_KEY`    | Base64-encoded SSH private key for Match repository access                   | String          | Yes      |
-| iOS               | `MATCH_PASSWORD`                   | Password to decrypt the provisioning profiles and certificates used by Match | String          | Yes      |
-|                   |                                    |                                                                              |                 |          |
-| macOS             | `KEYCHAIN_PASSWORD`                   | Password for the temporary signing keychain                                 | String | Yes      |
-| macOS             | `CERTIFICATES_PASSWORD`               | Password used to import signing certificates into the keychain              | String | Yes      |
-| macOS             | `MAC_APP_DISTRIBUTION_CERTIFICATE_B64` | Base64-encoded macOS App Distribution certificate (.p12)                    | String | Yes      |
-| macOS             | `MAC_INSTALLER_DISTRIBUTION_CERTIFICATE_B64` | Base64-encoded macOS Installer Distribution certificate (.p12)       | String | Yes      |
-| macOS             | `MAC_EMBEDDED_PROVISION_B64`          | Base64-encoded embedded provisioning profile (.provisionprofile)            | String | Yes      |
-| macOS             | `MAC_RUNTIME_PROVISION_B64`           | Base64-encoded runtime provisioning profile (.provisionprofile)             | String | Yes      |
-|                   |                                    |                                                                              |                 |          |
-| Desktop (Windows) | `WINDOWS_SIGNING_KEY`              | Signing key for Windows application                                          | String          | No       |
-| Desktop (Windows) | `WINDOWS_SIGNING_PASSWORD`         | Password for Windows signing key                                             | String          | No       |
-| Desktop (Windows) | `WINDOWS_SIGNING_CERTIFICATE`      | Certificate for Windows app signing                                          | String          | No       |
-|                   |                                    |                                                                              |                 |          |
-| Desktop (MacOS)   | `MACOS_SIGNING_KEY`                | Signing key for MacOS application                                            | String          | No       |
-| Desktop (MacOS)   | `MACOS_SIGNING_PASSWORD`           | Password for MacOS signing key                                               | String          | No       |
-| Desktop (MacOS)   | `MACOS_SIGNING_CERTIFICATE`        | Certificate for MacOS app signing                                            | String          | No       |
-|                   |                                    |                                                                              |                 |          |
-| Desktop (Linux)   | `LINUX_SIGNING_KEY`                | Signing key for Linux application                                            | String          | No       |
-| Desktop (Linux)   | `LINUX_SIGNING_PASSWORD`           | Password for Linux signing key                                               | String          | No       |
-| Desktop (Linux)   | `LINUX_SIGNING_CERTIFICATE`        | Certificate for Linux app signing                                            | String          | No       |
-
+| Platform          | Key Name                                     | Description                                                                  | Encoding/Format | Required |
+|-------------------|----------------------------------------------|------------------------------------------------------------------------------|-----------------|----------|
+| Android           | `ORIGINAL_KEYSTORE_FILE`                     | Base64 encoded release keystore                                              | Base64          | Yes      |
+| Android           | `ORIGINAL_KEYSTORE_FILE_PASSWORD`            | Keystore password                                                            | String          | Yes      |
+| Android           | `ORIGINAL_KEYSTORE_ALIAS`                    | Keystore alias                                                               | String          | Yes      |
+| Android           | `ORIGINAL_KEYSTORE_ALIAS_PASSWORD`           | Keystore alias password                                                      | String          | Yes      |
+|                   |                                              |                                                                              |                 |          |
+| Android           | `UPLOAD_KEYSTORE_FILE`                       | Base64 encoded release keystore for upload                                   | Base64          | Yes      |
+| Android           | `UPLOAD_KEYSTORE_FILE_PASSWORD`              | Upload keystore password                                                     | String          | Yes      |
+| Android           | `UPLOAD_KEYSTORE_ALIAS`                      | Upload keystore alias                                                        | String          | Yes      |
+| Android           | `UPLOAD_KEYSTORE_ALIAS_PASSWORD`             | Upload keystore alias password                                               | String          | Yes      |
+|                   |                                              |                                                                              |                 |          |
+| Google Services   | `GOOGLESERVICES`                             | Google Services JSON content                                                 | Base64          | Yes      |
+| Play Console      | `PLAYSTORECREDS`                             | Play Store service account credentials                                       | Base64          | Yes      |
+| Firebase          | `FIREBASECREDS`                              | Firebase App Distribution credentials                                        | Base64          | Yes      |
+|                   |                                              |                                                                              |                 |          |
+| iOS               | `NOTARIZATION_APPLE_ID`                      | Apple ID for app notarization                                                | String          | Yes      |
+| iOS               | `NOTARIZATION_PASSWORD`                      | Password for notarization process                                            | String          | Yes      |
+| iOS               | `NOTARIZATION_TEAM_ID`                       | Apple Developer Team ID                                                      | String          | Yes      |
+| iOS               | `APPSTORE_KEY_ID`                            | App Store Connect API key ID                                                 | String          | Yes      |
+| iOS               | `APPSTORE_ISSUER_ID`                         | App Store Connect issuer ID                                                  | String          | Yes      |
+| iOS               | `APPSTORE_AUTH_KEY`                          | Base64-encoded App Store Connect API key content                             | String          | Yes      |
+| iOS               | `MATCH_SSH_PRIVATE_KEY`                      | Base64-encoded SSH private key for Match repository access                   | String          | Yes      |
+| iOS               | `MATCH_PASSWORD`                             | Password to decrypt the provisioning profiles and certificates used by Match | String          | Yes      |
+|                   |                                              |                                                                              |                 |          |
+| macOS             | `KEYCHAIN_PASSWORD`                          | Password for the temporary signing keychain                                  | String          | Yes      |
+| macOS             | `CERTIFICATES_PASSWORD`                      | Password used to import signing certificates into the keychain               | String          | Yes      |
+| macOS             | `MAC_APP_DISTRIBUTION_CERTIFICATE_B64`       | Base64-encoded macOS App Distribution certificate (.p12)                     | String          | Yes      |
+| macOS             | `MAC_INSTALLER_DISTRIBUTION_CERTIFICATE_B64` | Base64-encoded macOS Installer Distribution certificate (.p12)               | String          | Yes      |
+| macOS             | `MAC_EMBEDDED_PROVISION_B64`                 | Base64-encoded embedded provisioning profile (.provisionprofile)             | String          | Yes      |
+| macOS             | `MAC_RUNTIME_PROVISION_B64`                  | Base64-encoded runtime provisioning profile (.provisionprofile)              | String          | Yes      |
+|                   |                                              |                                                                              |                 |          |
+| Desktop (Windows) | `WINDOWS_SIGNING_KEY`                        | Signing key for Windows application                                          | String          | No       |
+| Desktop (Windows) | `WINDOWS_SIGNING_PASSWORD`                   | Password for Windows signing key                                             | String          | No       |
+| Desktop (Windows) | `WINDOWS_SIGNING_CERTIFICATE`                | Certificate for Windows app signing                                          | String          | No       |
+|                   |                                              |                                                                              |                 |          |
+| Desktop (MacOS)   | `MACOS_SIGNING_KEY`                          | Signing key for MacOS application                                            | String          | No       |
+| Desktop (MacOS)   | `MACOS_SIGNING_PASSWORD`                     | Password for MacOS signing key                                               | String          | No       |
+| Desktop (MacOS)   | `MACOS_SIGNING_CERTIFICATE`                  | Certificate for MacOS app signing                                            | String          | No       |
+|                   |                                              |                                                                              |                 |          |
+| Desktop (Linux)   | `LINUX_SIGNING_KEY`                          | Signing key for Linux application                                            | String          | No       |
+| Desktop (Linux)   | `LINUX_SIGNING_PASSWORD`                     | Password for Linux signing key                                               | String          | No       |
+| Desktop (Linux)   | `LINUX_SIGNING_CERTIFICATE`                  | Certificate for Linux app signing                                            | String          | No       |
 
 ### Fastlane Setup
 
 #### Install Fastlane
+
 ```bash
 # Install Ruby (if not already installed)
 brew install ruby
@@ -155,7 +160,9 @@ bundle add fastlane
 ```
 
 #### Fastfile Configuration
+
 `Fastfile`:
+
 ```ruby
 default_platform(:android)
 
@@ -285,7 +292,7 @@ platform :android do
     unless File.exist?(keystore_path)
       UI.error "Keystore file not found at: #{keystore_path}"
       UI.error "Please ensure the keystore file exists at the correct location"
-      exit 1  # Exit with error code 1
+      exit 1 # Exit with error code 1
     end
 
     gradle(
@@ -335,62 +342,62 @@ platform :ios do
   #############################
 
   private_lane :setup_ci_if_needed do
-      unless ENV['CI']
-          UI.message("🖥️ Running locally, skipping CI-specific setup.")
-      else
-          setup_ci
-      end
+    unless ENV['CI']
+      UI.message("🖥️ Running locally, skipping CI-specific setup.")
+    else
+      setup_ci
+    end
   end
 
   private_lane :load_api_key do |options|
-      app_store_connect_api_key(
-        key_id: options[:appstore_key_id] || "HA469T6757",
-        issuer_id: options[:appstore_issuer_id] || "8er9e361-9603-4c3e-b147-be3b1o816099",
-        key_filepath: options[:key_filepath] || "./secrets/Auth_Key.p8",
-        duration: 1200
-      )
+    app_store_connect_api_key(
+      key_id: options[:appstore_key_id] || "HA469T6757",
+      issuer_id: options[:appstore_issuer_id] || "8er9e361-9603-4c3e-b147-be3b1o816099",
+      key_filepath: options[:key_filepath] || "./secrets/Auth_Key.p8",
+      duration: 1200
+    )
   end
 
   private_lane :fetch_certificates_with_match do |options|
-      match(
-        type: options[:match_type] || "adhoc",
-        app_identifier: options[:app_identifier] || "com.example.9af3c1d2",
-        readonly: true,
-        git_url: options[:git_url] || "git@github.com:openMF/ios-provisioning-profile.git",
-        git_branch: options[:git_branch] || "master",
-        git_private_key: options[:git_private_key] || "./secrets/match_ci_key",
-        force_for_new_devices: true,
-        api_key: Actions.lane_context[SharedValues::APP_STORE_CONNECT_API_KEY]
-      )
+    match(
+      type: options[:match_type] || "adhoc",
+      app_identifier: options[:app_identifier] || "com.example.9af3c1d2",
+      readonly: true,
+      git_url: options[:git_url] || "git@github.com:openMF/ios-provisioning-profile.git",
+      git_branch: options[:git_branch] || "master",
+      git_private_key: options[:git_private_key] || "./secrets/match_ci_key",
+      force_for_new_devices: true,
+      api_key: Actions.lane_context[SharedValues::APP_STORE_CONNECT_API_KEY]
+    )
   end
 
   private_lane :build_ios_project do |options|
-      app_identifier = options[:app_identifier] || "com.example.9af3c1d2"
-      provisioning_profile_name = options[:provisioning_profile_name] || "match AdHoc com.example.9af3c1d2"
+    app_identifier = options[:app_identifier] || "com.example.9af3c1d2"
+    provisioning_profile_name = options[:provisioning_profile_name] || "match AdHoc com.example.9af3c1d2"
 
-      cocoapods(
-        podfile: "cmp-ios/Podfile",
-        clean_install: true,
-        repo_update: true
-      )
-      
-      update_code_signing_settings(
-        use_automatic_signing: false,
-        path: "cmp-ios/iosApp.xcodeproj",
-        targets: "iosApp",
-        team_id: "G432R4FZP6",
-        code_sign_identity: "Apple Distribution",
-        profile_name: provisioning_profile_name,
-        bundle_identifier: "com.example.9af3c1d2"
-      )
-      
-      build_ios_app(
-        scheme: "iosApp",
-        workspace: cmp-ios/iosApp.xcworkspace,
-        output_name: "iosApp.ipa",
-        output_directory: "cmp-ios/build",
-        skip_codesigning: "Release"
-      )
+    cocoapods(
+      podfile: "cmp-ios/Podfile",
+      clean_install: true,
+      repo_update: true
+    )
+
+    update_code_signing_settings(
+      use_automatic_signing: false,
+      path: "cmp-ios/iosApp.xcodeproj",
+      targets: "iosApp",
+      team_id: "G432R4FZP6",
+      code_sign_identity: "Apple Distribution",
+      profile_name: provisioning_profile_name,
+      bundle_identifier: "com.example.9af3c1d2"
+    )
+
+    build_ios_app(
+      scheme: "iosApp",
+      workspace: cmp - ios / iosApp.xcworkspace,
+      output_name: "iosApp.ipa",
+      output_directory: "cmp-ios/build",
+      skip_codesigning: "Release"
+    )
   end
 
   ###################
@@ -409,7 +416,7 @@ platform :ios do
       clean_install: true,
       repo_update: true
     )
-      
+
     build_ios_app(
       scheme: options[:scheme],
       project: options[:project_path],
@@ -430,7 +437,7 @@ platform :ios do
 
   desc "Increment build number from latest Firebase release"
   lane :increment_version do |options|
-  service_file = options[:serviceCredsFile] || "./secrets/firebaseAppDistributionServiceCredentialsFile.json"
+    service_file = options[:serviceCredsFile] || "./secrets/firebaseAppDistributionServiceCredentialsFile.json"
 
     latest_release = firebase_app_distribution_get_latest_release(
       app: options[:firebase_app_id] || "1:728434912738:ios:1d81f8e53ca7a6f31a1dbb",
@@ -458,24 +465,24 @@ platform :ios do
 
   desc "Upload iOS application to Firebase App Distribution"
   lane :deploy_on_firebase do |options|
-  service_file = options[:serviceCredsFile] || "./secrets/firebaseAppDistributionServiceCredentialsFile.json"
-  groups = options[:groups] || "mifos-mobile-testers"
-  firebase_app_id = options[:firebase_app_id] ||= "1:728434912738:ios:1d81f8e53ca7a6f31a1dbb"
+    service_file = options[:serviceCredsFile] || "./secrets/firebaseAppDistributionServiceCredentialsFile.json"
+    groups = options[:groups] || "mifos-mobile-testers"
+    firebase_app_id = options[:firebase_app_id] ||= "1:728434912738:ios:1d81f8e53ca7a6f31a1dbb"
 
     increment_version(serviceCredsFile: service_file)
 
     build_signed_ios(
-        options.merge(
-            match_type: "adhoc",
-            provisioning_profile_name: "match AdHoc com.example.9af3c1d2"
-        )
+      options.merge(
+        match_type: "adhoc",
+        provisioning_profile_name: "match AdHoc com.example.9af3c1d2"
+      )
     )
 
     releaseNotes = generateReleaseNote()
 
     firebase_app_distribution(
       app: firebase_app_id,
-      service_credentials_file: service_file,,
+      service_credentials_file: service_file, ,
       release_notes: releaseNotes,
       groups: groups
     )
@@ -484,124 +491,127 @@ platform :ios do
   desc "Upload beta build to TestFlight"
   lane :beta do |options|
 
-      setup_ci_if_needed
-      load_api_key(options)
-      fetch_certificates_with_match(
-        options.merge(match_type: "appstore")
-      )
+    setup_ci_if_needed
+    load_api_key(options)
+    fetch_certificates_with_match(
+      options.merge(match_type: "appstore")
+    )
 
-      increment_version_number(
-        xcodeproj: "cmp-ios/iosApp.xcodeproj",
-        version_number: "1.0.0"
-      )
+    increment_version_number(
+      xcodeproj: "cmp-ios/iosApp.xcodeproj",
+      version_number: "1.0.0"
+    )
 
-      latest_build_number = latest_testflight_build_number(
-        app_identifier: options[:app_identifier] || "com.example.9af3c1d2",
-        api_key: Actions.lane_context[SharedValues::APP_STORE_CONNECT_API_KEY]
-      )
+    latest_build_number = latest_testflight_build_number(
+      app_identifier: options[:app_identifier] || "com.example.9af3c1d2",
+      api_key: Actions.lane_context[SharedValues::APP_STORE_CONNECT_API_KEY]
+    )
 
-      increment_build_number(
-        xcodeproj: "cmp-ios/iosApp.xcodeproj",
-        build_number: latest_build_number + 1
-      )
+    increment_build_number(
+      xcodeproj: "cmp-ios/iosApp.xcodeproj",
+      build_number: latest_build_number + 1
+    )
 
-      build_ios_project(
-        options.merge(
-            provisioning_profile_name: "match AppStore com.example.9af3c1d2"
-        )
+    build_ios_project(
+      options.merge(
+        provisioning_profile_name: "match AppStore com.example.9af3c1d2"
       )
+    )
 
-      pilot(
-        api_key: Actions.lane_context[SharedValues::APP_STORE_CONNECT_API_KEY],
-        skip_waiting_for_build_processing: true
-      )
+    pilot(
+      api_key: Actions.lane_context[SharedValues::APP_STORE_CONNECT_API_KEY],
+      skip_waiting_for_build_processing: true
+    )
   end
-  
+
   desc "Upload iOS Application to AppStore"
   lane :release do |options|
 
-      setup_ci_if_needed
-      load_api_key(options)
-      fetch_certificates_with_match(
-        options.merge(match_type: "appstore")
-      )
+    setup_ci_if_needed
+    load_api_key(options)
+    fetch_certificates_with_match(
+      options.merge(match_type: "appstore")
+    )
 
-      increment_version_number(
-        xcodeproj: "cmp-ios/iosApp.xcodeproj",
-        version_number: "1.0.0"
-      )
+    increment_version_number(
+      xcodeproj: "cmp-ios/iosApp.xcodeproj",
+      version_number: "1.0.0"
+    )
 
-      latest_build_number = latest_testflight_build_number(
-        app_identifier: options[:app_identifier] || "com.example.9af3c1d2",
-        api_key: Actions.lane_context[SharedValues::APP_STORE_CONNECT_API_KEY]
-      )
+    latest_build_number = latest_testflight_build_number(
+      app_identifier: options[:app_identifier] || "com.example.9af3c1d2",
+      api_key: Actions.lane_context[SharedValues::APP_STORE_CONNECT_API_KEY]
+    )
 
-      increment_build_number(
-        xcodeproj: "cmp-ios/iosApp.xcodeproj",
-        build_number: latest_build_number + 1
-      )
-      
-      update_plist(
-        plist_path: "cmp-ios/iosApp/Info.plist",
-        block: proc do |plist|
-          plist['NSContactsUsageDescription'] = 'This app requires access to your contacts to enable autofill and collaboration features.'
-          plist['NSLocationWhenInUseUsageDescription'] = 'This app does not use your location to suggest services near you.'
-          plist['NSBluetoothAlwaysUsageDescription'] = 'This app does not use Bluetooth to communicate with nearby devices.'
-        end
-      )
+    increment_build_number(
+      xcodeproj: "cmp-ios/iosApp.xcodeproj",
+      build_number: latest_build_number + 1
+    )
 
-      build_ios_project(
-        options.merge(
-            provisioning_profile_name: "match AppStore com.example.9af3c1d2"
-        )
+    update_plist(
+      plist_path: "cmp-ios/iosApp/Info.plist",
+      block: proc do |plist|
+        plist['NSContactsUsageDescription'] = 'This app requires access to your contacts to enable autofill and collaboration features.'
+        plist['NSLocationWhenInUseUsageDescription'] = 'This app does not use your location to suggest services near you.'
+        plist['NSBluetoothAlwaysUsageDescription'] = 'This app does not use Bluetooth to communicate with nearby devices.'
+      end
+    )
+
+    build_ios_project(
+      options.merge(
+        provisioning_profile_name: "match AppStore com.example.9af3c1d2"
       )
-      
-      deliver(
-        screenshots_path: "./fastlane/screenshots_ios",
-        metadata_path: options[:metadata_path] || "./fastlane/metadata",
-        submit_for_review: true,
-        automatic_release: true,
-        api_key: Actions.lane_context[SharedValues::APP_STORE_CONNECT_API_KEY],
-        skip_app_version_update: true,
-        force: true,
-        precheck_include_in_app_purchases: false,
-        overwrite_screenshots: true,
-        app_rating_config_path: options[:app_rating_config_path] || "./fastlane/age_rating.json",
-        submission_information: {
-          add_id_info_uses_idfa: false,
-          add_id_info_limits_tracking: false,
-          add_id_info_serves_ads: false,
-          add_id_info_tracks_action: false,
-          add_id_info_tracks_install: false,
-          content_rights_has_rights: true,
-          content_rights_contains_third_party_content: false,
-          export_compliance_platform: 'ios',
-          export_compliance_compliance_required: false,
-          export_compliance_encryption_updated: false,
-          export_compliance_app_type: nil,
-          export_compliance_uses_encryption: false,
-          export_compliance_is_exempt: true,
-          export_compliance_contains_third_party_cryptography: false,
-          export_compliance_contains_proprietary_cryptography: false,
-          export_compliance_available_on_french_store: true
-        }
-      )
+    )
+
+    deliver(
+      screenshots_path: "./fastlane/screenshots_ios",
+      metadata_path: options[:metadata_path] || "./fastlane/metadata",
+      submit_for_review: true,
+      automatic_release: true,
+      api_key: Actions.lane_context[SharedValues::APP_STORE_CONNECT_API_KEY],
+      skip_app_version_update: true,
+      force: true,
+      precheck_include_in_app_purchases: false,
+      overwrite_screenshots: true,
+      app_rating_config_path: options[:app_rating_config_path] || "./fastlane/age_rating.json",
+      submission_information: {
+        add_id_info_uses_idfa: false,
+        add_id_info_limits_tracking: false,
+        add_id_info_serves_ads: false,
+        add_id_info_tracks_action: false,
+        add_id_info_tracks_install: false,
+        content_rights_has_rights: true,
+        content_rights_contains_third_party_content: false,
+        export_compliance_platform: 'ios',
+        export_compliance_compliance_required: false,
+        export_compliance_encryption_updated: false,
+        export_compliance_app_type: nil,
+        export_compliance_uses_encryption: false,
+        export_compliance_is_exempt: true,
+        export_compliance_contains_third_party_cryptography: false,
+        export_compliance_contains_proprietary_cryptography: false,
+        export_compliance_available_on_french_store: true
+      }
+    )
   end
 end
 ```
 
 ### Code Quality Checks
+
 - Static code analysis (Detekt)
 - Code formatting (Spotless)
 - Dependency guard
 - Unit and UI testing
 
 ### Release Management
+
 - Semantic versioning
 - Automated beta deployments
 - Cross-platform release automation
 
 ### Resources
+
 - [Kotlin Multiplatform Documentation](https://kotlinlang.org/docs/multiplatform.html)
 - [Compose Multiplatform Guide](https://www.jetbrains.com/lp/compose-multiplatform/)
 - [Fastlane Documentation](https://docs.fastlane.tools/)
@@ -617,14 +627,14 @@ end
 # Multi-Platform App Build and Publish Workflow
 
 > \[!TIP]
->  ####  _[multi_platform_build_and_publish.yaml](.github/workflows/multi-platform-build-and-publish.yaml)_ 👀️
+>  ####
+_[multi_platform_build_and_publish.yaml](.github/workflows/multi-platform-build-and-publish.yaml)_ 👀️
 
 ```mermaid
 flowchart TB
-    %% Main workflow trigger
+%% Main workflow trigger
     Start[/"Workflow Trigger"/]
-    
-    %% Android section
+%% Android section
     subgraph Android["Android Pipeline"]
         direction TB
         A_Build["Build Android App"]
@@ -633,8 +643,8 @@ flowchart TB
         A_Check -->|Yes| A_Play["Publish to Play Store"]
         A_Check -->|No| A_Skip["Skip Play Store"]
     end
-    
-    %% iOS section
+
+%% iOS section
     subgraph iOS["iOS Pipeline"]
         direction TB
         I_Build["Build iOS App"]
@@ -643,8 +653,8 @@ flowchart TB
         I_Check -->|Yes| I_Store["Publish to App Store"]
         I_Check -->|No| I_Skip["Skip App Store"]
     end
-    
-    %% Desktop section
+
+%% Desktop section
     subgraph Desktop["Desktop Pipeline"]
         direction TB
         D_Build["Initialize Desktop Build"]
@@ -652,59 +662,56 @@ flowchart TB
         D_Build --> D_Mac["macOS Build"]
         D_Build --> D_Linux["Linux Build"]
     end
-    
-    %% Web section
+
+%% Web section
     subgraph Web["Web Pipeline"]
         direction TB
         W_Build["Build Web App"]
         W_Build --> W_Deploy["Deploy to GitHub Pages"]
     end
-    
-    %% GitHub Release section
+
+%% GitHub Release section
     subgraph Release["Release Pipeline"]
         direction TB
         R_Version["Generate Version"]
         R_Notes["Generate Release Notes"]
         R_Artifacts["Collect Artifacts"]
         R_Create["Create GitHub Release"]
-        
         R_Version --> R_Notes
         R_Notes --> R_Artifacts
         R_Artifacts --> R_Create
     end
-    
-    %% Main workflow connections
+
+%% Main workflow connections
     Start --> Android
     Start --> iOS
     Start --> Desktop
     Start --> Web
-    
     Android --> Release
     iOS --> Release
     Desktop --> Release
     Web --> Release
-    
-    %% Styling
-    classDef trigger fill:#2C3E50,color:#fff,stroke:#2C3E50
-    classDef pipeline fill:#34495E,color:#fff,stroke:#2C3E50
-    classDef process fill:#ECF0F1,stroke:#34495E,color:#2C3E50
-    classDef conditional fill:#E74C3C,stroke:#C0392B,color:#fff
-    classDef deployment fill:#27AE60,stroke:#229954,color:#fff
-    classDef release fill:#3498DB,stroke:#2980B9,color:#fff
-    
+%% Styling
+    classDef trigger fill: #2C3E50, color: #fff, stroke: #2C3E50
+    classDef pipeline fill: #34495E, color: #fff, stroke: #2C3E50
+    classDef process fill: #ECF0F1, stroke: #34495E, color: #2C3E50
+    classDef conditional fill: #E74C3C, stroke: #C0392B, color: #fff
+    classDef deployment fill: #27AE60, stroke: #229954, color: #fff
+    classDef release fill: #3498DB, stroke: #2980B9, color: #fff
     class Start trigger
-    class Android,iOS,Desktop,Web pipeline
-    class A_Build,I_Build,D_Build,W_Build process
-    class A_Check,I_Check conditional
-    class A_Firebase,I_Firebase,A_Play,I_Store,W_Deploy deployment
-    class R_Version,R_Notes,R_Artifacts,R_Create release
-    class D_Win,D_Mac,D_Linux process
-    class A_Skip,I_Skip process
+    class Android, iOS, Desktop, Web pipeline
+    class A_Build, I_Build, D_Build, W_Build process
+    class A_Check, I_Check conditional
+    class A_Firebase, I_Firebase, A_Play, I_Store, W_Deploy deployment
+    class R_Version, R_Notes, R_Artifacts, R_Create release
+    class D_Win, D_Mac, D_Linux process
+    class A_Skip, I_Skip process
 ```
 
 ## Overview
 
-This GitHub Actions workflow provides a comprehensive solution for building and publishing multi-platform applications, supporting:
+This GitHub Actions workflow provides a comprehensive solution for building and publishing
+multi-platform applications, supporting:
 
 - Android (APK and Play Store)
 - iOS (App Store and Firebase Distribution)
@@ -751,35 +758,35 @@ Configure the following secrets in your repository settings:
 #### iOS Secrets
 
 - Notarization Credentials:
-  - `NOTARIZATION_APPLE_ID`
-  - `NOTARIZATION_PASSWORD`
-  - `NOTARIZATION_TEAM_ID`
+    - `NOTARIZATION_APPLE_ID`
+    - `NOTARIZATION_PASSWORD`
+    - `NOTARIZATION_TEAM_ID`
 - Fastlane Match Credentials:
-  - `MATCH_SSH_PRIVATE_KEY`
-  - `MATCH_PASSWORD`
+    - `MATCH_SSH_PRIVATE_KEY`
+    - `MATCH_PASSWORD`
 - App Store Connect API Credentials:
-  - `APPSTORE_KEY_ID`
-  - `APPSTORE_ISSUER_ID`
-  - `APPSTORE_AUTH_KEY`
+    - `APPSTORE_KEY_ID`
+    - `APPSTORE_ISSUER_ID`
+    - `APPSTORE_AUTH_KEY`
 
 #### macOS Secrets
 
 - Keychain & Certificates:
-  - `KEYCHAIN_PASSWORD`: Password for temporary signing keychain
-  - `CERTIFICATES_PASSWORD`: Password used to import certificates into keychain
+    - `KEYCHAIN_PASSWORD`: Password for temporary signing keychain
+    - `CERTIFICATES_PASSWORD`: Password used to import certificates into keychain
 
 - macOS Signing Certificates (Base64 encoded):
-  - `MAC_APP_DISTRIBUTION_CERTIFICATE_B64`: App Distribution certificate (.p12)
-  - `MAC_INSTALLER_DISTRIBUTION_CERTIFICATE_B64`: Installer Distribution certificate (.p12)
+    - `MAC_APP_DISTRIBUTION_CERTIFICATE_B64`: App Distribution certificate (.p12)
+    - `MAC_INSTALLER_DISTRIBUTION_CERTIFICATE_B64`: Installer Distribution certificate (.p12)
 
 - Provisioning Profiles (Base64 encoded):
-  - `MAC_EMBEDDED_PROVISION_B64`: Embedded provisioning profile (.provisionprofile)
-  - `MAC_RUNTIME_PROVISION_B64`: Runtime provisioning profile (.provisionprofile)
+    - `MAC_EMBEDDED_PROVISION_B64`: Embedded provisioning profile (.provisionprofile)
+    - `MAC_RUNTIME_PROVISION_B64`: Runtime provisioning profile (.provisionprofile)
 
 - App Store Connect API (reused from iOS):
-  - `APPSTORE_KEY_ID`
-  - `APPSTORE_ISSUER_ID`
-  - `APPSTORE_AUTH_KEY`
+    - `APPSTORE_KEY_ID`
+    - `APPSTORE_ISSUER_ID`
+    - `APPSTORE_AUTH_KEY`
 
 ## Workflow Inputs
 
@@ -788,11 +795,11 @@ The workflow supports the following configuration inputs:
 ### Release Configuration
 
 - `release_type`:
-  - Default: `'internal'`
-  - Options: `'internal'`, `'beta'`
+    - Default: `'internal'`
+    - Options: `'internal'`, `'beta'`
 - `target_branch`:
-  - Default: `'dev'`
-  - Specifies the branch for release
+    - Default: `'dev'`
+    - Specifies the branch for release
 
 ### Platform Package Names
 
@@ -808,28 +815,40 @@ The workflow supports the following configuration inputs:
 - `distribute_ios_appstore`: Distribute iOS App to Appstore (Default: `false`)
 - `distribute_macos_testflight`: Distribute macOS App via TestFlight (Default: `false`)
 - `distribute_macos_appstore`: Distribute macOS App to Appstore (Default: `false`)
-- `distribute_desktop_external`: Distribute Desktop App builds outside official stores (Default: `true`)
+- `distribute_desktop_external`: Distribute Desktop App builds outside official stores (Default:
+  `true`)
 
-### Signing & Certificates
+### iOS Configuration
 
-- `app_identifier`: The unique bundle identifier for the iOS and macOS application
-- `git_url`: Git URL for certificates & provisioning profiles (Fastlane Match)
-- `git_branch`: Branch inside certificates repo for Match
-- `match_type`: Type of provisioning profile (adhoc, appstore, development)
-- `provisioning_profile_name`: Provisioning profile name to use for code signing
-- `metadata_path`: Path to metadata directory (app name, description, screenshots, etc.) for App Store submission
+iOS configuration inputs have been removed from the workflow. Configuration is read automatically
+from `fastlane-config/project_config.rb` in your project repository.
 
-### Firebase
+**Configuration extracted from project_config.rb:**
 
-- `firebase_app_id`: Firebase App ID for iOS distribution
-- `tester_groups`: Firebase tester groups for internal/beta distribution
+- `app_identifier`
+- `git_url`
+- `git_branch`
+- `match_type`
+- `provisioning_profile_name`
+- `firebase_app_id`
+- `tester_groups`
+
+**Optional workflow inputs:**
+
+- `metadata_path`: Path to metadata directory for App Store submission
+- `tester_groups`: Override for Firebase tester groups
+
+For migration from previous versions, see
+the [iOS Configuration Guide](https://github.com/openMF/kmp-project-template/blob/dev/docs/GITHUB_ACTIONS_IOS_MIGRATION.md).
 
 ### Build System
 
 - `use_cocoapods`: Whether to integrate Kotlin Multiplatform with CocoaPods (true/false)
 - `shared_module`: Gradle path to the KMP shared module (e.g., `:cmp-shared`)
-- `ci_gradle_properties_path`: Path to CI-specific Gradle properties (default: `.github/ci-gradle.properties`)
-- `compose_resources_dir`: Path to Compose resources directory (default: `cmp-shared/build/compose/cocoapods/compose-resources`)
+- `ci_gradle_properties_path`: Path to CI-specific Gradle properties (default:
+  `.github/ci-gradle.properties`)
+- `compose_resources_dir`: Path to Compose resources directory (default:
+  `cmp-shared/build/compose/cocoapods/compose-resources`)
 - `java-version`: Java version to use (default: `17`)
 - `xcode-version`: Xcode version to use (default: `16.4`)
 - `cmp_desktop_dir`: Path to the KMP desktop project used for macOS builds (default: `cmp-desktop`)
@@ -908,7 +927,7 @@ on:
         type: boolean
         default: false
         description: Distribute iOS App via Firebase App Distribution
-        
+
       distribute_ios_testflight:
         type: boolean
         default: false
@@ -917,7 +936,7 @@ on:
       distribute_ios_appstore:
         type: boolean
         default: false
-        description: Distribute iOS App to Appstore  
+        description: Distribute iOS App to Appstore
 
 permissions:
   contents: write
@@ -931,29 +950,22 @@ concurrency:
 jobs:
   multi_platform_build_and_publish:
     name: Multi-Platform Build and Publish
-    uses: openMF/mifos-x-actionhub/.github/workflows/multi-platform-build-and-publish.yaml@v1.0.6
+    uses: openMF/mifos-x-actionhub/.github/workflows/multi-platform-build-and-publish.yaml@v2.0.0
     with:
       java-version: 21
       xcode-version: '16.4'
       release_type: ${{ inputs.release_type }}
       target_branch: ${{ inputs.target_branch }}
-      android_package_name: 'cmp-android' # <-- Change this to your android package name
-      ios_package_name: 'cmp-ios' # <-- Change this to your ios package name
-      desktop_package_name: 'cmp-desktop' # <-- Change this to your desktop package name
-      web_package_name: 'cmp-web'   # <-- Change this to your web package name
-      app_identifier: 'org.mifos.kmp.template'
-      git_url: 'git@github.com:openMF/ios-provisioning-profile.git'
-      git_branch: 'master'
-      match_type: 'adhoc'
-      provisioning_profile_name: 'match AdHoc org.mifos.kmp.template'
-      firebase_app_id: '1:728434912738:ios:1d81f8e53ca7a6f31a1dbb'
+      android_package_name: 'cmp-android'
+      ios_package_name: 'cmp-ios'
+      desktop_package_name: 'cmp-desktop'
+      web_package_name: 'cmp-web'
       metadata_path: './fastlane/metadata'
       use_cocoapods: true
       shared_module: ':cmp-shared'
       publish_android: ${{ inputs.publish_android }}
       distribute_ios_firebase: ${{ inputs.distribute_ios_firebase }}
       distribute_ios_testflight: ${{ inputs.distribute_ios_testflight }}
-      tester_groups: 'mifos-wallet-testers'
     secrets:
       original_keystore_file: ${{ secrets.ORIGINAL_KEYSTORE_FILE }}
       original_keystore_file_password: ${{ secrets.ORIGINAL_KEYSTORE_FILE_PASSWORD }}
@@ -1053,26 +1065,28 @@ E --> F["fa:fa-upload Upload Static Web Files\n📦 Preparing Deployment Artifac
 F --> G{{"fa:fa-rocket Deploy to GitHub Pages"}}
 
 %% Deployment Outcomes
-G -->|Success| H["fa:fa-check-circle Update Deployment Environment\n✨ Environment Sync"]
-G -->|Failure| I["fa:fa-undo Rollback Deployment\n🔙 Reverting Changes"]
+G -->|Success|H["fa:fa-check-circle Update Deployment Environment\n✨ Environment Sync"]
+G -->|Failure|I["fa:fa-undo Rollback Deployment\n🔙 Reverting Changes"]
 
 %% Styling
-classDef triggerNode fill:#2196F3,color:white,stroke:#1565C0,stroke-width:2px;
-classDef processNode fill:#4CAF50,color:white,stroke:#2E7D32,stroke-width:2px;
-classDef decisionNode fill:#FF9800,color:white,stroke:#EF6C00,stroke-width:2px;
-classDef successNode fill:#8BC34A,color:white,stroke:#558B2F,stroke-width:2px;
-classDef failureNode fill:#F44336,color:white,stroke:#C62828,stroke-width:2px;
+classDef triggerNode fill: #2196F3, color: white, stroke: #1565C0, stroke-width: 2px;
+classDef processNode fill: #4CAF50, color: white, stroke:#2E7D32, stroke-width: 2px;
+classDef decisionNode fill: #FF9800, color: white, stroke: #EF6C00, stroke-width: 2px;
+classDef successNode fill:#8BC34A, color: white, stroke: #558B2F,stroke-width: 2px;
+classDef failureNode fill: #F44336, color: white, stroke: #C62828, stroke-width: 2px;
 
 class A triggerNode;
-class B,C,D,F processNode;
-class E,G decisionNode;
+class B, C, D, F processNode;
+class E, G decisionNode;
 class H successNode;
 class I failureNode;
 ```
 
 ## Overview
 
-This GitHub Actions workflow automates the build and deployment of a Kotlin/JS web application to GitHub Pages. It simplifies the process of publishing your web application by automatically handling the build and deployment steps whenever changes are merged into the development branch.
+This GitHub Actions workflow automates the build and deployment of a Kotlin/JS web application to
+GitHub Pages. It simplifies the process of publishing your web application by automatically handling
+the build and deployment steps whenever changes are merged into the development branch.
 
 ## Prerequisites
 
@@ -1094,7 +1108,8 @@ Before using this workflow, ensure you have the following:
 
 ### 1. How to Setup the Workflow
 
-This workflow is designed as a reusable workflow. You'll need to call it from another workflow file. Create a workflow file (e.g., `.github/workflows/deploy.yml`) that looks like this:
+This workflow is designed as a reusable workflow. You'll need to call it from another workflow file.
+Create a workflow file (e.g., `.github/workflows/deploy.yml`) that looks like this:
 
 ```yaml
 name: Build And Deploy Web App
@@ -1196,9 +1211,9 @@ kotlin {
 ## Version Compatibility
 
 - Tested with:
-  - GitHub Actions: v4-v5
-  - configurable (java-version input; default 17)
-  - Kotlin/JS: Latest versions
+    - GitHub Actions: v4-v5
+    - configurable (java-version input; default 17)
+    - Kotlin/JS: Latest versions
 
 <div align="right">
 
@@ -1218,20 +1233,20 @@ kotlin {
 flowchart TD
     A([Workflow Starts]) --> B[Checkout Repository]
     B --> C[Get Current Timestamp]
-    
     C --> D[Create Version Tag]
     D --> E[Tag Format: YYYY.MM.0]
-    
-    style A fill:#2196F3,color:white
-    style B fill:#4CAF50,color:white
-    style C fill:#FF9800,color:white
-    style D fill:#9C27B0,color:white
-    style E fill:#03A9F4,color:white
+    style A fill: #2196F3, color: white
+    style B fill: #4CAF50, color: white
+    style C fill: #FF9800, color: white
+    style D fill: #9C27B0, color: white
+    style E fill: #03A9F4, color: white
 ```
 
 ## Overview
 
-This GitHub Actions workflow automates the creation of monthly version tags for your repository. It follows a calendar-based versioning scheme, generating tags that represent the year and month of release.
+This GitHub Actions workflow automates the creation of monthly version tags for your repository. It
+follows a calendar-based versioning scheme, generating tags that represent the year and month of
+release.
 
 ## Versioning Scheme
 
@@ -1345,9 +1360,9 @@ jobs:
 ## Version Compatibility
 
 - Tested with:
-  - GitHub Actions: v4
-  - Ubuntu: Latest
-  - Third-party actions: Specified versions
+    - GitHub Actions: v4
+    - Ubuntu: Latest
+    - Third-party actions: Specified versions
 
 ## Best Practices
 
@@ -1380,80 +1395,89 @@ flowchart TD
     D2 --> E
     D3 --> E
     D4 --> E
-
-    style A fill:#2196F3,color:white
-    style B fill:#4CAF50,color:white
-    style C fill:#FF9800,color:white
-    style D1 fill:#9C27B0,color:white
-    style D2 fill:#673AB7,color:white
-    style D3 fill:#F44336,color:white
-    style D4 fill:#03A9F4,color:white
+    style A fill: #2196F3, color: white
+    style B fill: #4CAF50, color: white
+    style C fill: #FF9800, color: white
+    style D1 fill: #9C27B0, color: white
+    style D2 fill: #673AB7, color: white
+    style D3 fill: #F44336, color: white
+    style D4 fill: #03A9F4, color: white
 ```
 
 ## Overview
 
-This reusable GitHub Actions workflow provides a comprehensive Continuous Integration (CI) pipeline for multi-platform mobile and desktop applications, specifically designed for projects using Gradle and Kotlin Multiplatform (KMP).
+This reusable GitHub Actions workflow provides a comprehensive Continuous Integration (CI) pipeline
+for multi-platform mobile and desktop applications, specifically designed for projects using Gradle
+and Kotlin Multiplatform (KMP).
 
 ## Key Features
+
 - Automated code quality checks
 - Dependency management and verification
 - Cross-platform builds:
-  - Android APK generation
-  - Desktop application builds (Windows, Linux, MacOS)
-  - Web application compilation
-  - iOS app build support
+    - Android APK generation
+    - Desktop application builds (Windows, Linux, MacOS)
+    - Web application compilation
+    - iOS app build support
 
 ## Prerequisites
+
 - Java (configurable, defaults to 17)
 - Gradle
 - Configured build scripts for:
-  - Android module
-  - Desktop module
-  - Web module
-  - iOS module
+    - Android module
+    - Desktop module
+    - Web module
+    - iOS module
 - Installed Gradle plugins for code quality checks
 
 ## Workflow Jobs
 
 ### 1. Static Analysis Checks
+
 - Runs initial code quality verification
 - Uses custom static analysis check action
 
 ### 2. Android App Build
+
 - Builds debug APK for the specified Android module
 - Runs on Ubuntu latest
 
 ### 3. Desktop App Build
+
 - Builds desktop applications for:
-  - Windows
-  - Linux
-  - MacOS
+    - Windows
+    - Linux
+    - MacOS
 - Uses cross-platform build strategy
 
 ### 4. Web Application Build
+
 - Compiles web application
 - Runs on Windows latest
 
 ### 5. iOS App Build
+
 - Builds iOS application
 - Runs on MacOS latest
 
 ## Configuration Parameters
 
-| Parameter              | Description                                                                                            | Type    | Required |
-|------------------------|--------------------------------------------------------------------------------------------------------|---------|----------|
-| `android_package_name` | Name of the Android project module                                                                     | String  | Yes      |
-| `desktop_package_name` | Name of the Desktop project module                                                                     | String  | Yes      |
-| `web_package_name`     | Name of the Web project module                                                                         | String  | Yes      |
-| `ios_package_name`     | Name of the iOS project module                                                                         | String  | Yes      |
-| `build_ios`            | Enable iOS build                                                                                       | Boolean | No       |
-| `use_cocoapods`        | Whether to use CocoaPods for integrating the shared module into the iOS app                            | Boolean | Yes      |
-| `shared_module`        | Gradle path to the shared Kotlin Multiplatform module used in the iOS app (e.g., :cmp-shared, :shared) | String  | Required **if `build_ios` = true**      |
-| `use_cocoapods`        | Whether to use CocoaPods for integrating the shared module into the iOS app                            | Boolean| Required **if `build_ios` = true** |
-| `java-version`         | Java version to use (e.g., 17, 21)                                                                     | String | No       |
-| `xcode-version`        | Xcode version to use (e.g., 16.4)                                                                      | String | No       |
+| Parameter              | Description                                                                                            | Type    | Required                           |
+|------------------------|--------------------------------------------------------------------------------------------------------|---------|------------------------------------|
+| `android_package_name` | Name of the Android project module                                                                     | String  | Yes                                |
+| `desktop_package_name` | Name of the Desktop project module                                                                     | String  | Yes                                |
+| `web_package_name`     | Name of the Web project module                                                                         | String  | Yes                                |
+| `ios_package_name`     | Name of the iOS project module                                                                         | String  | Yes                                |
+| `build_ios`            | Enable iOS build                                                                                       | Boolean | No                                 |
+| `use_cocoapods`        | Whether to use CocoaPods for integrating the shared module into the iOS app                            | Boolean | Yes                                |
+| `shared_module`        | Gradle path to the shared Kotlin Multiplatform module used in the iOS app (e.g., :cmp-shared, :shared) | String  | Required **if `build_ios` = true** |
+| `use_cocoapods`        | Whether to use CocoaPods for integrating the shared module into the iOS app                            | Boolean | Required **if `build_ios` = true** |
+| `java-version`         | Java version to use (e.g., 17, 21)                                                                     | String  | No                                 |
+| `xcode-version`        | Xcode version to use (e.g., 16.4)                                                                      | String  | No                                 |
 
 ## Workflow Trigger Conditions
+
 - Triggered on workflow call
 - Supports concurrency management
 - Cancels previous runs if a new one is triggered
@@ -1492,6 +1516,7 @@ jobs:
 ---
 
 # Promote Release to Play Store Workflow
+
 > \[!TIP]
 > #### [_promote_to_production.yml_](.github/workflows/promote-to-production.yaml)
 
@@ -1499,38 +1524,43 @@ jobs:
 flowchart TD
     A([Workflow Starts]) --> B[Checkout Repository]
     B --> C[Configure Ruby Environment]
-
     C --> D[Install Fastlane\nand Plugins]
     D --> E[Inflate Play Store Secrets]
-
     E --> F[Promote Beta to\nProduction Play Store]
-
-    style A fill:#2196F3,color:white
-    style B fill:#4CAF50,color:white
-    style C fill:#FF9800,color:white
-    style D fill:#9C27B0,color:white
-    style E fill:#FF5722,color:white
-    style F fill:#03A9F4,color:white
+    style A fill: #2196F3, color: white
+    style B fill: #4CAF50, color: white
+    style C fill: #FF9800, color: white
+    style D fill: #9C27B0, color: white
+    style E fill: #FF5722, color: white
+    style F fill: #03A9F4, color: white
 ```
 
 ### Overview
-This workflow automates the promotion of a beta release to the production environment on the Google Play Store.
+
+This workflow automates the promotion of a beta release to the production environment on the Google
+Play Store.
 
 ### Workflow Trigger
+
 - Callable workflow (can be invoked from other workflows)
 
 ### Prerequisites
+
 1. **Ruby Environment**
+
 - Requires Ruby setup (uses `ruby/setup-ruby` action)
 - Bundler version 2.2.27
 - Fastlane installed with specific plugins
 
 2. **Required Plugins**
+
 - `firebase_app_distribution`
 - `increment_build_number`
 
 ### Configuration Steps
+
 1. **Repository Setup**
+
 - Ensure your repository is properly structured for Android app deployment
 - Have a `Fastfile` configured with `promote_to_production` lane
 
@@ -1548,21 +1578,25 @@ This workflow automates the promotion of a beta release to the production enviro
    ```
 
 3. **GitHub Secrets**
+
 - Ensure you have Play Store credentials configured in your repository secrets
 - Typically includes:
-  - `$PLAYSTORE_CREDS`: Google Play Service Account JSON
-  - Other authentication credentials as needed
+    - `$PLAYSTORE_CREDS`: Google Play Service Account JSON
+    - Other authentication credentials as needed
 
 ### Workflow Parameters
+
 - No direct input parameters
 - Uses environment variable `SUPPLY_UPLOAD_MAX_RETRIES` (default: 5)
 
 ### Best Practices
+
 - Ensure your beta release is thoroughly tested before promotion
 - Use version tagging and semantic versioning
 - Keep Play Store credentials secure
 
 ### Example Workflow
+
 ```yaml
 name: Promote Release to Play Store
 
