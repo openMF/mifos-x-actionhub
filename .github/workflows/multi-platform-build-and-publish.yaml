@@ -27,9 +27,11 @@
 # - upload_keystore_alias_password: Upload keystore alias password
 #
 # Google and Firebase credentials:
-# - google_services: Google Services configuration JSON
-# - playstore_creds: Play Store service account credentials
-# - firebase_creds: Firebase distribution credentials
+# - google_services: Google Services configuration JSON (Base64 encoded)
+# - playstore_creds: Play Store service account credentials (Base64 encoded)
+# - firebase_creds: Firebase distribution credentials (Base64 encoded)
+# - supabase_creds: Supabase credentials JSON (Base64 encoded)
+#   Format: {"url": "https://xxx.supabase.co", "anonKey": "xxx"}
 # - token: GitHub token for repository access
 #
 # Apple-related secrets:
@@ -261,6 +263,9 @@ on:
       firebase_creds:
         description: 'Firebase distribution credentials'
         required: false
+      supabase_creds:
+        description: 'Supabase credentials JSON (Base64 encoded). Format: {"url": "...", "anonKey": "..."}'
+        required: false
       token:
         description: 'Github Token'
         required: false
@@ -366,6 +371,13 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Create Supabase credentials file
+        run: |
+          if [ -n "${{ secrets.supabase_creds }}" ]; then
+            mkdir -p secrets
+            echo '${{ secrets.supabase_creds }}' | base64 --decode > secrets/supabaseCredentialsFile.json
+          fi
+
       - name: Publish Android App on Firebase
         uses: openMF/mifos-x-actionhub-android-firebase-publish@v1.0.0
         with:
@@ -388,6 +400,13 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+
+      - name: Create Supabase credentials file
+        run: |
+          if [ -n "${{ secrets.supabase_creds }}" ]; then
+            mkdir -p secrets
+            echo '${{ secrets.supabase_creds }}' | base64 --decode > secrets/supabaseCredentialsFile.json
+          fi
 
       - name: Promote Android App to Beta or Internal
         uses: openMF/mifos-x-actionhub-publish-android-on-playstore-beta@v1.0.0
@@ -413,6 +432,13 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+
+      - name: Create Supabase credentials file
+        run: |
+          if [ -n "${{ secrets.supabase_creds }}" ]; then
+            mkdir -p secrets
+            echo '${{ secrets.supabase_creds }}' | base64 --decode > secrets/supabaseCredentialsFile.json
+          fi
 
       - name: Copy CI gradle.properties
         run: mkdir -p ~/.gradle && cp "${{ inputs.ci_gradle_properties_path }}" ~/.gradle/gradle.properties
@@ -457,6 +483,13 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
+      - name: Create Supabase credentials file
+        run: |
+          if [ -n "${{ secrets.supabase_creds }}" ]; then
+            mkdir -p secrets
+            echo '${{ secrets.supabase_creds }}' | base64 --decode > secrets/supabaseCredentialsFile.json
+          fi
+
       - name: Copy CI gradle.properties
         run: mkdir -p ~/.gradle && cp "${{ inputs.ci_gradle_properties_path }}" ~/.gradle/gradle.properties
 
@@ -495,6 +528,13 @@ jobs:
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
+
+      - name: Create Supabase credentials file
+        run: |
+          if [ -n "${{ secrets.supabase_creds }}" ]; then
+            mkdir -p secrets
+            echo '${{ secrets.supabase_creds }}' | base64 --decode > secrets/supabaseCredentialsFile.json
+          fi
 
       - name: Copy CI gradle.properties
         run: mkdir -p ~/.gradle && cp "${{ inputs.ci_gradle_properties_path }}" ~/.gradle/gradle.properties
@@ -535,6 +575,13 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
+      - name: Create Supabase credentials file
+        run: |
+          if [ -n "${{ secrets.supabase_creds }}" ]; then
+            mkdir -p secrets
+            echo '${{ secrets.supabase_creds }}' | base64 --decode > secrets/supabaseCredentialsFile.json
+          fi
+
       - name: Upload macOS to TestFlight
         uses: openMF/mifos-x-actionhub-publish-macos-on-appstore-testflight-kmp@v1.0.0
         with:
@@ -559,6 +606,13 @@ jobs:
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
+
+      - name: Create Supabase credentials file
+        run: |
+          if [ -n "${{ secrets.supabase_creds }}" ]; then
+            mkdir -p secrets
+            echo '${{ secrets.supabase_creds }}' | base64 --decode > secrets/supabaseCredentialsFile.json
+          fi
 
       - name: Submit macOS App to App Store
         uses: openMF/mifos-x-actionhub-publish-macos-on-appstore-kmp@v1.0.0
@@ -590,6 +644,23 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Create Supabase credentials file (Unix)
+        if: runner.os != 'Windows'
+        run: |
+          if [ -n "${{ secrets.supabase_creds }}" ]; then
+            mkdir -p secrets
+            echo '${{ secrets.supabase_creds }}' | base64 --decode > secrets/supabaseCredentialsFile.json
+          fi
+
+      - name: Create Supabase credentials file (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          if ('${{ secrets.supabase_creds }}' -ne '') {
+            New-Item -ItemType Directory -Force -Path secrets
+            [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String('${{ secrets.supabase_creds }}')) | Out-File -FilePath secrets/supabaseCredentialsFile.json -Encoding UTF8
+          }
+
       - uses: openMF/mifos-x-actionhub-publish-desktop-app-kmp@v1.0.1
         with:
           desktop_package_name: ${{ inputs.desktop_package_name }}
@@ -618,6 +689,13 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
+      - name: Create Supabase credentials file
+        run: |
+          if [ -n "${{ secrets.supabase_creds }}" ]; then
+            mkdir -p secrets
+            echo '${{ secrets.supabase_creds }}' | base64 --decode > secrets/supabaseCredentialsFile.json
+          fi
+
       - name: Publish KMP Web App To GitHub Pages
         uses: openMF/mifos-x-actionhub-web-publish-kmp@v1.0.1
         id: deployment
@@ -634,6 +712,13 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+
+      - name: Create Supabase credentials file
+        run: |
+          if [ -n "${{ secrets.supabase_creds }}" ]; then
+            mkdir -p secrets
+            echo '${{ secrets.supabase_creds }}' | base64 --decode > secrets/supabaseCredentialsFile.json
+          fi
 
       # Setup Ruby for Fastlane automation
       - name: Configure Ruby

@@ -100,6 +100,11 @@ name: Debug Build & PR Checks
 # Trigger conditions for the workflow
 on:
   workflow_call:
+    secrets:
+      supabase_creds:
+        description: 'Supabase credentials JSON (Base64 encoded). Format: {"url": "...", "anonKey": "..."}'
+        required: false
+
     inputs:
       java-version:
         description: 'Java version to use (e.g., 17, 21)'
@@ -189,6 +194,13 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Create Supabase credentials file
+        run: |
+          if [ -n "${{ secrets.supabase_creds }}" ]; then
+            mkdir -p secrets
+            echo '${{ secrets.supabase_creds }}' | base64 --decode > secrets/supabaseCredentialsFile.json
+          fi
+
       - name: Build Android App
         uses: openMF/mifos-x-actionhub-build-android-app@v1.0.2
         with:
@@ -206,6 +218,23 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
+      - name: Create Supabase credentials file (Unix)
+        if: runner.os != 'Windows'
+        run: |
+          if [ -n "${{ secrets.supabase_creds }}" ]; then
+            mkdir -p secrets
+            echo '${{ secrets.supabase_creds }}' | base64 --decode > secrets/supabaseCredentialsFile.json
+          fi
+
+      - name: Create Supabase credentials file (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          if ('${{ secrets.supabase_creds }}' -ne '') {
+            New-Item -ItemType Directory -Force -Path secrets
+            [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String('${{ secrets.supabase_creds }}')) | Out-File -FilePath secrets/supabaseCredentialsFile.json -Encoding UTF8
+          }
+
       - name: Build Desktop App
         uses: openMF/mifos-x-actionhub-build-desktop-app-kmp@v1.0.1
         with:
@@ -221,6 +250,14 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
+      - name: Create Supabase credentials file
+        shell: pwsh
+        run: |
+          if ('${{ secrets.supabase_creds }}' -ne '') {
+            New-Item -ItemType Directory -Force -Path secrets
+            [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String('${{ secrets.supabase_creds }}')) | Out-File -FilePath secrets/supabaseCredentialsFile.json -Encoding UTF8
+          }
+
       - name: Build Web App
         uses: openMF/mifos-x-actionhub-build-web-app-kmp@v1.0.1
         with:
@@ -235,6 +272,13 @@ jobs:
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
+
+      - name: Create Supabase credentials file
+        run: |
+          if [ -n "${{ secrets.supabase_creds }}" ]; then
+            mkdir -p secrets
+            echo '${{ secrets.supabase_creds }}' | base64 --decode > secrets/supabaseCredentialsFile.json
+          fi
 
       - name: Setup latest Xcode version
         uses: maxim-lobanov/setup-xcode@v1
