@@ -556,7 +556,7 @@ jobs:
         run: ./gradlew ${{ inputs.shared_module }}:generateDummyFramework
 
       - name: Deploy iOS App to App Store
-        uses: openMF/mifos-x-actionhub-publish-ios-on-appstore@v1.0.1
+        uses: openMF/mifos-x-actionhub-publish-ios-on-appstore@v1.0.2
         with:
           metadata_path: ${{ inputs.metadata_path }}
           # Configuration read from fastlane-config/project_config.rb
