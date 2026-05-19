@@ -1,0 +1,88 @@
+# Reusable test-coverage workflow for Kover-based KMP / multi-module projects.
+#
+# Consumers call this via
+#   uses: openMF/mifos-x-actionhub/.github/workflows/test-coverage.yaml@<ref>
+#
+# Internally delegates to the composite action
+#   MobileByteLabs/mifos-x-actionhub-kover-coverage@v1
+# which holds the actual logic (kover XML report run + per-module floor
+# check) — same delegation pattern every other workflow in this umbrella
+# uses for its sibling `mifos-x-actionhub-*` composite actions.
+#
+# Discovery is fully dynamic: whatever modules apply the Kover plugin (via
+# a convention plugin or direct application) emit `build/reports/kover/report.xml`,
+# and the composite action checks each against `.kover-floor.yml`. Adding
+# a new module to a consumer fork needs zero workflow changes.
+
+name: Test Coverage Floor (reusable)
+
+on:
+  workflow_call:
+    inputs:
+      java-version:
+        description: 'JDK version to set up before running Gradle.'
+        type: string
+        default: '17'
+      java-distribution:
+        description: 'JDK distribution (temurin, zulu, etc.).'
+        type: string
+        default: 'temurin'
+      report-task:
+        description: 'Gradle task that produces the per-module kover XML reports.'
+        type: string
+        default: 'koverXmlReport'
+      gradle-args:
+        description: 'Extra Gradle args appended to the report task invocation.'
+        type: string
+        default: '--continue --stacktrace'
+      floor-file:
+        description: 'Path (relative to repo root) of the per-module floor YAML.'
+        type: string
+        default: '.kover-floor.yml'
+      default-floor:
+        description: 'Line-coverage floor (%) for any module not listed in the floor file.'
+        type: number
+        default: 0
+      upload-html-report:
+        description: 'Whether to upload the aggregated HTML coverage report as an artifact.'
+        type: boolean
+        default: true
+      html-report-path:
+        description: 'Path of the aggregated HTML report directory (project-specific override).'
+        type: string
+        default: 'build/reports/kover/html'
+      artifact-retention-days:
+        description: 'Retention in days for the uploaded HTML coverage artifact.'
+        type: number
+        default: 14
+      runs-on:
+        description: 'Runner label.'
+        type: string
+        default: 'ubuntu-latest'
+      timeout-minutes:
+        description: 'Job timeout in minutes.'
+        type: number
+        default: 45
+
+jobs:
+  coverage:
+    name: Enforce per-module coverage floor
+    runs-on: ${{ inputs.runs-on }}
+    timeout-minutes: ${{ inputs.timeout-minutes }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Run Kover coverage gate
+        uses: MobileByteLabs/mifos-x-actionhub-kover-coverage@v1
+        with:
+          java-version: ${{ inputs.java-version }}
+          java-distribution: ${{ inputs.java-distribution }}
+          report-task: ${{ inputs.report-task }}
+          gradle-args: ${{ inputs.gradle-args }}
+          floor-file: ${{ inputs.floor-file }}
+          default-floor: ${{ inputs.default-floor }}
+          upload-html-report: ${{ inputs.upload-html-report }}
+          html-report-path: ${{ inputs.html-report-path }}
+          artifact-retention-days: ${{ inputs.artifact-retention-days }}
