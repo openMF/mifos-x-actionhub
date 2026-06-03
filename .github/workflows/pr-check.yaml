@@ -59,7 +59,7 @@
 #   | `use_cocoapods` | Whether to use CocoaPods for integrating the shared module into the iOS app | Boolean | Required **if `build_ios` = true** |
 #   | `shared_module` | Gradle path to the shared Kotlin Multiplatform module used in the iOS app (e.g., :cmp-shared, :shared) | String | Required **if `build_ios` = true** |
 #   | `java-version` | Java version to use (e.g., 17, 21) | String | No |
-#   | `xcode-version`| Xcode version to use (e.g., 16.4) | String | No       |
+#   | `xcode-version`| Xcode version to use (e.g., 26.0) | String | No       |
 #
 ### Usage Example
 #   ```yaml
@@ -113,9 +113,14 @@ on:
         default: '17'
 
       xcode-version:
-        description: 'Xcode version to use (e.g., 16.4).'
+        description: >
+          Xcode version to use (e.g., 26.0). Default tracks the macos-latest
+          image's current iOS SDK (iOS 26) — required for Compose Multiplatform
+          targets that reference iOS 26 APIs (UIViewLayoutRegion,
+          swift_DarwinFoundation, UIUtilities). Override to an older Xcode
+          (e.g., '16.4') for projects pinned to pre-iOS-26 SDKs.
         required: false
-        default: '16.4'
+        default: '26.0'
         type: string
 
       android_package_name:

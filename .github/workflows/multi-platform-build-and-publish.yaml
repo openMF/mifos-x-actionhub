@@ -101,9 +101,14 @@ on:
         type: string
 
       xcode-version:
-        description: 'Xcode version to use (e.g., 16.4).'
+        description: >
+          Xcode version to use (e.g., 26.0). Default tracks the macos-latest
+          image's current iOS SDK (iOS 26) — required for Compose Multiplatform
+          targets that reference iOS 26 APIs (UIViewLayoutRegion,
+          swift_DarwinFoundation, UIUtilities). Override to an older Xcode
+          (e.g., '16.4') for projects pinned to pre-iOS-26 SDKs.
         required: false
-        default: '16.4'
+        default: '26.0'
         type: string
 
       release_type:
