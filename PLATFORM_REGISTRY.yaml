@@ -1,0 +1,166 @@
+# PLATFORM_REGISTRY.yaml — single source of truth for every <platform>/<target> mapping
+#
+# Per fastlane-modernization sub-plan 13 (AC54, AC60):
+# - Every migrated target row now references `deployment/<platform>/<target>/` in the
+#   consumer's `kmp-project-template` source tree, matching the new layout produced by
+#   sub-plans 06-11.
+# - New rows added for the 6 Tier-2 targets shipped in mifos-x-actionhub-publish-desktop-app-kmp@v2.0.0
+#   and mifos-x-actionhub-web-publish-kmp@v2.0.0:
+#     desktop/dmg-notarized
+#     desktop/msi-signed
+#     desktop/microsoft-store
+#     web/cloudflare-pages
+#     web/netlify
+#     web/vercel
+# - Each row populates all 4 command slots (local_command + script_command + ci_command + act_command)
+#   per the registry contract.
+#
+# Tag target after merge: v1.0.14
+schema_version: '1.1.0'
+last_updated: '2026-06-04'
+
+targets:
+  # -------------------------------------------------------------------
+  # ANDROID (Tier-1, unchanged from v1.0.13)
+  # -------------------------------------------------------------------
+  android-firebase:
+    platform: android
+    target: firebase
+    path: deployment/android/firebase/
+    local_command: 'bash deployment/android/firebase/local.sh'
+    script_command: 'bash deployment/android/firebase/script.sh'
+    ci_command: 'bash deployment/android/firebase/ci.sh'
+    act_command: 'act -W .github/workflows/release-android.yml -j publish-firebase'
+
+  android-play-store:
+    platform: android
+    target: play-store
+    path: deployment/android/play-store/
+    local_command: 'bash deployment/android/play-store/local.sh'
+    script_command: 'bash deployment/android/play-store/script.sh'
+    ci_command: 'bash deployment/android/play-store/ci.sh'
+    act_command: 'act -W .github/workflows/release-android.yml -j publish-play-store'
+
+  # -------------------------------------------------------------------
+  # iOS (Tier-1, unchanged from v1.0.13)
+  # -------------------------------------------------------------------
+  ios-firebase:
+    platform: ios
+    target: firebase
+    path: deployment/ios/firebase/
+    local_command: 'bash deployment/ios/firebase/local.sh'
+    script_command: 'bash deployment/ios/firebase/script.sh'
+    ci_command: 'bash deployment/ios/firebase/ci.sh'
+    act_command: 'act -W .github/workflows/release-ios.yml -j publish-firebase'
+
+  ios-testflight:
+    platform: ios
+    target: testflight
+    path: deployment/ios/testflight/
+    local_command: 'bash deployment/ios/testflight/local.sh'
+    script_command: 'bash deployment/ios/testflight/script.sh'
+    ci_command: 'bash deployment/ios/testflight/ci.sh'
+    act_command: 'act -W .github/workflows/release-ios.yml -j publish-testflight'
+
+  ios-app-store:
+    platform: ios
+    target: app-store
+    path: deployment/ios/app-store/
+    local_command: 'bash deployment/ios/app-store/local.sh'
+    script_command: 'bash deployment/ios/app-store/script.sh'
+    ci_command: 'bash deployment/ios/app-store/ci.sh'
+    act_command: 'act -W .github/workflows/release-ios.yml -j publish-app-store'
+
+  # -------------------------------------------------------------------
+  # DESKTOP — Tier-1 default + 3 NEW Tier-2 targets (v2.0.0)
+  # -------------------------------------------------------------------
+  desktop-gh-releases:
+    platform: desktop
+    target: gh-releases
+    path: deployment/desktop/gh-releases/
+    tier: 1
+    local_command: 'bash deployment/desktop/gh-releases/local.sh'
+    script_command: 'bash deployment/desktop/gh-releases/script.sh'
+    ci_command: 'bash deployment/desktop/gh-releases/ci.sh'
+    act_command: 'act -W .github/workflows/release-desktop.yml -j publish-gh-releases'
+    actionhub_ref: 'openMF/mifos-x-actionhub-publish-desktop-app-kmp@v2.0.0'
+
+  desktop-dmg-notarized:
+    platform: desktop
+    target: dmg-notarized
+    path: deployment/desktop/dmg-notarized/
+    tier: 2
+    local_command: 'bash deployment/desktop/dmg-notarized/local.sh'
+    script_command: 'bash deployment/desktop/dmg-notarized/script.sh'
+    ci_command: 'bash deployment/desktop/dmg-notarized/ci.sh'
+    act_command: 'act -W .github/workflows/release-desktop.yml -j publish-dmg-notarized'
+    actionhub_ref: 'openMF/mifos-x-actionhub-publish-desktop-app-kmp/dmg-notarized@v2.0.0'
+
+  desktop-msi-signed:
+    platform: desktop
+    target: msi-signed
+    path: deployment/desktop/msi-signed/
+    tier: 2
+    local_command: 'pwsh deployment/desktop/msi-signed/local.ps1'
+    script_command: 'pwsh deployment/desktop/msi-signed/script.ps1'
+    ci_command: 'pwsh deployment/desktop/msi-signed/ci.ps1'
+    act_command: 'act -W .github/workflows/release-desktop.yml -j publish-msi-signed'
+    actionhub_ref: 'openMF/mifos-x-actionhub-publish-desktop-app-kmp/msi-signed@v2.0.0'
+
+  desktop-microsoft-store:
+    platform: desktop
+    target: microsoft-store
+    path: deployment/desktop/microsoft-store/
+    tier: 2
+    local_command: 'pwsh deployment/desktop/microsoft-store/local.ps1'
+    script_command: 'pwsh deployment/desktop/microsoft-store/script.ps1'
+    ci_command: 'pwsh deployment/desktop/microsoft-store/ci.ps1'
+    act_command: 'act -W .github/workflows/release-desktop.yml -j publish-microsoft-store'
+    actionhub_ref: 'openMF/mifos-x-actionhub-publish-desktop-app-kmp/microsoft-store@v2.0.0'
+
+  # -------------------------------------------------------------------
+  # WEB — Tier-1 default + 3 NEW Tier-2 targets (v2.0.0)
+  # -------------------------------------------------------------------
+  web-gh-pages:
+    platform: web
+    target: gh-pages
+    path: deployment/web/gh-pages/
+    tier: 1
+    local_command: 'bash deployment/web/gh-pages/local.sh'
+    script_command: 'bash deployment/web/gh-pages/script.sh'
+    ci_command: 'bash deployment/web/gh-pages/ci.sh'
+    act_command: 'act -W .github/workflows/release-web.yml -j publish-gh-pages'
+    actionhub_ref: 'openMF/mifos-x-actionhub-web-publish-kmp@v2.0.0'
+
+  web-cloudflare-pages:
+    platform: web
+    target: cloudflare-pages
+    path: deployment/web/cloudflare-pages/
+    tier: 2
+    local_command: 'bash deployment/web/cloudflare-pages/local.sh'
+    script_command: 'bash deployment/web/cloudflare-pages/script.sh'
+    ci_command: 'bash deployment/web/cloudflare-pages/ci.sh'
+    act_command: 'act -W .github/workflows/release-web.yml -j publish-cloudflare-pages'
+    actionhub_ref: 'openMF/mifos-x-actionhub-web-publish-kmp/cloudflare-pages@v2.0.0'
+
+  web-netlify:
+    platform: web
+    target: netlify
+    path: deployment/web/netlify/
+    tier: 2
+    local_command: 'bash deployment/web/netlify/local.sh'
+    script_command: 'bash deployment/web/netlify/script.sh'
+    ci_command: 'bash deployment/web/netlify/ci.sh'
+    act_command: 'act -W .github/workflows/release-web.yml -j publish-netlify'
+    actionhub_ref: 'openMF/mifos-x-actionhub-web-publish-kmp/netlify@v2.0.0'
+
+  web-vercel:
+    platform: web
+    target: vercel
+    path: deployment/web/vercel/
+    tier: 2
+    local_command: 'bash deployment/web/vercel/local.sh'
+    script_command: 'bash deployment/web/vercel/script.sh'
+    ci_command: 'bash deployment/web/vercel/ci.sh'
+    act_command: 'act -W .github/workflows/release-web.yml -j publish-vercel'
+    actionhub_ref: 'openMF/mifos-x-actionhub-web-publish-kmp/vercel@v2.0.0'
