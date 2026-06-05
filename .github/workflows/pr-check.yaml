@@ -250,18 +250,17 @@ jobs:
   build_web_app:
     name: Build Web Application
     needs: [ checks ]
-    runs-on: windows-latest
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
       - name: Create Supabase credentials file
-        shell: pwsh
         run: |
-          if ('${{ secrets.supabase_creds }}' -ne '') {
-            New-Item -ItemType Directory -Force -Path secrets
-            [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String('${{ secrets.supabase_creds }}')) | Out-File -FilePath secrets/supabaseCredentialsFile.json -Encoding UTF8
-          }
+          if [ -n "${{ secrets.supabase_creds }}" ]; then
+            mkdir -p secrets
+            echo '${{ secrets.supabase_creds }}' | base64 --decode > secrets/supabaseCredentialsFile.json
+          fi
 
       - name: Build Web App
         uses: openMF/mifos-x-actionhub-build-web-app-kmp@v1.0.1
