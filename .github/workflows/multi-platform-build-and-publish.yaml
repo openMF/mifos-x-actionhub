@@ -94,6 +94,16 @@ name: Multi-Platform App Build and Publish
 on:
   workflow_call:
     inputs:
+      kmp_flavor:
+        description: >
+          Product flavor to build and distribute (e.g. prod, demo, bankA).
+          Passed as KMP_FLAVOR to all sub-actions so Fastlane lanes select the
+          correct Gradle variant and Firebase/Play Store target automatically.
+          When blank the Fastlane lanes fall back to their own defaults (usually 'prod').
+        type: string
+        default: 'prod'
+        required: false
+
       java-version:
         description: 'Java version to use (e.g., 17, 21).'
         required: false
@@ -387,6 +397,7 @@ jobs:
         uses: openMF/mifos-x-actionhub-android-firebase-publish@v1.0.0
         with:
           android_package_name: ${{ inputs.android_package_name }}
+          kmp_flavor: ${{ inputs.kmp_flavor }}
           keystore_file: ${{ secrets.original_keystore_file }}
           keystore_password: ${{ secrets.original_keystore_file_password }}
           keystore_alias: ${{ secrets.original_keystore_alias }}
@@ -417,6 +428,7 @@ jobs:
         uses: openMF/mifos-x-actionhub-publish-android-on-playstore-beta@v1.0.0
         with:
           release_type: ${{ inputs.release_type }}
+          kmp_flavor: ${{ inputs.kmp_flavor }}
           android_package_name: ${{ inputs.android_package_name }}
           google_services: ${{ secrets.google_services }}
           playstore_creds: ${{ secrets.playstore_creds }}
@@ -469,6 +481,7 @@ jobs:
         continue-on-error: true
         with:
           ios_package_name: ${{ inputs.ios_package_name }}
+          kmp_flavor: ${{ inputs.kmp_flavor }}
           # Configuration read from fastlane-config/project_config.rb
           # Only secrets and optional overrides passed explicitly:
           appstore_key_id: ${{ secrets.appstore_key_id }}
@@ -743,6 +756,7 @@ jobs:
         uses: openMF/mifos-x-actionhub-build-android-app@v1.0.2
         with:
           build_type: 'Release'
+          kmp_flavor: ${{ inputs.kmp_flavor }}
           android_package_name: ${{ inputs.android_package_name }}
           google_services: ${{ secrets.google_services }}
           keystore_file: ${{ secrets.original_keystore_file }}
@@ -867,10 +881,9 @@ jobs:
           draft: false
           prerelease: true
           files: |
-            ./all-artifacts/android-app/${{ inputs.android_package_name }}/build/outputs/apk/demo/release/*.apk
-            ./all-artifacts/android-app/${{ inputs.android_package_name }}/build/outputs/apk/prod/release/*.apk
+            ./all-artifacts/android-app/${{ inputs.android_package_name }}/build/outputs/apk/${{ inputs.kmp_flavor }}/release/*.apk
             ./all-artifacts/desktop-app-macos-latest/${{ inputs.desktop_package_name }}/build/compose/binaries/main-release/dmg/*.dmg
             ./all-artifacts/desktop-app-ubuntu-latest/${{ inputs.desktop_package_name }}/build/compose/binaries/main-release/deb/*.deb
             ./all-artifacts/desktop-app-windows-latest/${{ inputs.desktop_package_name }}/build/compose/binaries/main-release/exe/*.exe
-            ./all-artifacts/desktop-app-windows-latest/${{ inputs.desktop_package_name }}/build/compose/binaries/main-release/msi/*.msi            
+            ./all-artifacts/desktop-app-windows-latest/${{ inputs.desktop_package_name }}/build/compose/binaries/main-release/msi/*.msi
             ./all-artifacts/${{ inputs.web_package_name }}.zip
