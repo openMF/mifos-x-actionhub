@@ -1,0 +1,40 @@
+# .github/workflows/v2/release-android.yaml
+#
+# Thin wrapper → therajanmaurya/mifos-x-actionhub-publish-android-kmp/.github/workflows/release.yaml@v2.0.0
+# Provides a stable @v1.0.17+ entry point for consumers who want the discoverable
+# mifos-x-actionhub interface instead of referencing the platform repo directly.
+name: v2 · Release Android
+
+on:
+  workflow_call:
+    inputs:
+      android_package_name: { required: true,  type: string, description: 'Gradle module (e.g. cmp-android)' }
+      version_tag:          { required: true,  type: string, description: 'Version tag (e.g. v2026.06.16)' }
+      starting_rung:        { required: false, type: string, default: 'firebase', description: 'firebase | internal | beta | production' }
+      tester_groups:        { required: false, type: string, default: 'qa-team,beta-testers', description: 'Firebase tester groups' }
+      production_rollout:   { required: false, type: string, default: '0.10', description: 'Stage 3 staged rollout percentage' }
+    secrets:
+      google_services:          { required: true }
+      firebase_creds:           { required: true }
+      playstore_creds:          { required: true }
+      release_keystore:         { required: true }
+      keystore_password:        { required: true }
+      keystore_alias:           { required: true }
+      keystore_alias_password:  { required: true }
+
+  workflow_dispatch:
+    inputs:
+      android_package_name: { required: true,  type: string, default: 'cmp-android' }
+      version_tag:          { required: true,  type: string }
+      starting_rung:        { required: false, type: choice, options: [firebase, internal, beta, production], default: firebase }
+
+jobs:
+  delegate:
+    uses: therajanmaurya/mifos-x-actionhub-publish-android-kmp/.github/workflows/release.yaml@v2.0.0
+    with:
+      android_package_name: ${{ inputs.android_package_name }}
+      version_tag:          ${{ inputs.version_tag }}
+      starting_rung:        ${{ inputs.starting_rung }}
+      tester_groups:        ${{ inputs.tester_groups }}
+      production_rollout:   ${{ inputs.production_rollout }}
+    secrets: inherit

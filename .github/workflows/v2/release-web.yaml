@@ -1,0 +1,30 @@
+# .github/workflows/v2/release-web.yaml
+#
+# Thin wrapper → therajanmaurya/mifos-x-actionhub-publish-web-kmp/.github/workflows/release.yaml@v2.0.0
+name: v2 · Release Web
+
+on:
+  workflow_call:
+    inputs:
+      host:             { required: true,  type: string, description: 'gh-pages | cloudflare-pages | netlify | vercel' }
+      web_package_name: { required: true,  type: string, description: 'Gradle module (e.g. cmp-web)' }
+      starting_rung:    { required: false, type: string, default: 'preview', description: 'preview | staging | production' }
+    secrets:
+      cloudflare_api_token: { required: false }
+      netlify_auth_token:   { required: false }
+      vercel_token:         { required: false }
+
+  workflow_dispatch:
+    inputs:
+      host:             { required: true,  type: choice, options: [gh-pages, cloudflare-pages, netlify, vercel] }
+      web_package_name: { required: true,  type: string, default: 'cmp-web' }
+      starting_rung:    { required: false, type: choice, options: [preview, staging, production], default: preview }
+
+jobs:
+  delegate:
+    uses: therajanmaurya/mifos-x-actionhub-publish-web-kmp/.github/workflows/release.yaml@v2.0.0
+    with:
+      host:             ${{ inputs.host }}
+      web_package_name: ${{ inputs.web_package_name }}
+      starting_rung:    ${{ inputs.starting_rung }}
+    secrets: inherit

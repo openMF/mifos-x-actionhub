@@ -1,0 +1,31 @@
+# .github/workflows/v2/release-desktop.yaml
+#
+# Thin wrapper → therajanmaurya/mifos-x-actionhub-publish-desktop-kmp/.github/workflows/release.yaml@v2.0.0
+# Windows + Linux only. For macOS desktop, use release-apple.yaml (mac-dmg-notarized).
+name: v2 · Release Desktop (Windows + Linux)
+
+on:
+  workflow_call:
+    inputs:
+      target:               { required: true,  type: string, description: 'windows-exe | windows-msi-signed | windows-microsoft-store | linux-deb' }
+      desktop_package_name: { required: true,  type: string, description: 'Gradle module (e.g. cmp-desktop)' }
+      github_tag:           { required: true,  type: string, description: 'GH Release tag (must exist)' }
+      starting_rung:        { required: false, type: string, default: 'prerelease', description: 'prerelease | beta | stable' }
+    secrets: {}
+
+  workflow_dispatch:
+    inputs:
+      target:               { required: true,  type: choice, options: [windows-exe, windows-msi-signed, windows-microsoft-store, linux-deb] }
+      desktop_package_name: { required: true,  type: string, default: 'cmp-desktop' }
+      github_tag:           { required: true,  type: string }
+      starting_rung:        { required: false, type: choice, options: [prerelease, beta, stable], default: prerelease }
+
+jobs:
+  delegate:
+    uses: therajanmaurya/mifos-x-actionhub-publish-desktop-kmp/.github/workflows/release.yaml@v2.0.0
+    with:
+      target:               ${{ inputs.target }}
+      desktop_package_name: ${{ inputs.desktop_package_name }}
+      github_tag:           ${{ inputs.github_tag }}
+      starting_rung:        ${{ inputs.starting_rung }}
+    secrets: inherit

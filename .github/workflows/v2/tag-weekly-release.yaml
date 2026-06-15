@@ -1,0 +1,148 @@
+# .github/workflows/v2/tag-weekly-release.yaml
+#
+# Reusable workflow that auto-tags + auto-releases on a weekly cadence.
+# CONSUMER's workflow file owns the cron trigger; this provides the logic.
+#
+# Versioning strategies (consumer picks):
+#   reckon        — uses Gradle Reckon plugin (`./gradlew :reckonTagPush`)
+#   calver-week   — vYYYY.W##.0 (e.g. v2026.W24.0)
+#   semver-patch  — bump latest tag's patch
+#
+# Defaults: starting_rung=beta (Stage 2). Weekly cadence ships to public beta.
+#
+# Idempotent — skips tag creation if no commits since the previous tag.
+name: v2 · Tag Weekly Release
+
+on:
+  workflow_call:
+    inputs:
+      version_strategy:      { required: false, type: string, default: 'calver-week',  description: 'reckon | calver-week | semver-patch' }
+      reckon_stage:          { required: false, type: string, default: 'beta',         description: 'Used when strategy=reckon' }
+      starting_rung:         { required: false, type: string, default: 'beta',         description: 'Per-platform release starting stage' }
+      target_branch:         { required: false, type: string, default: 'main',         description: 'Branch to tag from' }
+      skip_if_no_commits:    { required: false, type: boolean, default: true,          description: 'Skip tag creation if no commits since last tag' }
+      android_package_name:  { required: false, type: string, default: 'cmp-android' }
+      ios_package_name:      { required: false, type: string, default: 'cmp-ios' }
+      mac_package_name:      { required: false, type: string, default: 'cmp-desktop' }
+      shared_module:         { required: false, type: string, default: 'cmp-shared' }
+      web_package_name:      { required: false, type: string, default: 'cmp-web' }
+      include_android:       { required: false, type: boolean, default: true }
+      include_ios:           { required: false, type: boolean, default: true }
+      include_web:           { required: false, type: boolean, default: true }
+      include_mac:           { required: false, type: boolean, default: false }
+      include_desktop_win:   { required: false, type: boolean, default: false }
+      include_desktop_linux: { required: false, type: boolean, default: false }
+
+permissions:
+  contents: write
+
+jobs:
+  compute-version:
+    name: Compute weekly version + tag
+    runs-on: ubuntu-latest
+    outputs:
+      version_tag: ${{ steps.bump.outputs.version_tag }}
+      skipped:     ${{ steps.bump.outputs.skipped }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ inputs.target_branch }}
+
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: '17' }
+
+      - name: Compute + tag
+        id: bump
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          STRATEGY="${{ inputs.version_strategy }}"
+          STAGE="${{ inputs.reckon_stage }}"
+          SKIP_IF_NO_COMMITS="${{ inputs.skip_if_no_commits }}"
+
+          # Skip if no commits since last tag
+          if [[ "$SKIP_IF_NO_COMMITS" == "true" ]]; then
+            LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || true)
+            if [[ -n "$LAST_TAG" ]]; then
+              COMMITS=$(git rev-list "${LAST_TAG}..HEAD" --count)
+              if [[ "$COMMITS" -eq 0 ]]; then
+                echo "::notice::No commits since $LAST_TAG — skipping weekly release"
+                echo "skipped=true"        >> "$GITHUB_OUTPUT"
+                echo "version_tag=$LAST_TAG" >> "$GITHUB_OUTPUT"
+                exit 0
+              fi
+            fi
+          fi
+
+          case "$STRATEGY" in
+            reckon)
+              ./gradlew :reckonTagPush -Preckon.stage="$STAGE"
+              TAG=$(git describe --tags --abbrev=0)
+              ;;
+            calver-week)
+              YEAR=$(date -u +%Y)
+              WEEK=$(date -u +%V)
+              TAG="v${YEAR}.W${WEEK}.0"
+              # If tag already exists (re-run same week), bump patch
+              if git rev-parse "$TAG" >/dev/null 2>&1; then
+                PATCH=0
+                while git rev-parse "v${YEAR}.W${WEEK}.${PATCH}" >/dev/null 2>&1; do
+                  PATCH=$((PATCH + 1))
+                done
+                TAG="v${YEAR}.W${WEEK}.${PATCH}"
+              fi
+              git tag -a "$TAG" -m "Weekly beta release $TAG"
+              git push origin "$TAG"
+              ;;
+            semver-patch)
+              LATEST=$(git tag -l 'v*' | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -1)
+              LATEST=${LATEST:-v0.0.0}
+              IFS='.' read -r MAJ MIN PAT <<< "${LATEST#v}"
+              PAT=$((PAT + 1))
+              TAG="v${MAJ}.${MIN}.${PAT}"
+              git tag -a "$TAG" -m "Weekly patch release $TAG"
+              git push origin "$TAG"
+              ;;
+            *)
+              echo "::error::Invalid version_strategy: $STRATEGY"
+              exit 1
+              ;;
+          esac
+
+          echo "skipped=false"       >> "$GITHUB_OUTPUT"
+          echo "version_tag=$TAG"    >> "$GITHUB_OUTPUT"
+          echo "📦 Tagged weekly release: $TAG"
+
+      - name: Generate release notes
+        if: ${{ steps.bump.outputs.skipped != 'true' }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ steps.bump.outputs.version_tag }}
+        run: |
+          gh release create "$TAG" --generate-notes --target "${{ inputs.target_branch }}" --prerelease --title "$TAG (weekly beta)"
+
+  release:
+    name: Trigger multi-platform release
+    needs: compute-version
+    if: ${{ needs.compute-version.outputs.skipped != 'true' }}
+    uses: openMF/mifos-x-actionhub/.github/workflows/v2/release-multi-platform.yaml@v1.0.17
+    with:
+      version_tag:           ${{ needs.compute-version.outputs.version_tag }}
+      starting_rung:         ${{ inputs.starting_rung }}
+      android_package_name:  ${{ inputs.android_package_name }}
+      ios_package_name:      ${{ inputs.ios_package_name }}
+      mac_package_name:      ${{ inputs.mac_package_name }}
+      shared_module:         ${{ inputs.shared_module }}
+      web_package_name:      ${{ inputs.web_package_name }}
+      include_android:       ${{ inputs.include_android }}
+      include_ios:           ${{ inputs.include_ios }}
+      include_mac:           ${{ inputs.include_mac }}
+      include_desktop_win:   ${{ inputs.include_desktop_win }}
+      include_desktop_linux: ${{ inputs.include_desktop_linux }}
+      include_web:           ${{ inputs.include_web }}
+    secrets: inherit

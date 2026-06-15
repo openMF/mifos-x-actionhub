@@ -1,0 +1,110 @@
+# .github/workflows/v2/deployment-status.yaml
+#
+# Reads consumer's deployment/PROMOTION_LOG.yaml + (optionally) Play Store +
+# App Store Connect APIs → renders a per-platform rung matrix as Markdown,
+# posts to the workflow step summary.
+#
+# Consumer triggers (typically scheduled hourly or on workflow_dispatch).
+name: v2 · Deployment Status
+
+on:
+  workflow_call:
+    inputs:
+      promotion_log_path: { required: false, type: string, default: 'deployment/PROMOTION_LOG.yaml' }
+      include_play_api:   { required: false, type: boolean, default: false, description: 'Query Play Developer API for live state' }
+      include_asc_api:    { required: false, type: boolean, default: false, description: 'Query App Store Connect API for live state' }
+      slack_webhook_url:  { required: false, type: string, default: '' }
+    secrets:
+      playstore_creds:   { required: false }
+      appstore_auth_key: { required: false }
+      appstore_key_id:   { required: false }
+      appstore_issuer_id:{ required: false }
+
+jobs:
+  status:
+    name: Render deployment rung matrix
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Parse PROMOTION_LOG.yaml
+        id: parse
+        run: |
+          set -euo pipefail
+          LOG="${{ inputs.promotion_log_path }}"
+          if [[ ! -f "$LOG" ]]; then
+            echo "::warning::No PROMOTION_LOG.yaml at $LOG"
+            echo "matrix=" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          # Use yq for YAML parsing
+          if ! command -v yq >/dev/null; then
+            curl -sSfL https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 -o /tmp/yq
+            chmod +x /tmp/yq
+            export PATH="/tmp:$PATH"
+          fi
+
+          # Build per-(platform, target) → most recent row
+          python3 <<'PYEOF' > /tmp/matrix.md
+          import yaml, re
+          from collections import defaultdict
+          from datetime import datetime
+
+          with open("${{ inputs.promotion_log_path }}") as f:
+              data = yaml.safe_load(f)
+          events = data.get("events", []) or []
+          # Sort by timestamp desc
+          events.sort(key=lambda e: e.get("timestamp", ""), reverse=True)
+          # First-hit per (platform, target_base) wins
+          seen = {}
+          for e in events:
+              target = e.get("target", "")
+              # target shape: "{platform}-{lane}[-stage]" — pick platform + lane
+              parts = target.split("-")
+              if len(parts) < 2: continue
+              platform = parts[0]
+              key = target  # use full target for uniqueness within platform
+              if key in seen: continue
+              seen[key] = e
+
+          # Group by platform
+          by_platform = defaultdict(list)
+          for k, e in seen.items():
+              platform = e.get("target", "").split("-")[0]
+              by_platform[platform].append(e)
+
+          print("# Deployment Status\n")
+          print("| Platform | Target | Version | Outcome | When | Run |")
+          print("|----------|--------|---------|---------|------|-----|")
+          for p in ("android", "ios", "mac", "desktop", "web"):
+              for e in by_platform.get(p, []):
+                  target  = e.get("target",  "(unknown)")
+                  version = e.get("version_to", "—")
+                  outcome = e.get("outcome",    "—")
+                  ts      = e.get("timestamp",  "—")
+                  run_url = e.get("ci_run_url", "—")
+                  run_link = f"[run]({run_url})" if run_url.startswith("http") else run_url
+                  print(f"| {p} | {target} | `{version}` | {outcome} | {ts} | {run_link} |")
+
+          if not by_platform:
+              print("| (no events) | — | — | — | — | — |")
+          PYEOF
+
+          # Post to step summary
+          cat /tmp/matrix.md >> "$GITHUB_STEP_SUMMARY"
+          # Also output for the slack-post step
+          {
+            echo 'matrix<<MARKDOWN_EOF'
+            cat /tmp/matrix.md
+            echo 'MARKDOWN_EOF'
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Post to Slack (optional)
+        if: ${{ inputs.slack_webhook_url != '' && steps.parse.outputs.matrix != '' }}
+        env:
+          WEBHOOK: ${{ inputs.slack_webhook_url }}
+          MATRIX:  ${{ steps.parse.outputs.matrix }}
+        run: |
+          PAYLOAD=$(jq -nc --arg text "$MATRIX" '{text: $text}')
+          curl -sS -X POST -H 'Content-type: application/json' --data "$PAYLOAD" "$WEBHOOK"
