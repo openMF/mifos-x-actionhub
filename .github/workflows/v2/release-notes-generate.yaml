@@ -1,0 +1,131 @@
+# .github/workflows/v2/release-notes-generate.yaml
+#
+# Auto-generate Markdown release notes from conventional commits since the
+# previous tag. Outputs the notes for chained workflows (used by
+# tag-weekly-release.yaml + tag-monthly-release.yaml) and optionally creates
+# a draft GH Release.
+name: v2 · Generate Release Notes
+
+on:
+  workflow_call:
+    inputs:
+      version_tag:       { required: true,  type: string, description: 'New tag to compute notes UP TO' }
+      previous_tag:      { required: false, type: string, default: '', description: 'Anchor; default: most recent tag before version_tag' }
+      target_branch:     { required: false, type: string, default: 'main' }
+      create_gh_release: { required: false, type: boolean, default: false, description: 'Also `gh release create`' }
+      is_prerelease:     { required: false, type: boolean, default: false }
+    outputs:
+      notes_path:
+        value: ${{ jobs.generate.outputs.notes_path }}
+
+permissions:
+  contents: write
+
+jobs:
+  generate:
+    name: Generate notes
+    runs-on: ubuntu-latest
+    outputs:
+      notes_path: ${{ steps.write.outputs.notes_path }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ inputs.target_branch }}
+
+      - name: Compute anchor + collect commits
+        id: collect
+        run: |
+          set -euo pipefail
+          TAG="${{ inputs.version_tag }}"
+          PREV="${{ inputs.previous_tag }}"
+          if [[ -z "$PREV" ]]; then
+            # Most-recent annotated tag before TAG (exclude TAG itself)
+            PREV=$(git tag -l 'v*' --sort=-creatordate | grep -v -F -x "$TAG" | head -1)
+          fi
+          PREV=${PREV:-$(git rev-list --max-parents=0 HEAD | head -1)}
+          echo "📚 Collecting commits $PREV..$TAG"
+          git log "${PREV}..${TAG}" --pretty='format:%H%x09%s%x09%an' > /tmp/commits.txt || true
+          echo "prev=$PREV" >> "$GITHUB_OUTPUT"
+
+      - name: Categorize via conventional commits
+        id: categorize
+        run: |
+          set -euo pipefail
+          python3 <<'PYEOF' > /tmp/notes.md
+          import os, re
+
+          CATEGORIES = [
+              ("breaking",    r"^(\w+)(?:\([^)]+\))?!:", "🚨 Breaking changes"),
+              ("feat",        r"^feat(?:\(([^)]+)\))?: ",  "✨ Features"),
+              ("fix",         r"^fix(?:\(([^)]+)\))?: ",   "🐛 Bug fixes"),
+              ("perf",        r"^perf(?:\(([^)]+)\))?: ",  "⚡ Performance"),
+              ("refactor",    r"^refactor(?:\(([^)]+)\))?: ", "♻️ Refactors"),
+              ("docs",        r"^docs(?:\(([^)]+)\))?: ",  "📚 Documentation"),
+              ("test",        r"^test(?:\(([^)]+)\))?: ",  "✅ Tests"),
+              ("chore",       r"^chore(?:\(([^)]+)\))?: ", "🧹 Chores"),
+              ("ci",          r"^ci(?:\(([^)]+)\))?: ",    "🤖 CI"),
+              ("build",       r"^build(?:\(([^)]+)\))?: ", "🔧 Build"),
+          ]
+
+          buckets = {k: [] for k, _, _ in CATEGORIES}
+          other = []
+
+          with open("/tmp/commits.txt") as f:
+              for line in f:
+                  parts = line.rstrip("\n").split("\t")
+                  if len(parts) < 3: continue
+                  sha, subject, author = parts[0], parts[1], parts[2]
+                  matched = False
+                  for key, pat, _ in CATEGORIES:
+                      if re.match(pat, subject):
+                          buckets[key].append((sha, subject, author))
+                          matched = True
+                          break
+                  if not matched: other.append((sha, subject, author))
+
+          tag = os.environ.get("TAG", "(tag)")
+          prev = "${{ steps.collect.outputs.prev }}"
+          print(f"## {tag}\n")
+          print(f"_Changes since `{prev}`_\n")
+          for key, _, label in CATEGORIES:
+              entries = buckets[key]
+              if not entries: continue
+              print(f"### {label}\n")
+              for sha, subject, author in entries:
+                  print(f"- {subject} ([`{sha[:7]}`]) by @{author}")
+              print()
+          if other:
+              print("### Other\n")
+              for sha, subject, author in other:
+                  print(f"- {subject} ([`{sha[:7]}`]) by @{author}")
+              print()
+          PYEOF
+        env:
+          TAG: ${{ inputs.version_tag }}
+
+      - name: Write notes file
+        id: write
+        run: |
+          mkdir -p .release-notes
+          NOTES_PATH=".release-notes/${{ inputs.version_tag }}.md"
+          cp /tmp/notes.md "$NOTES_PATH"
+          echo "notes_path=$NOTES_PATH" >> "$GITHUB_OUTPUT"
+          echo "✅ Notes written to $NOTES_PATH"
+          cat "$NOTES_PATH" >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@v4
+        with: { name: release-notes, path: '.release-notes/*' }
+
+      - name: Create GitHub Release (optional)
+        if: ${{ inputs.create_gh_release }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ inputs.version_tag }}
+          NOTES: ${{ steps.write.outputs.notes_path }}
+          PRE: ${{ inputs.is_prerelease }}
+        run: |
+          PRE_FLAG=""
+          [[ "$PRE" == "true" ]] && PRE_FLAG="--prerelease"
+          gh release create "$TAG" --title "$TAG" --notes-file "$NOTES" $PRE_FLAG || \
+            gh release edit "$TAG" --notes-file "$NOTES"

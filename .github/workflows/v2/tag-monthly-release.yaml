@@ -1,0 +1,125 @@
+# .github/workflows/v2/tag-monthly-release.yaml
+#
+# Reusable workflow that auto-tags + auto-releases on a monthly cadence.
+# Default: calver-month strategy (vYYYY.MM.0). Default starting_rung=production.
+#
+# Always fires (no skip-if-no-commits) — monthly cadence is contractually reliable.
+# v2 successor to the existing top-level monthly-version-tag.yaml.
+name: v2 · Tag Monthly Release
+
+on:
+  workflow_call:
+    inputs:
+      version_strategy:      { required: false, type: string, default: 'calver-month', description: 'reckon | calver-month | semver-minor' }
+      reckon_stage:          { required: false, type: string, default: 'final',        description: 'Used when strategy=reckon' }
+      starting_rung:         { required: false, type: string, default: 'production',   description: 'Per-platform release starting stage' }
+      target_branch:         { required: false, type: string, default: 'main' }
+      production_rollout:    { required: false, type: string, default: '0.10' }
+      android_package_name:  { required: false, type: string, default: 'cmp-android' }
+      ios_package_name:      { required: false, type: string, default: 'cmp-ios' }
+      mac_package_name:      { required: false, type: string, default: 'cmp-desktop' }
+      shared_module:         { required: false, type: string, default: 'cmp-shared' }
+      web_package_name:      { required: false, type: string, default: 'cmp-web' }
+      include_android:       { required: false, type: boolean, default: true }
+      include_ios:           { required: false, type: boolean, default: true }
+      include_web:           { required: false, type: boolean, default: true }
+      include_mac:           { required: false, type: boolean, default: false }
+      include_desktop_win:   { required: false, type: boolean, default: false }
+      include_desktop_linux: { required: false, type: boolean, default: false }
+
+permissions:
+  contents: write
+
+jobs:
+  compute-version:
+    name: Compute monthly version + tag
+    runs-on: ubuntu-latest
+    outputs:
+      version_tag: ${{ steps.bump.outputs.version_tag }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ inputs.target_branch }}
+
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: '17' }
+
+      - name: Compute + tag
+        id: bump
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          STRATEGY="${{ inputs.version_strategy }}"
+          STAGE="${{ inputs.reckon_stage }}"
+
+          case "$STRATEGY" in
+            reckon)
+              ./gradlew :reckonTagPush -Preckon.stage="$STAGE"
+              TAG=$(git describe --tags --abbrev=0)
+              ;;
+            calver-month)
+              YEAR=$(date -u +%Y)
+              MONTH=$(date -u +%m)
+              TAG="v${YEAR}.${MONTH}.0"
+              # If tag already exists (re-run same month), bump patch
+              if git rev-parse "$TAG" >/dev/null 2>&1; then
+                PATCH=0
+                while git rev-parse "v${YEAR}.${MONTH}.${PATCH}" >/dev/null 2>&1; do
+                  PATCH=$((PATCH + 1))
+                done
+                TAG="v${YEAR}.${MONTH}.${PATCH}"
+              fi
+              git tag -a "$TAG" -m "Monthly production release $TAG"
+              git push origin "$TAG"
+              ;;
+            semver-minor)
+              LATEST=$(git tag -l 'v*' | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -1)
+              LATEST=${LATEST:-v0.0.0}
+              IFS='.' read -r MAJ MIN PAT <<< "${LATEST#v}"
+              MIN=$((MIN + 1))
+              PAT=0
+              TAG="v${MAJ}.${MIN}.${PAT}"
+              git tag -a "$TAG" -m "Monthly minor release $TAG"
+              git push origin "$TAG"
+              ;;
+            *)
+              echo "::error::Invalid version_strategy: $STRATEGY"
+              exit 1
+              ;;
+          esac
+
+          echo "version_tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "📦 Tagged monthly release: $TAG"
+
+      - name: Create GitHub Release with auto-generated notes
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ steps.bump.outputs.version_tag }}
+        run: |
+          gh release create "$TAG" --generate-notes --target "${{ inputs.target_branch }}" --latest --title "$TAG (monthly production)"
+
+  release:
+    name: Trigger multi-platform production release
+    needs: compute-version
+    uses: openMF/mifos-x-actionhub/.github/workflows/v2/release-multi-platform.yaml@v1.0.17
+    with:
+      version_tag:           ${{ needs.compute-version.outputs.version_tag }}
+      starting_rung:         ${{ inputs.starting_rung }}
+      production_rollout:    ${{ inputs.production_rollout }}
+      android_package_name:  ${{ inputs.android_package_name }}
+      ios_package_name:      ${{ inputs.ios_package_name }}
+      mac_package_name:      ${{ inputs.mac_package_name }}
+      shared_module:         ${{ inputs.shared_module }}
+      web_package_name:      ${{ inputs.web_package_name }}
+      include_android:       ${{ inputs.include_android }}
+      include_ios:           ${{ inputs.include_ios }}
+      include_mac:           ${{ inputs.include_mac }}
+      include_desktop_win:   ${{ inputs.include_desktop_win }}
+      include_desktop_linux: ${{ inputs.include_desktop_linux }}
+      include_web:           ${{ inputs.include_web }}
+    secrets: inherit

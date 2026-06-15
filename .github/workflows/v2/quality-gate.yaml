@@ -1,0 +1,100 @@
+# .github/workflows/v2/quality-gate.yaml
+#
+# Combined quality suite: coverage + Spotless + Detekt + Dependency Guard + SBOM.
+# Expanded from v1's test-coverage.yaml (which was Kover-only).
+#
+# Designed to run on every PR + on tag (pre-release gate).
+name: v2 · Quality Gate
+
+on:
+  workflow_call:
+    inputs:
+      coverage_threshold: { required: false, type: string,  default: '0.70', description: 'Minimum Kover line coverage (0.0-1.0)' }
+      sbom_format:        { required: false, type: string,  default: 'cyclonedx-json', description: 'cyclonedx-json | cyclonedx-xml | spdx-json' }
+      fail_on_warnings:   { required: false, type: boolean, default: false, description: 'Spotless/Detekt warnings fail the gate' }
+      java-version:       { required: false, type: string,  default: '17' }
+    outputs:
+      coverage_pct:
+        value: ${{ jobs.coverage.outputs.pct }}
+      sbom_path:
+        value: ${{ jobs.sbom.outputs.path }}
+
+jobs:
+  format:
+    name: Spotless
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with: { distribution: zulu, java-version: '${{ inputs.java-version }}' }
+      - run: ./gradlew spotlessCheck
+
+  static-analysis:
+    name: Detekt
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with: { distribution: zulu, java-version: '${{ inputs.java-version }}' }
+      - run: ./gradlew detekt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: { name: detekt-reports, path: '**/build/reports/detekt/**' }
+
+  dependency-guard:
+    name: Dependency Guard
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with: { distribution: zulu, java-version: '${{ inputs.java-version }}' }
+      - run: ./gradlew dependencyGuard
+
+  coverage:
+    name: Kover Coverage
+    runs-on: ubuntu-latest
+    outputs:
+      pct: ${{ steps.report.outputs.pct }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with: { distribution: zulu, java-version: '${{ inputs.java-version }}' }
+      - name: Run tests + Kover XML report
+        run: ./gradlew koverXmlReport
+      - name: Compute coverage + enforce threshold
+        id: report
+        env:
+          THRESHOLD: ${{ inputs.coverage_threshold }}
+        run: |
+          REPORT=$(find . -name 'report.xml' -path '*kover*' | head -1)
+          [[ -f "$REPORT" ]] || { echo "::error::No Kover report found"; exit 1; }
+          # Extract counter lines for INSTRUCTION (closest to "line coverage")
+          COVERED=$(grep -oP 'type="INSTRUCTION"[^>]*covered="\K\d+' "$REPORT" | head -1)
+          MISSED=$(grep -oP 'type="INSTRUCTION"[^>]*missed="\K\d+'  "$REPORT" | head -1)
+          TOTAL=$((COVERED + MISSED))
+          [[ "$TOTAL" -gt 0 ]] || { echo "::error::Coverage total is 0"; exit 1; }
+          PCT=$(awk "BEGIN { printf \"%.4f\", $COVERED / $TOTAL }")
+          echo "📊 Coverage: $PCT ($COVERED / $TOTAL)"
+          echo "pct=$PCT" >> "$GITHUB_OUTPUT"
+          MEETS=$(awk -v p="$PCT" -v t="$THRESHOLD" 'BEGIN { print (p >= t) ? "yes" : "no" }')
+          [[ "$MEETS" == "yes" ]] || { echo "::error::Coverage $PCT below threshold $THRESHOLD"; exit 1; }
+      - uses: actions/upload-artifact@v4
+        with: { name: kover-report, path: '**/build/reports/kover/**' }
+
+  sbom:
+    name: SBOM (CycloneDX)
+    runs-on: ubuntu-latest
+    outputs:
+      path: ${{ steps.gen.outputs.path }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with: { distribution: zulu, java-version: '${{ inputs.java-version }}' }
+      - name: Generate SBOM via cyclonedx-gradle-plugin
+        id: gen
+        run: |
+          ./gradlew cyclonedxBom -PcyclonedxOutputFormat="${{ inputs.sbom_format }}"
+          SBOM=$(find . -name 'bom.*' -path '*reports*' | head -1)
+          echo "path=$SBOM" >> "$GITHUB_OUTPUT"
+      - uses: actions/upload-artifact@v4
+        with: { name: sbom, path: '**/build/reports/bom.*' }

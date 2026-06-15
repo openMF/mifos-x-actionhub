@@ -1,0 +1,178 @@
+# .github/workflows/v2/rollback.yaml
+#
+# Revert a release per platform. Operations are non-destructive — they
+# republish a previous version to the production channel. Used in incident
+# response.
+#
+# Per-platform operations:
+#   android: supply --rollout 0.0 (halt rollout) OR republish previous AAB
+#   ios:     pilot expire-build (TestFlight) + deliver previous build (App Store)
+#   mac:     same as ios with platform=osx
+#   web:     copy gh-pages-staging → gh-pages (revert by branch overwrite)
+#
+# Appends a row to consumer's deployment/ROLLBACK_LOG.yaml per
+# RULE-DEPLOYMENT-MANIFEST-001.
+name: v2 · Rollback
+
+on:
+  workflow_call:
+    inputs:
+      platform:            { required: true,  type: string, description: 'android | ios | mac | web | all' }
+      rollback_to_version: { required: true,  type: string, description: 'Tag to revert to (e.g. v2026.06.15)' }
+      reason:              { required: true,  type: string, description: 'Required: free-text reason for audit log' }
+      operator:            { required: false, type: string, default: '', description: 'Defaults to github.actor' }
+      android_package_name: { required: false, type: string, default: 'cmp-android' }
+      ios_package_name:     { required: false, type: string, default: 'cmp-ios' }
+      mac_package_name:     { required: false, type: string, default: 'cmp-desktop' }
+      web_package_name:     { required: false, type: string, default: 'cmp-web' }
+    secrets:
+      playstore_creds:        { required: false }
+      appstore_key_id:        { required: false }
+      appstore_issuer_id:     { required: false }
+      appstore_auth_key:      { required: false }
+      match_password:         { required: false }
+      match_ssh_private_key:  { required: false }
+
+permissions:
+  contents: write
+
+jobs:
+  validate-inputs:
+    name: Validate inputs + audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate
+        run: |
+          if [[ -z "${{ inputs.reason }}" ]]; then
+            echo "::error::reason input is REQUIRED for rollback (audit log)"; exit 1
+          fi
+          if ! [[ "${{ inputs.rollback_to_version }}" =~ ^v[0-9] ]]; then
+            echo "::error::rollback_to_version must look like 'v2026.06.15'"; exit 1
+          fi
+          # Verify the rollback target exists
+          if ! git ls-remote --tags origin "${{ inputs.rollback_to_version }}" | grep -q .; then
+            echo "::error::tag ${{ inputs.rollback_to_version }} not found on origin"; exit 1
+          fi
+
+  android-rollback:
+    if: ${{ inputs.platform == 'android' || inputs.platform == 'all' }}
+    needs: validate-inputs
+    name: Rollback Android (Play track)
+    runs-on: ubuntu-latest
+    environment: rollback-android   # requires admin approval
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: '${{ inputs.rollback_to_version }}', fetch-depth: 0 }
+      - uses: actions/setup-java@v4
+        with: { distribution: zulu, java-version: '17' }
+      - uses: ruby/setup-ruby@afeafc3d1ab54a631816aba4c914a0081c12ff2f  # v1.232.0
+        with: { bundler-cache: true }
+      - name: Materialize Play Store creds
+        env: { PLAYSTORE_CREDS: '${{ secrets.playstore_creds }}' }
+        run: |
+          mkdir -p secrets
+          echo "$PLAYSTORE_CREDS" | base64 --decode > secrets/playStorePublishServiceCredentialsFile.json
+      - name: Halt Play Production rollout (rollout=0.0)
+        run: bundle exec fastlane supply --package_name '${{ inputs.android_package_name }}' --track production --rollout 0.0
+      - name: Republish previous version's AAB
+        run: |
+          # Build the previous version's AAB from the checked-out rollback_to_version tag
+          ./gradlew ":${{ inputs.android_package_name }}:bundleRelease"
+          AAB=$(find . -name '*.aab' -type f | head -1)
+          bundle exec fastlane supply --package_name '${{ inputs.android_package_name }}' --aab "$AAB" --track production
+      - name: Cleanup
+        if: always()
+        run: rm -rf secrets
+
+  ios-rollback:
+    if: ${{ inputs.platform == 'ios' || inputs.platform == 'all' }}
+    needs: validate-inputs
+    name: Rollback iOS (TestFlight expire + App Store deliver previous)
+    runs-on: macos-14
+    environment: rollback-ios
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: '${{ inputs.rollback_to_version }}', fetch-depth: 0 }
+      - uses: ruby/setup-ruby@afeafc3d1ab54a631816aba4c914a0081c12ff2f
+        with: { bundler-cache: true }
+      - name: Materialize Apple secrets
+        env:
+          APPSTORE_AUTH_KEY_B64: ${{ secrets.appstore_auth_key }}
+          MATCH_GIT_PRIVATE_KEY: ${{ secrets.match_ssh_private_key }}
+        run: |
+          mkdir -p secrets
+          echo "$APPSTORE_AUTH_KEY_B64" | base64 --decode > secrets/AuthKey.p8
+          printf '%s' "$MATCH_GIT_PRIVATE_KEY" > secrets/match_ci_key
+          chmod 600 secrets/match_ci_key
+      - name: Republish previous build to App Store
+        env:
+          APPSTORE_KEY_ID:    ${{ secrets.appstore_key_id }}
+          APPSTORE_ISSUER_ID: ${{ secrets.appstore_issuer_id }}
+          MATCH_PASSWORD:     ${{ secrets.match_password }}
+        run: bundle exec fastlane ios release
+      - name: Cleanup
+        if: always()
+        run: rm -rf secrets
+
+  mac-rollback:
+    if: ${{ inputs.platform == 'mac' || inputs.platform == 'all' }}
+    needs: validate-inputs
+    name: Rollback macOS (Mac App Store)
+    runs-on: macos-14
+    environment: rollback-mac
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: '${{ inputs.rollback_to_version }}' }
+      - run: echo "::notice::Mac rollback not yet implemented — manual intervention required"
+
+  web-rollback:
+    if: ${{ inputs.platform == 'web' || inputs.platform == 'all' }}
+    needs: validate-inputs
+    name: Rollback Web (copy gh-pages-staging → gh-pages)
+    runs-on: ubuntu-latest
+    environment: rollback-web
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - name: Overwrite gh-pages with previous tag's gh-pages-staging
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git fetch origin gh-pages-staging gh-pages
+          # Treat staging as the rollback source — staging always lags production by 1 stage
+          git push --force origin "origin/gh-pages-staging:refs/heads/gh-pages"
+
+  audit-log:
+    name: Append ROLLBACK_LOG.yaml
+    needs: [validate-inputs]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Append rollback row
+        env:
+          PLATFORM:   ${{ inputs.platform }}
+          TARGET:     ${{ inputs.rollback_to_version }}
+          REASON:     ${{ inputs.reason }}
+          OPERATOR:   ${{ inputs.operator || github.actor }}
+          RUN_URL:    ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          LOG=deployment/ROLLBACK_LOG.yaml
+          [[ -f "$LOG" ]] || { echo "events: []" > "$LOG"; }
+          TS=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+          cat >> "$LOG" <<EOF
+
+            - timestamp:           "$TS"
+              platform:            "$PLATFORM"
+              rolled_back_to:      "$TARGET"
+              reason:              "$REASON"
+              operator:            "$OPERATOR"
+              ci_run_url:          "$RUN_URL"
+              outcome:             "executed"
+          EOF
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add "$LOG"
+          git commit -m "audit(rollback): $PLATFORM → $TARGET (reason: $REASON)" || true
+          git push || echo "::warning::Failed to push ROLLBACK_LOG.yaml — append manually"

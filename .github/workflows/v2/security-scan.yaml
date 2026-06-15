@@ -1,0 +1,103 @@
+# .github/workflows/v2/security-scan.yaml
+#
+# Security gate — SBOM + dependency vulnerability scan + secret leak detection.
+# Runs on every PR + nightly cron (consumer triggers).
+name: v2 · Security Scan
+
+on:
+  workflow_call:
+    inputs:
+      sbom_format:          { required: false, type: string,  default: 'cyclonedx-json' }
+      fail_on_vuln_severity: { required: false, type: string, default: 'high', description: 'critical | high | medium | low' }
+      gitleaks_config_path: { required: false, type: string,  default: '' }
+      java-version:         { required: false, type: string,  default: '17' }
+    outputs:
+      sbom_artifact:
+        value: ${{ jobs.sbom.outputs.artifact }}
+      vulns_found:
+        value: ${{ jobs.osv.outputs.vulns }}
+      secrets_found:
+        value: ${{ jobs.gitleaks.outputs.leaks }}
+
+jobs:
+  sbom:
+    name: SBOM (CycloneDX)
+    runs-on: ubuntu-latest
+    outputs:
+      artifact: ${{ steps.gen.outputs.path }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with: { distribution: zulu, java-version: '${{ inputs.java-version }}' }
+      - id: gen
+        run: |
+          ./gradlew cyclonedxBom -PcyclonedxOutputFormat="${{ inputs.sbom_format }}"
+          SBOM=$(find . -name 'bom.*' | head -1)
+          echo "path=$SBOM" >> "$GITHUB_OUTPUT"
+      - uses: actions/upload-artifact@v4
+        with: { name: sbom, path: '**/build/reports/bom.*' }
+
+  osv:
+    name: Dependency vulnerabilities (OSV-Scanner)
+    needs: sbom
+    runs-on: ubuntu-latest
+    outputs:
+      vulns: ${{ steps.scan.outputs.count }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with: { name: sbom, path: ./sbom }
+      - name: Run OSV-Scanner against SBOM
+        id: scan
+        run: |
+          curl -sSfL https://github.com/google/osv-scanner/releases/latest/download/osv-scanner_linux_amd64 -o osv-scanner
+          chmod +x osv-scanner
+          SBOM_FILE=$(find ./sbom -name 'bom.*' | head -1)
+          ./osv-scanner --format=json --sbom="$SBOM_FILE" > osv-results.json || true
+
+          COUNT=$(jq '[.results[]?.packages[]?.vulnerabilities[]?] | length' osv-results.json 2>/dev/null || echo 0)
+          echo "🔎 OSV: found $COUNT vulnerabilities"
+          echo "count=$COUNT" >> "$GITHUB_OUTPUT"
+
+          SEVERITY="${{ inputs.fail_on_vuln_severity }}"
+          HIGHEST=$(jq -r '[.results[]?.packages[]?.vulnerabilities[]?.severity[]?.score | tonumber] | max // 0' osv-results.json 2>/dev/null || echo 0)
+          case "$SEVERITY" in
+            critical) MIN=9.0 ;;
+            high)     MIN=7.0 ;;
+            medium)   MIN=4.0 ;;
+            low)      MIN=0.1 ;;
+          esac
+          AT_OR_ABOVE=$(awk -v h="$HIGHEST" -v m="$MIN" 'BEGIN { print (h >= m) ? "yes" : "no" }')
+          if [[ "$AT_OR_ABOVE" == "yes" ]]; then
+            echo "::error::OSV found vuln with CVSS $HIGHEST ≥ threshold $MIN ($SEVERITY)"
+            exit 1
+          fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: { name: osv-results, path: osv-results.json }
+
+  gitleaks:
+    name: Secret leak scan (gitleaks)
+    runs-on: ubuntu-latest
+    outputs:
+      leaks: ${{ steps.scan.outputs.count }}
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }   # gitleaks needs full history
+      - name: Run gitleaks
+        id: scan
+        run: |
+          curl -sSfL https://github.com/gitleaks/gitleaks/releases/download/v8.18.4/gitleaks_8.18.4_linux_x64.tar.gz | tar xz
+          CONFIG_ARG=""
+          [[ -n "${{ inputs.gitleaks_config_path }}" ]] && CONFIG_ARG="--config=${{ inputs.gitleaks_config_path }}"
+          ./gitleaks detect --redact $CONFIG_ARG --report-format=json --report-path=gitleaks.json || true
+          COUNT=$(jq '. | length' gitleaks.json 2>/dev/null || echo 0)
+          echo "🔐 gitleaks: found $COUNT potential leaks"
+          echo "count=$COUNT" >> "$GITHUB_OUTPUT"
+          if [[ "$COUNT" -gt 0 ]]; then
+            echo "::error::gitleaks detected $COUNT potential secret leaks"
+            exit 1
+          fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: { name: gitleaks-report, path: gitleaks.json }

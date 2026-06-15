@@ -1,0 +1,41 @@
+# .github/workflows/v2/release-apple.yaml
+#
+# Thin wrapper → openMF/mifos-x-actionhub-publish-apple-kmp/.github/workflows/release.yaml@v2.0.0
+# Covers iOS AND macOS (Mac App Store path). For macOS DMG direct-distribution,
+# also routes through publish-apple-kmp via the mac-dmg-notarized sub-action.
+name: v2 · Release Apple (iOS + macOS)
+
+on:
+  workflow_call:
+    inputs:
+      platform:      { required: true,  type: string, description: 'ios | mac' }
+      package_name:  { required: true,  type: string, description: 'Gradle module (cmp-ios or cmp-desktop)' }
+      shared_module: { required: true,  type: string, description: 'KMP shared module (e.g. cmp-shared)' }
+      version_tag:   { required: true,  type: string }
+      starting_rung: { required: false, type: string, default: 'internal', description: 'firebase (ios only) | internal | beta | production' }
+    secrets:
+      appstore_key_id:           { required: true }
+      appstore_issuer_id:        { required: true }
+      appstore_auth_key:         { required: true }
+      match_password:            { required: true }
+      match_ssh_private_key:     { required: true }
+      firebase_creds:            { required: false }
+
+  workflow_dispatch:
+    inputs:
+      platform:      { required: true,  type: choice, options: [ios, mac] }
+      package_name:  { required: true,  type: string, default: 'cmp-ios' }
+      shared_module: { required: true,  type: string, default: 'cmp-shared' }
+      version_tag:   { required: true,  type: string }
+      starting_rung: { required: false, type: choice, options: [firebase, internal, beta, production], default: internal }
+
+jobs:
+  delegate:
+    uses: openMF/mifos-x-actionhub-publish-apple-kmp/.github/workflows/release.yaml@v2.0.0
+    with:
+      platform:      ${{ inputs.platform }}
+      package_name:  ${{ inputs.package_name }}
+      shared_module: ${{ inputs.shared_module }}
+      version_tag:   ${{ inputs.version_tag }}
+      starting_rung: ${{ inputs.starting_rung }}
+    secrets: inherit
