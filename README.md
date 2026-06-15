@@ -12,11 +12,30 @@
 
 </div>
 
+---
+
+## 🆕 v2 surface (since v1.0.17)
+
+[`.github/workflows/v2/`](./.github/workflows/v2/) — a redesigned, opt-in workflow surface featuring:
+
+- **Uniform 3-stage promotion ladder** across Android / iOS / macOS / Desktop / Web (internal → beta → production)
+- **Approval gates** via GHA `environment:` protection rules (consumer-configured)
+- **Supersede semantics** (`concurrency.cancel-in-progress: true`) — new release cancels pending approvals
+- **Auto-tag + auto-release** (`v2/tag-weekly-release.yaml`, `v2/tag-monthly-release.yaml`) — adopting the `mifos-pay` cron pattern
+- **NEW capabilities** absent in v1: `v2/rollback.yaml`, `v2/security-scan.yaml`, `v2/deployment-status.yaml`, `v2/release-notes-generate.yaml`
+
+**v1 is unchanged.** Pinned consumers at `@v1.0.16` continue working without migration. Opt-in to v2 by referencing `.github/workflows/v2/*@v1.0.17+`.
+
+📖 See [`.github/workflows/v2/README.md`](./.github/workflows/v2/README.md) for the full v2 file index, migration table, and consumer usage examples.
+
+---
+
 <details>
 <summary><kbd>Table of contents</kbd></summary>
 
 #### TOC
 
+- [🆕 v2 surface (since v1.0.17)](#-v2-surface-since-v1017)
 - [✨ Multi-Platform App Build and Publish Workflow](#multi-platform-app-build-and-publish-workflow)
     - [Workflow Usage Example](#workflow-usage-example)
 - [✨ Kotlin/JS Web Application GitHub Pages Deployment Workflow](#kotlinjs-web-application-github-pages-deployment-workflow)
