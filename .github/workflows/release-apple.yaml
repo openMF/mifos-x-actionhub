@@ -1,0 +1,150 @@
+# .github/workflows/release-apple.yaml
+#
+# ADDITIVE — reusable workflow for Apple platforms (iOS or macOS) promotion ladder.
+# Companion to existing iOS/macOS workflows. Existing workflows UNCHANGED.
+#
+# Promotion model (uniform across iOS + macOS, switched by `platform` input):
+#   Stage 0 (firebase)        — out-of-band dev/QA (iOS only; macOS skips)
+#   Stage 1 (internal)        — TestFlight Internal, 1 reviewer required
+#   Stage 2 (beta)            — TestFlight External (Apple beta review ~24h), 1 reviewer
+#   Stage 3 (production)      — App Store / Mac App Store (Apple review 1-3d), 2 reviewers + wait
+name: Release · Apple (ladder)
+
+on:
+  workflow_call:
+    inputs:
+      platform:
+        description: "Platform: ios | mac"
+        required: true
+        type: string
+      package_name:
+        description: 'Gradle module (e.g. cmp-ios or cmp-desktop)'
+        required: true
+        type: string
+      shared_module:
+        description: 'KMP shared module path (e.g. cmp-shared)'
+        required: true
+        type: string
+      version_tag:
+        description: 'Version tag'
+        required: true
+        type: string
+      starting_rung:
+        description: "Resume from: firebase | internal | beta | production"
+        required: false
+        type: string
+        default: 'internal'
+
+    secrets:
+      appstore_key_id:           { required: true }
+      appstore_issuer_id:        { required: true }
+      appstore_auth_key:         { required: true }
+      match_password:            { required: true }
+      match_ssh_private_key:     { required: true }
+      firebase_creds:            { required: false }
+
+concurrency:
+  group: release-apple-${{ inputs.platform }}
+  cancel-in-progress: true
+
+jobs:
+  stage-0-firebase:
+    name: Stage 0 — Firebase App Distribution (iOS only)
+    if: |
+      inputs.platform == 'ios' &&
+      contains(fromJSON('["firebase","internal","beta","production"]'), inputs.starting_rung)
+    runs-on: macos-14
+    environment: ios-firebase
+    steps:
+      - uses: actions/checkout@v4
+      - name: Publish to Firebase
+        uses: therajanmaurya/mifos-x-actionhub-publish-apple-kmp/ios-firebase-distribution@main
+        with:
+          ios_package_name:      ${{ inputs.package_name }}
+          shared_module:         ${{ inputs.shared_module }}
+          appstore_key_id:       ${{ secrets.appstore_key_id }}
+          appstore_issuer_id:    ${{ secrets.appstore_issuer_id }}
+          appstore_auth_key:     ${{ secrets.appstore_auth_key }}
+          match_password:        ${{ secrets.match_password }}
+          match_ssh_private_key: ${{ secrets.match_ssh_private_key }}
+          firebase_creds:        ${{ secrets.firebase_creds }}
+
+  stage-1-testflight-internal:
+    name: Stage 1 — TestFlight Internal
+    needs: [stage-0-firebase]
+    if: contains(fromJSON('["internal","beta","production"]'), inputs.starting_rung) && !cancelled() && !failure()
+    runs-on: macos-14
+    environment: ${{ inputs.platform }}-testflight-internal
+    steps:
+      - uses: actions/checkout@v4
+      - name: Upload to TestFlight Internal (iOS)
+        if: inputs.platform == 'ios'
+        uses: therajanmaurya/mifos-x-actionhub-publish-apple-kmp/ios-testflight-internal@main
+        with:
+          ios_package_name:      ${{ inputs.package_name }}
+          shared_module:         ${{ inputs.shared_module }}
+          appstore_key_id:       ${{ secrets.appstore_key_id }}
+          appstore_issuer_id:    ${{ secrets.appstore_issuer_id }}
+          appstore_auth_key:     ${{ secrets.appstore_auth_key }}
+          match_password:        ${{ secrets.match_password }}
+          match_ssh_private_key: ${{ secrets.match_ssh_private_key }}
+      - name: Upload to Mac TestFlight Internal (macOS)
+        if: inputs.platform == 'mac'
+        uses: therajanmaurya/mifos-x-actionhub-publish-apple-kmp/mac-testflight-internal@main
+        with:
+          desktop_package_name:  ${{ inputs.package_name }}
+          appstore_key_id:       ${{ secrets.appstore_key_id }}
+          appstore_issuer_id:    ${{ secrets.appstore_issuer_id }}
+          appstore_auth_key:     ${{ secrets.appstore_auth_key }}
+          match_password:        ${{ secrets.match_password }}
+          match_ssh_private_key: ${{ secrets.match_ssh_private_key }}
+
+  stage-2-promote-to-external-beta:
+    name: Stage 2 — Promote to TestFlight External (no rebuild)
+    needs: [stage-1-testflight-internal]
+    if: contains(fromJSON('["beta","production"]'), inputs.starting_rung) && !cancelled() && !failure()
+    runs-on: macos-14
+    environment: ${{ inputs.platform }}-testflight-external
+    steps:
+      - uses: actions/checkout@v4
+      - name: Promote iOS TF Internal → External
+        if: inputs.platform == 'ios'
+        uses: therajanmaurya/mifos-x-actionhub-publish-apple-kmp/ios-promote-to-testflight-external@main
+        with:
+          ios_package_name:      ${{ inputs.package_name }}
+          appstore_key_id:       ${{ secrets.appstore_key_id }}
+          appstore_issuer_id:    ${{ secrets.appstore_issuer_id }}
+          appstore_auth_key:     ${{ secrets.appstore_auth_key }}
+      - name: Promote Mac TF Internal → External
+        if: inputs.platform == 'mac'
+        uses: therajanmaurya/mifos-x-actionhub-publish-apple-kmp/mac-promote-to-testflight-external@main
+        with:
+          desktop_package_name:  ${{ inputs.package_name }}
+          appstore_key_id:       ${{ secrets.appstore_key_id }}
+          appstore_issuer_id:    ${{ secrets.appstore_issuer_id }}
+          appstore_auth_key:     ${{ secrets.appstore_auth_key }}
+
+  stage-3-promote-to-app-store:
+    name: Stage 3 — Promote to App Store (2 reviewers + wait timer, no rebuild)
+    needs: [stage-2-promote-to-external-beta]
+    if: inputs.starting_rung == 'production' && !cancelled() && !failure()
+    runs-on: macos-14
+    environment: ${{ inputs.platform }}-app-store
+    steps:
+      - uses: actions/checkout@v4
+      - name: Promote iOS TF → App Store
+        if: inputs.platform == 'ios'
+        uses: therajanmaurya/mifos-x-actionhub-publish-apple-kmp/ios-promote-to-app-store@main
+        with:
+          ios_package_name:      ${{ inputs.package_name }}
+          appstore_key_id:       ${{ secrets.appstore_key_id }}
+          appstore_issuer_id:    ${{ secrets.appstore_issuer_id }}
+          appstore_auth_key:     ${{ secrets.appstore_auth_key }}
+      - name: Promote Mac TF → Mac App Store
+        if: inputs.platform == 'mac'
+        uses: therajanmaurya/mifos-x-actionhub-publish-apple-kmp/mac-promote-to-app-store@main
+        with:
+          desktop_package_name:  ${{ inputs.package_name }}
+          appstore_key_id:       ${{ secrets.appstore_key_id }}
+          appstore_issuer_id:    ${{ secrets.appstore_issuer_id }}
+          appstore_auth_key:     ${{ secrets.appstore_auth_key }}

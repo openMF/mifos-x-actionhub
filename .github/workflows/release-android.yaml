@@ -1,0 +1,136 @@
+# .github/workflows/release-android.yaml
+#
+# ADDITIVE — reusable workflow for the Android promotion ladder.
+# Companion to existing android-build-and-publish.yaml + promote-to-production.yaml.
+# Existing workflows are UNCHANGED — community consumers using @v1.0.16 are unaffected.
+#
+# Promotion model:
+#   Stage 0 (firebase)    — out-of-band dev/QA, no approval gate
+#   Stage 1 (internal)    — Play Internal track, 1 reviewer required
+#   Stage 2 (beta)        — Play Open Beta, 1 reviewer required (promote, no rebuild)
+#   Stage 3 (production)  — Play Production, 2 reviewers + wait timer (promote, no rebuild)
+#
+# Approval gates: GHA `environment:` protection rules (configured per-consumer-repo).
+#   environment: android-firebase            → no protection
+#   environment: android-play-internal       → 1 reviewer
+#   environment: android-play-beta           → 1 reviewer
+#   environment: android-play-production     → 2 reviewers + 30min wait timer
+#
+# Supersede semantics: concurrency.group=release-android + cancel-in-progress=true.
+# A NEW release run cancels any pending approvals on the previous run.
+#
+# Resume support: `starting_rung` input skips earlier stages (e.g. retry after
+# rung 3 failed but earlier rungs were fine).
+#
+# Composite refs use therajanmaurya/* during initial dev phase. Will rebind to
+# openMF/* at v2.0.0 tag (post-transfer).
+name: Release · Android (ladder)
+
+on:
+  workflow_call:
+    inputs:
+      android_package_name:
+        description: 'Android Gradle module (e.g. cmp-android)'
+        required: true
+        type: string
+      version_tag:
+        description: 'Version tag (e.g. v2026.06.15)'
+        required: true
+        type: string
+      starting_rung:
+        description: "Resume from a specific rung: firebase | internal | beta | production"
+        required: false
+        type: string
+        default: 'firebase'
+      tester_groups:
+        description: 'Firebase tester groups (comma-separated, Stage 0 only)'
+        required: false
+        type: string
+        default: 'qa-team,beta-testers'
+      production_rollout:
+        description: 'Stage 3 staged rollout percentage (0.0-1.0)'
+        required: false
+        type: string
+        default: '0.10'
+
+    secrets:
+      google_services:           { required: true }
+      firebase_creds:            { required: true }
+      playstore_creds:           { required: true }
+      release_keystore:          { required: true }
+      keystore_password:         { required: true }
+      keystore_alias:            { required: true }
+      keystore_alias_password:   { required: true }
+
+concurrency:
+  group: release-android
+  cancel-in-progress: true
+
+jobs:
+  stage-0-firebase:
+    name: Stage 0 — Firebase App Distribution
+    if: contains(fromJSON('["firebase","internal","beta","production"]'), inputs.starting_rung)
+    runs-on: ubuntu-latest
+    environment: android-firebase
+    steps:
+      - uses: actions/checkout@v4
+      - name: Publish to Firebase
+        uses: therajanmaurya/mifos-x-actionhub-publish-android-kmp/firebase-distribution@main
+        with:
+          android_package_name:     ${{ inputs.android_package_name }}
+          release_type:             prod
+          google_services:          ${{ secrets.google_services }}
+          firebase_creds:           ${{ secrets.firebase_creds }}
+          keystore_file:            ${{ secrets.release_keystore }}
+          keystore_password:        ${{ secrets.keystore_password }}
+          keystore_alias:           ${{ secrets.keystore_alias }}
+          keystore_alias_password:  ${{ secrets.keystore_alias_password }}
+          tester_groups:            ${{ inputs.tester_groups }}
+
+  stage-1-play-internal:
+    name: Stage 1 — Play Internal (approval required)
+    needs: [stage-0-firebase]
+    if: contains(fromJSON('["internal","beta","production"]'), inputs.starting_rung) && !cancelled() && !failure()
+    runs-on: ubuntu-latest
+    environment: android-play-internal
+    steps:
+      - uses: actions/checkout@v4
+      - name: Upload to Play Internal
+        uses: therajanmaurya/mifos-x-actionhub-publish-android-kmp/play-store-internal@main
+        with:
+          android_package_name:     ${{ inputs.android_package_name }}
+          google_services:          ${{ secrets.google_services }}
+          playstore_creds:          ${{ secrets.playstore_creds }}
+          keystore_file:            ${{ secrets.release_keystore }}
+          keystore_password:        ${{ secrets.keystore_password }}
+          keystore_alias:           ${{ secrets.keystore_alias }}
+          keystore_alias_password:  ${{ secrets.keystore_alias_password }}
+
+  stage-2-promote-to-beta:
+    name: Stage 2 — Promote to Open Beta (approval required, no rebuild)
+    needs: [stage-1-play-internal]
+    if: contains(fromJSON('["beta","production"]'), inputs.starting_rung) && !cancelled() && !failure()
+    runs-on: ubuntu-latest
+    environment: android-play-beta
+    steps:
+      - uses: actions/checkout@v4
+      - name: Promote Internal → Beta
+        uses: therajanmaurya/mifos-x-actionhub-publish-android-kmp/promote-to-beta@main
+        with:
+          android_package_name: ${{ inputs.android_package_name }}
+          playstore_creds:      ${{ secrets.playstore_creds }}
+
+  stage-3-promote-to-production:
+    name: Stage 3 — Promote to Production (2 reviewers + wait timer, no rebuild)
+    needs: [stage-2-promote-to-beta]
+    if: inputs.starting_rung == 'production' && !cancelled() && !failure()
+    runs-on: ubuntu-latest
+    environment: android-play-production
+    steps:
+      - uses: actions/checkout@v4
+      - name: Promote Beta → Production (staged rollout)
+        uses: therajanmaurya/mifos-x-actionhub-publish-android-kmp/promote-to-production@main
+        with:
+          android_package_name: ${{ inputs.android_package_name }}
+          playstore_creds:      ${{ secrets.playstore_creds }}
+          rollout:              ${{ inputs.production_rollout }}

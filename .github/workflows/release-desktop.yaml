@@ -1,0 +1,88 @@
+# .github/workflows/release-desktop.yaml
+#
+# ADDITIVE — reusable workflow for Desktop (Windows + Linux only) direct-distribution ladder.
+# macOS desktop targets live in release-apple.yaml since they share Apple Dev Program infra.
+#
+# Promotion model (GH Release flag-flip ladder):
+#   Stage 1 (prerelease)  — GH Release prerelease=true,  latest=false
+#   Stage 2 (beta)        — GH Release prerelease=false, latest=false
+#   Stage 3 (stable)      — GH Release prerelease=false, latest=true
+#
+# Stage 1 builds + uploads. Stages 2-3 promote = flip flags only (no rebuild).
+name: Release · Desktop (Win/Linux ladder)
+
+on:
+  workflow_call:
+    inputs:
+      target:
+        description: "Target: windows-exe | windows-msi-signed | windows-microsoft-store | linux-deb"
+        required: true
+        type: string
+      desktop_package_name:
+        description: 'Gradle module (e.g. cmp-desktop)'
+        required: true
+        type: string
+      github_tag:
+        description: 'GH Release tag (must already exist for promote stages)'
+        required: true
+        type: string
+      starting_rung:
+        description: "Resume from: prerelease | beta | stable"
+        required: false
+        type: string
+        default: 'prerelease'
+
+    secrets:
+      azure_client_id:                       { required: false }
+      azure_tenant_id:                       { required: false }
+      azure_subscription_id:                 { required: false }
+      azure_trusted_signing_endpoint:        { required: false }
+      azure_trusted_signing_account:         { required: false }
+      azure_cert_profile_name:               { required: false }
+      microsoft_store_client_id:             { required: false }
+      microsoft_store_client_secret:         { required: false }
+
+concurrency:
+  group: release-desktop-${{ inputs.target }}
+  cancel-in-progress: true
+
+jobs:
+  stage-1-prerelease:
+    name: Stage 1 — Prerelease (build + upload + prerelease flag)
+    if: contains(fromJSON('["prerelease","beta","stable"]'), inputs.starting_rung)
+    runs-on: ${{ (inputs.target == 'linux-deb') && 'ubuntu-latest' || 'windows-latest' }}
+    environment: desktop-${{ inputs.target }}-prerelease
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build + sign + upload (per target)
+        uses: therajanmaurya/mifos-x-actionhub-publish-desktop-kmp/${{ inputs.target }}@main
+        with:
+          desktop_package_name: ${{ inputs.desktop_package_name }}
+          github_tag:           ${{ inputs.github_tag }}
+          stage:                prerelease
+
+  stage-2-promote-to-beta:
+    name: Stage 2 — Promote to Beta (no rebuild — flip GH Release flags)
+    needs: [stage-1-prerelease]
+    if: contains(fromJSON('["beta","stable"]'), inputs.starting_rung) && !cancelled() && !failure()
+    runs-on: ubuntu-latest
+    environment: desktop-${{ inputs.target }}-beta
+    steps:
+      - uses: actions/checkout@v4
+      - name: Flip GH Release flags to beta
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release edit "${{ inputs.github_tag }}" --prerelease=false --latest=false
+
+  stage-3-promote-to-stable:
+    name: Stage 3 — Promote to Stable (2 reviewers + wait, no rebuild)
+    needs: [stage-2-promote-to-beta]
+    if: inputs.starting_rung == 'stable' && !cancelled() && !failure()
+    runs-on: ubuntu-latest
+    environment: desktop-${{ inputs.target }}-stable
+    steps:
+      - uses: actions/checkout@v4
+      - name: Flip GH Release flags to stable
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release edit "${{ inputs.github_tag }}" --prerelease=false --latest=true

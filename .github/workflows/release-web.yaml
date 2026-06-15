@@ -1,0 +1,82 @@
+# .github/workflows/release-web.yaml
+#
+# ADDITIVE — reusable workflow for Web direct-deploy ladder.
+# Companion to existing build-and-deploy-site.yaml. Existing UNCHANGED.
+#
+# Promotion model (per host, branch-based for gh-pages):
+#   Stage 1 (preview)     — gh-pages-preview branch
+#   Stage 2 (staging)     — gh-pages-staging branch (promote = copy preview → staging)
+#   Stage 3 (production)  — gh-pages branch (promote = copy staging → gh-pages)
+name: Release · Web (ladder)
+
+on:
+  workflow_call:
+    inputs:
+      host:
+        description: "Host: gh-pages | cloudflare-pages | netlify | vercel"
+        required: true
+        type: string
+        default: 'gh-pages'
+      web_package_name:
+        description: 'Gradle module (e.g. cmp-web)'
+        required: true
+        type: string
+      starting_rung:
+        description: "Resume from: preview | staging | production"
+        required: false
+        type: string
+        default: 'preview'
+
+    secrets:
+      cloudflare_api_token: { required: false }
+      netlify_auth_token:   { required: false }
+      vercel_token:         { required: false }
+
+concurrency:
+  group: release-web-${{ inputs.host }}
+  cancel-in-progress: true
+
+jobs:
+  stage-1-preview:
+    name: Stage 1 — Preview
+    if: contains(fromJSON('["preview","staging","production"]'), inputs.starting_rung)
+    runs-on: ubuntu-latest
+    environment: web-${{ inputs.host }}-preview
+    permissions: { contents: write, pages: write, id-token: write }
+    steps:
+      - uses: actions/checkout@v4
+      - name: Deploy to preview environment
+        uses: therajanmaurya/mifos-x-actionhub-publish-web-kmp/${{ inputs.host }}@main
+        with:
+          web_package_name: ${{ inputs.web_package_name }}
+          target_stage:     preview
+
+  stage-2-staging:
+    name: Stage 2 — Staging
+    needs: [stage-1-preview]
+    if: contains(fromJSON('["staging","production"]'), inputs.starting_rung) && !cancelled() && !failure()
+    runs-on: ubuntu-latest
+    environment: web-${{ inputs.host }}-staging
+    permissions: { contents: write, pages: write, id-token: write }
+    steps:
+      - uses: actions/checkout@v4
+      - name: Deploy to staging environment
+        uses: therajanmaurya/mifos-x-actionhub-publish-web-kmp/${{ inputs.host }}@main
+        with:
+          web_package_name: ${{ inputs.web_package_name }}
+          target_stage:     staging
+
+  stage-3-production:
+    name: Stage 3 — Production (2 reviewers + wait timer)
+    needs: [stage-2-staging]
+    if: inputs.starting_rung == 'production' && !cancelled() && !failure()
+    runs-on: ubuntu-latest
+    environment: web-${{ inputs.host }}-production
+    permissions: { contents: write, pages: write, id-token: write }
+    steps:
+      - uses: actions/checkout@v4
+      - name: Deploy to production environment
+        uses: therajanmaurya/mifos-x-actionhub-publish-web-kmp/${{ inputs.host }}@main
+        with:
+          web_package_name: ${{ inputs.web_package_name }}
+          target_stage:     production
