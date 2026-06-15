@@ -1,6 +1,6 @@
 # .github/workflows/v2/release-android.yaml
 #
-# Thin wrapper → openMF/mifos-x-actionhub-publish-android-kmp/.github/workflows/release.yaml@v2.0.0
+# Thin wrapper → therajanmaurya/mifos-x-actionhub-publish-android-kmp/.github/workflows/release.yaml@v2.0.0
 # Provides a stable @v1.0.17+ entry point for consumers who want the discoverable
 # mifos-x-actionhub interface instead of referencing the platform repo directly.
 name: v2 · Release Android
@@ -30,7 +30,7 @@ on:
 
 jobs:
   delegate:
-    uses: openMF/mifos-x-actionhub-publish-android-kmp/.github/workflows/release.yaml@v2.0.0
+    uses: therajanmaurya/mifos-x-actionhub-publish-android-kmp/.github/workflows/release.yaml@v2.0.0
     with:
       android_package_name: ${{ inputs.android_package_name }}
       version_tag:          ${{ inputs.version_tag }}

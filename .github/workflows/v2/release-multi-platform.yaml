@@ -42,7 +42,7 @@ on:
 jobs:
   android:
     if: ${{ inputs.include_android }}
-    uses: openMF/mifos-x-actionhub-publish-android-kmp/.github/workflows/release.yaml@v2.0.0
+    uses: therajanmaurya/mifos-x-actionhub-publish-android-kmp/.github/workflows/release.yaml@v2.0.0
     with:
       android_package_name: ${{ inputs.android_package_name }}
       version_tag:          ${{ inputs.version_tag }}
@@ -52,7 +52,7 @@ jobs:
 
   ios:
     if: ${{ inputs.include_ios }}
-    uses: openMF/mifos-x-actionhub-publish-apple-kmp/.github/workflows/release.yaml@v2.0.0
+    uses: therajanmaurya/mifos-x-actionhub-publish-apple-kmp/.github/workflows/release.yaml@v2.0.0
     with:
       platform:      ios
       package_name:  ${{ inputs.ios_package_name }}
@@ -63,7 +63,7 @@ jobs:
 
   mac:
     if: ${{ inputs.include_mac }}
-    uses: openMF/mifos-x-actionhub-publish-apple-kmp/.github/workflows/release.yaml@v2.0.0
+    uses: therajanmaurya/mifos-x-actionhub-publish-apple-kmp/.github/workflows/release.yaml@v2.0.0
     with:
       platform:      mac
       package_name:  ${{ inputs.mac_package_name }}
@@ -74,7 +74,7 @@ jobs:
 
   desktop-win:
     if: ${{ inputs.include_desktop_win }}
-    uses: openMF/mifos-x-actionhub-publish-desktop-kmp/.github/workflows/release.yaml@v2.0.0
+    uses: therajanmaurya/mifos-x-actionhub-publish-desktop-kmp/.github/workflows/release.yaml@v2.0.0
     with:
       target:               ${{ inputs.desktop_target }}
       desktop_package_name: ${{ inputs.mac_package_name }}   # both desktop targets use the cmp-desktop module
@@ -84,7 +84,7 @@ jobs:
 
   desktop-linux:
     if: ${{ inputs.include_desktop_linux }}
-    uses: openMF/mifos-x-actionhub-publish-desktop-kmp/.github/workflows/release.yaml@v2.0.0
+    uses: therajanmaurya/mifos-x-actionhub-publish-desktop-kmp/.github/workflows/release.yaml@v2.0.0
     with:
       target:               ${{ inputs.linux_target }}
       desktop_package_name: ${{ inputs.mac_package_name }}
@@ -94,7 +94,7 @@ jobs:
 
   web:
     if: ${{ inputs.include_web }}
-    uses: openMF/mifos-x-actionhub-publish-web-kmp/.github/workflows/release.yaml@v2.0.0
+    uses: therajanmaurya/mifos-x-actionhub-publish-web-kmp/.github/workflows/release.yaml@v2.0.0
     with:
       host:             ${{ inputs.web_host }}
       web_package_name: ${{ inputs.web_package_name }}

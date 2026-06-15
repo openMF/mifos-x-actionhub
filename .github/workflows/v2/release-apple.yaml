@@ -1,6 +1,6 @@
 # .github/workflows/v2/release-apple.yaml
 #
-# Thin wrapper → openMF/mifos-x-actionhub-publish-apple-kmp/.github/workflows/release.yaml@v2.0.0
+# Thin wrapper → therajanmaurya/mifos-x-actionhub-publish-apple-kmp/.github/workflows/release.yaml@v2.0.0
 # Covers iOS AND macOS (Mac App Store path). For macOS DMG direct-distribution,
 # also routes through publish-apple-kmp via the mac-dmg-notarized sub-action.
 name: v2 · Release Apple (iOS + macOS)
@@ -31,7 +31,7 @@ on:
 
 jobs:
   delegate:
-    uses: openMF/mifos-x-actionhub-publish-apple-kmp/.github/workflows/release.yaml@v2.0.0
+    uses: therajanmaurya/mifos-x-actionhub-publish-apple-kmp/.github/workflows/release.yaml@v2.0.0
     with:
       platform:      ${{ inputs.platform }}
       package_name:  ${{ inputs.package_name }}

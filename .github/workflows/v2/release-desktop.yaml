@@ -1,6 +1,6 @@
 # .github/workflows/v2/release-desktop.yaml
 #
-# Thin wrapper → openMF/mifos-x-actionhub-publish-desktop-kmp/.github/workflows/release.yaml@v2.0.0
+# Thin wrapper → therajanmaurya/mifos-x-actionhub-publish-desktop-kmp/.github/workflows/release.yaml@v2.0.0
 # Windows + Linux only. For macOS desktop, use release-apple.yaml (mac-dmg-notarized).
 name: v2 · Release Desktop (Windows + Linux)
 
@@ -22,7 +22,7 @@ on:
 
 jobs:
   delegate:
-    uses: openMF/mifos-x-actionhub-publish-desktop-kmp/.github/workflows/release.yaml@v2.0.0
+    uses: therajanmaurya/mifos-x-actionhub-publish-desktop-kmp/.github/workflows/release.yaml@v2.0.0
     with:
       target:               ${{ inputs.target }}
       desktop_package_name: ${{ inputs.desktop_package_name }}
