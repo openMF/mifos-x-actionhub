@@ -1,8 +1,12 @@
 # .github/workflows/v2/release-android.yaml
 #
-# Thin wrapper → therajanmaurya/mifos-x-actionhub-publish-android-kmp/.github/workflows/release.yaml@v2.0.0
+# Thin wrapper → therajanmaurya/mifos-x-actionhub-publish-android-kmp/.github/workflows/release.yaml@v2.0.4
 # Provides a stable @v1.0.17+ entry point for consumers who want the discoverable
 # mifos-x-actionhub interface instead of referencing the platform repo directly.
+#
+# Play App Signing model (per https://support.google.com/googleplay/android-developer/answer/9842756):
+# Google holds the app signing key in KMS; developer only holds the upload key.
+# Single keystore (upload_keystore) replaces the legacy release_keystore (as of v2.0.4).
 name: v2 · Release Android
 
 on:
@@ -17,7 +21,7 @@ on:
       google_services:          { required: true }
       firebase_creds:           { required: true }
       playstore_creds:          { required: true }
-      release_keystore:         { required: true }
+      upload_keystore:          { required: true }
       keystore_password:        { required: true }
       keystore_alias:           { required: true }
       keystore_alias_password:  { required: true }
@@ -30,7 +34,7 @@ on:
 
 jobs:
   delegate:
-    uses: therajanmaurya/mifos-x-actionhub-publish-android-kmp/.github/workflows/release.yaml@v2.0.0
+    uses: therajanmaurya/mifos-x-actionhub-publish-android-kmp/.github/workflows/release.yaml@v2.0.4
     with:
       android_package_name: ${{ inputs.android_package_name }}
       version_tag:          ${{ inputs.version_tag }}

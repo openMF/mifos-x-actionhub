@@ -42,7 +42,7 @@ on:
 jobs:
   android:
     if: ${{ inputs.include_android }}
-    uses: therajanmaurya/mifos-x-actionhub-publish-android-kmp/.github/workflows/release.yaml@v2.0.0
+    uses: therajanmaurya/mifos-x-actionhub-publish-android-kmp/.github/workflows/release.yaml@v2.0.4
     with:
       android_package_name: ${{ inputs.android_package_name }}
       version_tag:          ${{ inputs.version_tag }}
