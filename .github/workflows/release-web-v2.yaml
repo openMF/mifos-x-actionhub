@@ -1,4 +1,4 @@
-# .github/workflows/v2/release-web.yaml
+# .github/workflows/release-web-v2.yaml
 #
 # Thin wrapper → therajanmaurya/mifos-x-actionhub-publish-web-kmp/.github/workflows/release.yaml@v2.0.0
 name: v2 · Release Web

@@ -1,4 +1,4 @@
-# .github/workflows/v2/security-scan.yaml
+# .github/workflows/security-scan-v2.yaml
 #
 # Security gate — SBOM + dependency vulnerability scan + secret leak detection.
 # Runs on every PR + nightly cron (consumer triggers).

@@ -1,4 +1,4 @@
-# .github/workflows/v2/rollback.yaml
+# .github/workflows/rollback-v2.yaml
 #
 # Revert a release per platform. Operations are non-destructive — they
 # republish a previous version to the production channel. Used in incident

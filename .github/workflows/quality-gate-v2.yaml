@@ -1,4 +1,4 @@
-# .github/workflows/v2/quality-gate.yaml
+# .github/workflows/quality-gate-v2.yaml
 #
 # Combined quality suite: coverage + Spotless + Detekt + Dependency Guard + SBOM.
 # Expanded from v1's test-coverage.yaml (which was Kover-only).

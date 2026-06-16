@@ -1,4 +1,4 @@
-# .github/workflows/v2/release-desktop.yaml
+# .github/workflows/release-desktop-v2.yaml
 #
 # Thin wrapper → therajanmaurya/mifos-x-actionhub-publish-desktop-kmp/.github/workflows/release.yaml@v2.0.0
 # Windows + Linux only. For macOS desktop, use release-apple.yaml (mac-dmg-notarized).

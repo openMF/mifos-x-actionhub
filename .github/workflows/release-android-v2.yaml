@@ -1,4 +1,4 @@
-# .github/workflows/v2/release-android.yaml
+# .github/workflows/release-android-v2.yaml
 #
 # Thin wrapper → therajanmaurya/mifos-x-actionhub-publish-android-kmp/.github/workflows/release.yaml@v2.0.4
 # Provides a stable @v1.0.17+ entry point for consumers who want the discoverable
