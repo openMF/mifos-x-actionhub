@@ -103,10 +103,120 @@ jobs:
           fi
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
+  # ─────────────────────────────────────────────────────────────────────────────
+  # validate-secrets — fail-fast preflight, NOT downstream after a 10-min build
+  # ─────────────────────────────────────────────────────────────────────────────
+  # For every non-skip target, check the secrets that target needs are present.
+  # Missing → fail with a clear message + the exact `gh secret set` command to fix.
+  # Without this, missing secrets silently pass through as empty strings and
+  # die deep in Fastlane / Gradle / Play Console with confusing errors.
+  validate-secrets:
+    name: Preflight · Validate required secrets per target
+    runs-on: ubuntu-latest
+    steps:
+      - name: Android — google_services + upload_keystore family
+        if: ${{ inputs.android_target != 'skip' }}
+        env:
+          google_services:         ${{ secrets.google_services }}
+          firebase_creds:          ${{ secrets.firebase_creds }}
+          playstore_creds:         ${{ secrets.playstore_creds }}
+          upload_keystore:         ${{ secrets.upload_keystore }}
+          keystore_password:       ${{ secrets.keystore_password }}
+          keystore_alias:          ${{ secrets.keystore_alias }}
+          keystore_alias_password: ${{ secrets.keystore_alias_password }}
+        run: |
+          MISSING=()
+          # All targets need keystore + google services
+          [[ -z "${google_services:-}" ]]         && MISSING+=("google_services")
+          [[ -z "${upload_keystore:-}" ]]         && MISSING+=("upload_keystore")
+          [[ -z "${keystore_password:-}" ]]       && MISSING+=("keystore_password")
+          [[ -z "${keystore_alias:-}" ]]          && MISSING+=("keystore_alias")
+          [[ -z "${keystore_alias_password:-}" ]] && MISSING+=("keystore_alias_password")
+
+          # Firebase stage needs firebase_creds
+          if [[ "${{ inputs.android_target }}" == "firebase+internal" || "${{ inputs.android_target }}" == "firebase" ]]; then
+            [[ -z "${firebase_creds:-}" ]] && MISSING+=("firebase_creds")
+          fi
+
+          # Play Console stages need playstore_creds
+          if [[ "${{ inputs.android_target }}" =~ ^(firebase\+internal|internal|beta|production)$ ]]; then
+            [[ -z "${playstore_creds:-}" ]] && MISSING+=("playstore_creds")
+          fi
+
+          if [[ ${#MISSING[@]} -gt 0 ]]; then
+            echo "❌ android_target=${{ inputs.android_target }} requires these secrets, but they are MISSING:"
+            printf '   - %s\n' "${MISSING[@]}"
+            echo ""
+            echo "Action: set them in your repo's Settings → Secrets and variables → Actions, or via CLI:"
+            for s in "${MISSING[@]}"; do
+              echo "   gh secret set $s --repo \${{ github.repository }} < value.txt"
+            done
+            echo ""
+            echo "💡 Or use: bash scripts/sync-secrets-to-github.sh --only android"
+            exit 1
+          fi
+          echo "✅ Android secrets present"
+
+      - name: iOS — appstore + match family
+        if: ${{ inputs.ios_target != 'skip' }}
+        env:
+          appstore_key_id:       ${{ secrets.appstore_key_id }}
+          appstore_issuer_id:    ${{ secrets.appstore_issuer_id }}
+          appstore_auth_key:     ${{ secrets.appstore_auth_key }}
+          match_password:        ${{ secrets.match_password }}
+          match_ssh_private_key: ${{ secrets.match_ssh_private_key }}
+          firebase_creds:        ${{ secrets.firebase_creds }}
+        run: |
+          MISSING=()
+          [[ -z "${appstore_key_id:-}" ]]       && MISSING+=("appstore_key_id")
+          [[ -z "${appstore_issuer_id:-}" ]]    && MISSING+=("appstore_issuer_id")
+          [[ -z "${appstore_auth_key:-}" ]]     && MISSING+=("appstore_auth_key")
+          [[ -z "${match_password:-}" ]]        && MISSING+=("match_password")
+          [[ -z "${match_ssh_private_key:-}" ]] && MISSING+=("match_ssh_private_key")
+
+          if [[ "${{ inputs.ios_target }}" == "firebase+testflight" || "${{ inputs.ios_target }}" == "firebase" ]]; then
+            [[ -z "${firebase_creds:-}" ]] && MISSING+=("firebase_creds")
+          fi
+
+          if [[ ${#MISSING[@]} -gt 0 ]]; then
+            echo "❌ ios_target=${{ inputs.ios_target }} requires these secrets, but they are MISSING:"
+            printf '   - %s\n' "${MISSING[@]}"
+            echo ""
+            echo "Action: set them in your repo's Settings → Secrets and variables → Actions, or via CLI:"
+            for s in "${MISSING[@]}"; do
+              echo "   gh secret set $s --repo \${{ github.repository }} < value.txt"
+            done
+            exit 1
+          fi
+          echo "✅ iOS secrets present"
+
+      - name: macOS — same as iOS (appstore + match, no firebase)
+        if: ${{ inputs.mac_target != 'skip' }}
+        env:
+          appstore_key_id:       ${{ secrets.appstore_key_id }}
+          appstore_issuer_id:    ${{ secrets.appstore_issuer_id }}
+          appstore_auth_key:     ${{ secrets.appstore_auth_key }}
+          match_password:        ${{ secrets.match_password }}
+          match_ssh_private_key: ${{ secrets.match_ssh_private_key }}
+        run: |
+          MISSING=()
+          [[ -z "${appstore_key_id:-}" ]]       && MISSING+=("appstore_key_id")
+          [[ -z "${appstore_issuer_id:-}" ]]    && MISSING+=("appstore_issuer_id")
+          [[ -z "${appstore_auth_key:-}" ]]     && MISSING+=("appstore_auth_key")
+          [[ -z "${match_password:-}" ]]        && MISSING+=("match_password")
+          [[ -z "${match_ssh_private_key:-}" ]] && MISSING+=("match_ssh_private_key")
+
+          if [[ ${#MISSING[@]} -gt 0 ]]; then
+            echo "❌ mac_target=${{ inputs.mac_target }} requires these secrets, but they are MISSING:"
+            printf '   - %s\n' "${MISSING[@]}"
+            exit 1
+          fi
+          echo "✅ macOS secrets present"
+
   android-firebase:
     name: Android · Firebase Distribution (Stage 0)
     if: ${{ inputs.android_target == 'firebase+internal' || inputs.android_target == 'firebase' }}
-    needs: version-resolve
+    needs: [version-resolve, validate-secrets]
     uses: therajanmaurya/mifos-x-actionhub-publish-android-kmp/.github/workflows/release.yaml@v2.0.4
     with:
       android_package_name: ${{ inputs.android_package_name }}
@@ -129,7 +239,7 @@ jobs:
           || inputs.android_target == 'internal'
           || inputs.android_target == 'beta'
           || inputs.android_target == 'production' }}
-    needs: version-resolve
+    needs: [version-resolve, validate-secrets]
     uses: therajanmaurya/mifos-x-actionhub-publish-android-kmp/.github/workflows/release.yaml@v2.0.4
     with:
       android_package_name: ${{ inputs.android_package_name }}
@@ -148,7 +258,7 @@ jobs:
   ios-firebase:
     name: iOS · Firebase Distribution (Stage 0)
     if: ${{ inputs.ios_target == 'firebase+testflight' || inputs.ios_target == 'firebase' }}
-    needs: version-resolve
+    needs: [version-resolve, validate-secrets]
     uses: therajanmaurya/mifos-x-actionhub-publish-apple-kmp/.github/workflows/release.yaml@v2.0.0
     with:
       platform:      ios
@@ -171,7 +281,7 @@ jobs:
           || inputs.ios_target == 'internal'
           || inputs.ios_target == 'beta'
           || inputs.ios_target == 'production' }}
-    needs: version-resolve
+    needs: [version-resolve, validate-secrets]
     uses: therajanmaurya/mifos-x-actionhub-publish-apple-kmp/.github/workflows/release.yaml@v2.0.0
     with:
       platform:      ios
@@ -190,7 +300,7 @@ jobs:
   mac:
     name: macOS · Mac TF / Beta / MAS
     if: ${{ inputs.mac_target != 'skip' }}
-    needs: version-resolve
+    needs: [version-resolve, validate-secrets]
     uses: therajanmaurya/mifos-x-actionhub-publish-apple-kmp/.github/workflows/release.yaml@v2.0.0
     with:
       platform:      mac
@@ -208,7 +318,7 @@ jobs:
   desktop-win:
     name: Desktop · Windows
     if: ${{ inputs.desktop_win_target != 'skip' }}
-    needs: version-resolve
+    needs: [version-resolve, validate-secrets]
     uses: therajanmaurya/mifos-x-actionhub-publish-desktop-kmp/.github/workflows/release.yaml@v2.0.0
     with:
       target:               ${{ inputs.desktop_win_artifact }}
@@ -220,7 +330,7 @@ jobs:
   desktop-linux:
     name: Desktop · Linux
     if: ${{ inputs.desktop_linux_target != 'skip' }}
-    needs: version-resolve
+    needs: [version-resolve, validate-secrets]
     uses: therajanmaurya/mifos-x-actionhub-publish-desktop-kmp/.github/workflows/release.yaml@v2.0.0
     with:
       target:               linux-deb
@@ -232,7 +342,7 @@ jobs:
   web:
     name: Web · ${{ inputs.web_host }}
     if: ${{ inputs.web_target != 'skip' }}
-    needs: version-resolve
+    needs: [version-resolve, validate-secrets]
     uses: therajanmaurya/mifos-x-actionhub-publish-web-kmp/.github/workflows/release.yaml@v2.0.0
     with:
       host:             ${{ inputs.web_host }}

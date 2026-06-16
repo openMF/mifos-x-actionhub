@@ -1,5 +1,74 @@
 # v2 — reusable workflows for the consolidated KMP release ladder
 
+## 🔐 Secret naming convention (since v1.0.20)
+
+Consumers MUST set their GHA secrets with these **lowercase, snake_case** names. The reusable workflows declare them with these exact names — using these names lets the consumer's thin wrapper collapse to `secrets: inherit` instead of doing 12 lines of explicit mapping.
+
+**Android (7 secrets)**
+
+| Name | Content |
+|---|---|
+| `google_services` | Base64 of `google-services.json` |
+| `firebase_creds` | Base64 of Firebase App Distribution service-account JSON |
+| `playstore_creds` | Base64 of Play Store service-account JSON |
+| `upload_keystore` | Base64 of `upload_keystore.keystore` (Play App Signing upload key) |
+| `keystore_password` | Password for the keystore file |
+| `keystore_alias` | Alias inside the keystore (e.g. `upload`, `mifos-kmp-release`) |
+| `keystore_alias_password` | Password for the alias |
+
+**iOS / macOS (5 secrets)**
+
+| Name | Content |
+|---|---|
+| `appstore_key_id` | App Store Connect API Key ID |
+| `appstore_issuer_id` | App Store Connect Issuer ID |
+| `appstore_auth_key` | Base64 of `.p8` API key file |
+| `match_password` | Fastlane Match passphrase |
+| `match_ssh_private_key` | Base64 of SSH key with read access to the Match cert repo |
+
+**Optional / per-platform**
+
+| Name | Content |
+|---|---|
+| `cloudflare_api_token` / `cloudflare_account_id` | When `web_host: cloudflare-pages` |
+| `netlify_auth_token` / `netlify_site_id` | When `web_host: netlify` |
+| `vercel_token` / `vercel_org_id` / `vercel_project_id` | When `web_host: vercel` |
+
+## Why standardize?
+
+**Before** (consumer's wrapper, ~12 lines of mapping):
+```yaml
+secrets:
+  google_services:  ${{ secrets.GOOGLESERVICES }}
+  firebase_creds:   ${{ secrets.FIREBASECREDS }}
+  upload_keystore:  ${{ secrets.UPLOAD_KEYSTORE_FILE }}
+  ...
+```
+
+**After** (1 line):
+```yaml
+secrets: inherit
+```
+
+Any future centralized addition (e.g. `crashlytics_creds` for an upcoming feature) propagates to every consumer fork automatically — no per-fork mapping edits.
+
+## Preflight validation (since v1.0.20)
+
+`release-multi-platform.yaml` adds a `validate-secrets` job that runs BEFORE any platform deploy. For every non-skip target, it checks the required secrets are present. Missing → fast-fail in 8 seconds with the exact `gh secret set` command to fix.
+
+Without this validation, a missing `google_services` would silently pass as an empty string, the workflow would chew through a 5-10 minute Gradle build, then fail deep in Fastlane with a confusing "google-services.json missing" error. Preflight saves that wasted build time.
+
+## Migration path (existing forks)
+
+If your fork currently uses UPPERCASE secrets (`GOOGLESERVICES`, `UPLOAD_KEYSTORE_FILE`, etc.):
+
+1. Run `bash scripts/sync-secrets-to-github.sh --only android` (now dual-writes both old and new names during transition)
+2. Update your `release-multi-platform.yml` thin wrapper to use `secrets: inherit`
+3. Verify a CI run succeeds with the new names
+4. Delete the obsolete UPPERCASE secrets via `gh secret delete GOOGLESERVICES ...`
+
+---
+
 This directory is the **v2 surface** of `openMF/mifos-x-actionhub`. It introduces:
 
 - A uniform **promotion ladder** (Stage 0 firebase → Stage 1 internal → Stage 2 beta → Stage 3 production) across all platforms
