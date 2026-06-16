@@ -1,4 +1,4 @@
-# .github/workflows/v2/release-multi-platform.yaml
+# .github/workflows/release-multi-platform-v2.yaml
 #
 # Centralized multi-platform release orchestrator. Consumer repos call this with
 # a single `workflow_call` + `secrets: inherit`. All defaults, version

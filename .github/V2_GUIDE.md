@@ -141,7 +141,7 @@ on:
 
 jobs:
   release:
-    uses: openMF/mifos-x-actionhub/.github/workflows/v2/release-android.yaml@v1.0.17
+    uses: openMF/mifos-x-actionhub/.github/workflows/release-android-v2.yaml@v1.0.17
     with:
       android_package_name: cmp-android
       version_tag:          ${{ inputs.version_tag }}

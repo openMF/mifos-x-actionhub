@@ -1,4 +1,4 @@
-# .github/workflows/v2/deployment-status.yaml
+# .github/workflows/deployment-status-v2.yaml
 #
 # Reads consumer's deployment/PROMOTION_LOG.yaml + (optionally) Play Store +
 # App Store Connect APIs → renders a per-platform rung matrix as Markdown,

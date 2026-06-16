@@ -1,4 +1,4 @@
-# .github/workflows/v2/release-apple.yaml
+# .github/workflows/release-apple-v2.yaml
 #
 # Thin wrapper → therajanmaurya/mifos-x-actionhub-publish-apple-kmp/.github/workflows/release.yaml@v2.0.0
 # Covers iOS AND macOS (Mac App Store path). For macOS DMG direct-distribution,

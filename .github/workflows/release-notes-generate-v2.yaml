@@ -1,4 +1,4 @@
-# .github/workflows/v2/release-notes-generate.yaml
+# .github/workflows/release-notes-generate-v2.yaml
 #
 # Auto-generate Markdown release notes from conventional commits since the
 # previous tag. Outputs the notes for chained workflows (used by

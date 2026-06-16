@@ -1,4 +1,4 @@
-# .github/workflows/v2/pr-check.yaml
+# .github/workflows/pr-check-v2.yaml
 #
 # Multi-platform PR validation. Replaces v1's split between pr-check.yaml +
 # pr-check-android.yaml — `platforms:` input filter selects which to run.
