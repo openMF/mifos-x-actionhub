@@ -1,0 +1,52 @@
+# .github/workflows/pr-check-orchestrator.yaml
+#
+# CI for the orchestrator repo ITSELF (distinct from pr-check.yaml + pr-check-android.yaml,
+# which are REUSABLE WORKFLOWS that consumer projects call).
+#
+# This workflow runs on every PR + push to main against THIS repo and verifies:
+#   1. actionlint clean on every workflow file
+#   2. tests/chain-contract.sh — cross-repo contract verification:
+#      - Every publish-* pin resolves to a real remote tag (live gh api check)
+#      - Caller→callee input + secrets schemas match
+#      - Orchestrator's own workflow_call interface contract is sound
+#      - Job structure (validate-secrets + version-resolve as roots)
+#
+# If anything in the actionhub→publish-* integration drifts, these tests catch
+# it BEFORE a consumer dispatches and silently fails.
+
+name: PR Check (orchestrator)
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  actionlint:
+    name: actionlint — every workflow file
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker://rhysd/actionlint:1.7.4
+        with:
+          args: -color
+
+  chain-contract:
+    name: Chain Contract tests (cross-repo, 29 assertions)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install actionlint
+        run: |
+          bash <(curl https://raw.githubusercontent.com/rhysd/actionlint/main/scripts/download-actionlint.bash) 1.7.4
+          sudo mv actionlint /usr/local/bin/
+          actionlint --version
+      - name: Install Python deps
+        run: pip install pyyaml
+      - name: Run tests/chain-contract.sh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: bash tests/chain-contract.sh
