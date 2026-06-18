@@ -343,7 +343,7 @@ jobs:
     name: Web · ${{ inputs.web_host }}
     if: ${{ inputs.web_target != 'skip' }}
     needs: [version-resolve, validate-secrets]
-    uses: therajanmaurya/mifos-x-actionhub-publish-web-kmp/.github/workflows/release.yaml@v2.0.6
+    uses: therajanmaurya/mifos-x-actionhub-publish-web-kmp/.github/workflows/release.yaml@v2.0.7
     with:
       host:             ${{ inputs.web_host }}
       web_package_name: ${{ inputs.web_package_name }}
