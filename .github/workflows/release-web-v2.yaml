@@ -1,6 +1,6 @@
 # .github/workflows/release-web-v2.yaml
 #
-# Thin wrapper → therajanmaurya/mifos-x-actionhub-publish-web-kmp/.github/workflows/release.yaml@v2.0.0
+# Thin wrapper → therajanmaurya/mifos-x-actionhub-publish-web-kmp/.github/workflows/release.yaml@v2.0.7
 name: v2 · Release Web
 
 on:
@@ -22,7 +22,7 @@ on:
 
 jobs:
   delegate:
-    uses: therajanmaurya/mifos-x-actionhub-publish-web-kmp/.github/workflows/release.yaml@v2.0.0
+    uses: therajanmaurya/mifos-x-actionhub-publish-web-kmp/.github/workflows/release.yaml@v2.0.7
     with:
       host:             ${{ inputs.host }}
       web_package_name: ${{ inputs.web_package_name }}
