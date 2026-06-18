@@ -43,6 +43,9 @@ on:
       web_target:           { required: false, type: string, default: 'preview',             description: 'preview | staging | production | skip' }
       web_host:             { required: false, type: string, default: 'gh-pages',            description: 'gh-pages | cloudflare-pages | netlify | vercel' }
       production_rollout:   { required: false, type: string, default: '0.10',                description: 'Android staged rollout (0.0-1.0)' }
+      fastlane_mode:        { required: false, type: string, default: 'standard',             description: "'standard' (default) or 'pre-materialized' — see RULE-DEPLOYMENT-MANIFEST-001" }
+      fastlane_cwd:         { required: false, type: string, default: '.',                    description: 'Working dir for fastlane (set to `deployment` when using deployment/-layout)' }
+      pre_fastlane_script:  { required: false, type: string, default: '',                     description: 'Optional bash to run before each fastlane stage (pre-materialized mode)' }
     secrets:
       google_services:          { required: false }
       firebase_creds:           { required: false }
@@ -56,6 +59,7 @@ on:
       appstore_auth_key:        { required: false }
       match_password:           { required: false }
       match_ssh_private_key:    { required: false }
+      SOPS_AGE_KEY:             { required: false }
 
   workflow_dispatch:
     inputs:
@@ -69,6 +73,9 @@ on:
       web_target:           { required: false, type: choice, options: [preview, staging, production, skip],                                default: preview }
       web_host:             { required: false, type: choice, options: [gh-pages, cloudflare-pages, netlify, vercel],                       default: gh-pages }
       production_rollout:   { required: false, type: string, default: '0.10' }
+      fastlane_mode:        { required: false, type: choice, options: [standard, pre-materialized],                                       default: standard }
+      fastlane_cwd:         { required: false, type: string, default: '.' }
+      pre_fastlane_script:  { required: false, type: string, default: '' }
 
 jobs:
   version-resolve:
@@ -115,7 +122,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Android — google_services + upload_keystore family
-        if: ${{ inputs.android_target != 'skip' }}
+        if: ${{ inputs.android_target != 'skip' && inputs.fastlane_mode == 'standard' }}
         env:
           google_services:         ${{ secrets.google_services }}
           firebase_creds:          ${{ secrets.firebase_creds }}
@@ -158,7 +165,7 @@ jobs:
           echo "✅ Android secrets present"
 
       - name: iOS — appstore + match family
-        if: ${{ inputs.ios_target != 'skip' }}
+        if: ${{ inputs.ios_target != 'skip' && inputs.fastlane_mode == 'standard' }}
         env:
           appstore_key_id:       ${{ secrets.appstore_key_id }}
           appstore_issuer_id:    ${{ secrets.appstore_issuer_id }}
@@ -217,12 +224,15 @@ jobs:
     name: Android · Firebase Distribution (Stage 0)
     if: ${{ inputs.android_target == 'firebase+internal' || inputs.android_target == 'firebase' }}
     needs: [version-resolve, validate-secrets]
-    uses: therajanmaurya/mifos-x-actionhub-publish-android-kmp/.github/workflows/release.yaml@v2.0.8
+    uses: therajanmaurya/mifos-x-actionhub-publish-android-kmp/.github/workflows/release.yaml@v2.0.10
     with:
       android_package_name: ${{ inputs.android_package_name }}
       version_tag:          ${{ needs.version-resolve.outputs.version }}
       starting_rung:        firebase
       production_rollout:   '0.0'
+      mode:                 ${{ inputs.fastlane_mode }}
+      fastlane_cwd:         ${{ inputs.fastlane_cwd }}
+      pre_fastlane_script:  ${{ inputs.pre_fastlane_script }}
     secrets:
       google_services:          ${{ secrets.google_services }}
       firebase_creds:           ${{ secrets.firebase_creds }}
@@ -231,6 +241,7 @@ jobs:
       keystore_password:        ${{ secrets.keystore_password }}
       keystore_alias:           ${{ secrets.keystore_alias }}
       keystore_alias_password:  ${{ secrets.keystore_alias_password }}
+      SOPS_AGE_KEY:             ${{ secrets.SOPS_AGE_KEY }}
 
   android-promote:
     name: Android · Play Store (Internal / Beta / Production)
@@ -240,12 +251,15 @@ jobs:
           || inputs.android_target == 'beta'
           || inputs.android_target == 'production' }}
     needs: [version-resolve, validate-secrets]
-    uses: therajanmaurya/mifos-x-actionhub-publish-android-kmp/.github/workflows/release.yaml@v2.0.8
+    uses: therajanmaurya/mifos-x-actionhub-publish-android-kmp/.github/workflows/release.yaml@v2.0.10
     with:
       android_package_name: ${{ inputs.android_package_name }}
       version_tag:          ${{ needs.version-resolve.outputs.version }}
       starting_rung:        ${{ inputs.android_target == 'firebase+internal' && 'internal' || inputs.android_target }}
       production_rollout:   ${{ inputs.production_rollout }}
+      mode:                 ${{ inputs.fastlane_mode }}
+      fastlane_cwd:         ${{ inputs.fastlane_cwd }}
+      pre_fastlane_script:  ${{ inputs.pre_fastlane_script }}
     secrets:
       google_services:          ${{ secrets.google_services }}
       firebase_creds:           ${{ secrets.firebase_creds }}
@@ -254,18 +268,22 @@ jobs:
       keystore_password:        ${{ secrets.keystore_password }}
       keystore_alias:           ${{ secrets.keystore_alias }}
       keystore_alias_password:  ${{ secrets.keystore_alias_password }}
+      SOPS_AGE_KEY:             ${{ secrets.SOPS_AGE_KEY }}
 
   ios-firebase:
     name: iOS · Firebase Distribution (Stage 0)
     if: ${{ inputs.ios_target == 'firebase+testflight' || inputs.ios_target == 'firebase' }}
     needs: [version-resolve, validate-secrets]
-    uses: therajanmaurya/mifos-x-actionhub-publish-apple-kmp/.github/workflows/release.yaml@v2.0.8
+    uses: therajanmaurya/mifos-x-actionhub-publish-apple-kmp/.github/workflows/release.yaml@v2.0.10
     with:
-      platform:      ios
-      package_name:  ${{ inputs.ios_package_name }}
-      shared_module: ${{ inputs.shared_module }}
-      version_tag:   ${{ needs.version-resolve.outputs.version }}
-      starting_rung: firebase
+      platform:            ios
+      package_name:        ${{ inputs.ios_package_name }}
+      shared_module:       ${{ inputs.shared_module }}
+      version_tag:         ${{ needs.version-resolve.outputs.version }}
+      starting_rung:       firebase
+      mode:                ${{ inputs.fastlane_mode }}
+      fastlane_cwd:        ${{ inputs.fastlane_cwd }}
+      pre_fastlane_script: ${{ inputs.pre_fastlane_script }}
     secrets:
       appstore_key_id:        ${{ secrets.appstore_key_id }}
       appstore_issuer_id:     ${{ secrets.appstore_issuer_id }}
@@ -273,6 +291,7 @@ jobs:
       match_password:         ${{ secrets.match_password }}
       match_ssh_private_key:  ${{ secrets.match_ssh_private_key }}
       firebase_creds:         ${{ secrets.firebase_creds }}
+      SOPS_AGE_KEY:           ${{ secrets.SOPS_AGE_KEY }}
 
   ios-promote:
     name: iOS · TestFlight / Beta / App Store
@@ -282,13 +301,16 @@ jobs:
           || inputs.ios_target == 'beta'
           || inputs.ios_target == 'production' }}
     needs: [version-resolve, validate-secrets]
-    uses: therajanmaurya/mifos-x-actionhub-publish-apple-kmp/.github/workflows/release.yaml@v2.0.8
+    uses: therajanmaurya/mifos-x-actionhub-publish-apple-kmp/.github/workflows/release.yaml@v2.0.10
     with:
-      platform:      ios
-      package_name:  ${{ inputs.ios_package_name }}
-      shared_module: ${{ inputs.shared_module }}
-      version_tag:   ${{ needs.version-resolve.outputs.version }}
-      starting_rung: ${{ inputs.ios_target == 'firebase+testflight' && 'internal' || inputs.ios_target }}
+      platform:            ios
+      package_name:        ${{ inputs.ios_package_name }}
+      shared_module:       ${{ inputs.shared_module }}
+      version_tag:         ${{ needs.version-resolve.outputs.version }}
+      starting_rung:       ${{ inputs.ios_target == 'firebase+testflight' && 'internal' || inputs.ios_target }}
+      mode:                ${{ inputs.fastlane_mode }}
+      fastlane_cwd:        ${{ inputs.fastlane_cwd }}
+      pre_fastlane_script: ${{ inputs.pre_fastlane_script }}
     secrets:
       appstore_key_id:        ${{ secrets.appstore_key_id }}
       appstore_issuer_id:     ${{ secrets.appstore_issuer_id }}
@@ -296,12 +318,13 @@ jobs:
       match_password:         ${{ secrets.match_password }}
       match_ssh_private_key:  ${{ secrets.match_ssh_private_key }}
       firebase_creds:         ${{ secrets.firebase_creds }}
+      SOPS_AGE_KEY:           ${{ secrets.SOPS_AGE_KEY }}
 
   mac:
     name: macOS · Mac TF / Beta / MAS
     if: ${{ inputs.mac_target != 'skip' }}
     needs: [version-resolve, validate-secrets]
-    uses: therajanmaurya/mifos-x-actionhub-publish-apple-kmp/.github/workflows/release.yaml@v2.0.8
+    uses: therajanmaurya/mifos-x-actionhub-publish-apple-kmp/.github/workflows/release.yaml@v2.0.10
     with:
       platform:      mac
       package_name:  ${{ inputs.mac_package_name }}
