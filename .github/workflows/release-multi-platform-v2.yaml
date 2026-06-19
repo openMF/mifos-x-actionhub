@@ -46,6 +46,10 @@ on:
       fastlane_mode:        { required: false, type: string, default: 'standard',             description: "'standard' (default) or 'pre-materialized' — see RULE-DEPLOYMENT-MANIFEST-001" }
       fastlane_cwd:         { required: false, type: string, default: '.',                    description: 'Working dir for fastlane (set to `deployment` when using deployment/-layout)' }
       pre_fastlane_script:  { required: false, type: string, default: '',                     description: 'Optional bash to run before each fastlane stage (pre-materialized mode)' }
+      runner_pool_linux:    { required: false, type: string, default: '["ubuntu-latest"]',    description: 'JSON-array runs-on for Linux/Android jobs. Pass `["self-hosted","macOS"]` for local Mac runner.' }
+      runner_pool_mac:      { required: false, type: string, default: '["macos-14"]',         description: 'JSON-array runs-on for Apple jobs. Pass `["self-hosted","macOS"]` for local Mac runner.' }
+      publish_android_ref:  { required: false, type: string, default: 'v2.0.12',              description: 'Git ref of publish-android-kmp release.yaml (tag for prod, `dev` for local iteration).' }
+      publish_apple_ref:    { required: false, type: string, default: 'v2.0.12',              description: 'Git ref of publish-apple-kmp release.yaml (tag for prod, `dev` for local iteration).' }
     secrets:
       google_services:          { required: false }
       firebase_creds:           { required: false }
@@ -76,11 +80,15 @@ on:
       fastlane_mode:        { required: false, type: choice, options: [standard, pre-materialized],                                       default: standard }
       fastlane_cwd:         { required: false, type: string, default: '.' }
       pre_fastlane_script:  { required: false, type: string, default: '' }
+      runner_pool_linux:    { required: false, type: string, default: '["ubuntu-latest"]' }
+      runner_pool_mac:      { required: false, type: string, default: '["macos-14"]' }
+      publish_android_ref:  { required: false, type: string, default: 'v2.0.12' }
+      publish_apple_ref:    { required: false, type: string, default: 'v2.0.12' }
 
 jobs:
   version-resolve:
     name: Resolve version
-    runs-on: ubuntu-latest
+    runs-on: ${{ fromJSON(inputs.runner_pool_linux) }}
     outputs:
       version: ${{ steps.compute.outputs.version }}
     steps:
@@ -119,7 +127,7 @@ jobs:
   # die deep in Fastlane / Gradle / Play Console with confusing errors.
   validate-secrets:
     name: Preflight · Validate required secrets per target
-    runs-on: ubuntu-latest
+    runs-on: ${{ fromJSON(inputs.runner_pool_linux) }}
     steps:
       - name: Android — google_services + upload_keystore family
         if: ${{ inputs.android_target != 'skip' && inputs.fastlane_mode == 'standard' }}
@@ -224,7 +232,7 @@ jobs:
     name: Android · Firebase Distribution (Stage 0)
     if: ${{ inputs.android_target == 'firebase+internal' || inputs.android_target == 'firebase' }}
     needs: [version-resolve, validate-secrets]
-    uses: therajanmaurya/mifos-x-actionhub-publish-android-kmp/.github/workflows/release.yaml@v2.0.11
+    uses: therajanmaurya/mifos-x-actionhub-publish-android-kmp/.github/workflows/release.yaml@${{ inputs.publish_android_ref }}
     with:
       android_package_name: ${{ inputs.android_package_name }}
       version_tag:          ${{ needs.version-resolve.outputs.version }}
@@ -233,6 +241,7 @@ jobs:
       mode:                 ${{ inputs.fastlane_mode }}
       fastlane_cwd:         ${{ inputs.fastlane_cwd }}
       pre_fastlane_script:  ${{ inputs.pre_fastlane_script }}
+      runner_pool:          ${{ inputs.runner_pool_linux }}
     secrets:
       google_services:          ${{ secrets.google_services }}
       firebase_creds:           ${{ secrets.firebase_creds }}
@@ -251,7 +260,7 @@ jobs:
           || inputs.android_target == 'beta'
           || inputs.android_target == 'production' }}
     needs: [version-resolve, validate-secrets]
-    uses: therajanmaurya/mifos-x-actionhub-publish-android-kmp/.github/workflows/release.yaml@v2.0.11
+    uses: therajanmaurya/mifos-x-actionhub-publish-android-kmp/.github/workflows/release.yaml@${{ inputs.publish_android_ref }}
     with:
       android_package_name: ${{ inputs.android_package_name }}
       version_tag:          ${{ needs.version-resolve.outputs.version }}
@@ -260,6 +269,7 @@ jobs:
       mode:                 ${{ inputs.fastlane_mode }}
       fastlane_cwd:         ${{ inputs.fastlane_cwd }}
       pre_fastlane_script:  ${{ inputs.pre_fastlane_script }}
+      runner_pool:          ${{ inputs.runner_pool_linux }}
     secrets:
       google_services:          ${{ secrets.google_services }}
       firebase_creds:           ${{ secrets.firebase_creds }}
@@ -274,7 +284,7 @@ jobs:
     name: iOS · Firebase Distribution (Stage 0)
     if: ${{ inputs.ios_target == 'firebase+testflight' || inputs.ios_target == 'firebase' }}
     needs: [version-resolve, validate-secrets]
-    uses: therajanmaurya/mifos-x-actionhub-publish-apple-kmp/.github/workflows/release.yaml@v2.0.11
+    uses: therajanmaurya/mifos-x-actionhub-publish-apple-kmp/.github/workflows/release.yaml@${{ inputs.publish_apple_ref }}
     with:
       platform:            ios
       package_name:        ${{ inputs.ios_package_name }}
@@ -284,6 +294,7 @@ jobs:
       mode:                ${{ inputs.fastlane_mode }}
       fastlane_cwd:        ${{ inputs.fastlane_cwd }}
       pre_fastlane_script: ${{ inputs.pre_fastlane_script }}
+      runner_pool:         ${{ inputs.runner_pool_mac }}
     secrets:
       appstore_key_id:        ${{ secrets.appstore_key_id }}
       appstore_issuer_id:     ${{ secrets.appstore_issuer_id }}
@@ -301,7 +312,7 @@ jobs:
           || inputs.ios_target == 'beta'
           || inputs.ios_target == 'production' }}
     needs: [version-resolve, validate-secrets]
-    uses: therajanmaurya/mifos-x-actionhub-publish-apple-kmp/.github/workflows/release.yaml@v2.0.11
+    uses: therajanmaurya/mifos-x-actionhub-publish-apple-kmp/.github/workflows/release.yaml@${{ inputs.publish_apple_ref }}
     with:
       platform:            ios
       package_name:        ${{ inputs.ios_package_name }}
@@ -311,6 +322,7 @@ jobs:
       mode:                ${{ inputs.fastlane_mode }}
       fastlane_cwd:        ${{ inputs.fastlane_cwd }}
       pre_fastlane_script: ${{ inputs.pre_fastlane_script }}
+      runner_pool:         ${{ inputs.runner_pool_mac }}
     secrets:
       appstore_key_id:        ${{ secrets.appstore_key_id }}
       appstore_issuer_id:     ${{ secrets.appstore_issuer_id }}
@@ -324,13 +336,14 @@ jobs:
     name: macOS · Mac TF / Beta / MAS
     if: ${{ inputs.mac_target != 'skip' }}
     needs: [version-resolve, validate-secrets]
-    uses: therajanmaurya/mifos-x-actionhub-publish-apple-kmp/.github/workflows/release.yaml@v2.0.11
+    uses: therajanmaurya/mifos-x-actionhub-publish-apple-kmp/.github/workflows/release.yaml@${{ inputs.publish_apple_ref }}
     with:
       platform:      mac
       package_name:  ${{ inputs.mac_package_name }}
       shared_module: ${{ inputs.shared_module }}
       version_tag:   ${{ needs.version-resolve.outputs.version }}
       starting_rung: ${{ inputs.mac_target }}
+      runner_pool:   ${{ inputs.runner_pool_mac }}
     secrets:
       appstore_key_id:        ${{ secrets.appstore_key_id }}
       appstore_issuer_id:     ${{ secrets.appstore_issuer_id }}
