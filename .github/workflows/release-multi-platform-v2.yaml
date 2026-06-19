@@ -48,8 +48,6 @@ on:
       pre_fastlane_script:  { required: false, type: string, default: '',                     description: 'Optional bash to run before each fastlane stage (pre-materialized mode)' }
       runner_pool_linux:    { required: false, type: string, default: '["ubuntu-latest"]',    description: 'JSON-array runs-on for Linux/Android jobs. Pass `["self-hosted","macOS"]` for local Mac runner.' }
       runner_pool_mac:      { required: false, type: string, default: '["macos-14"]',         description: 'JSON-array runs-on for Apple jobs. Pass `["self-hosted","macOS"]` for local Mac runner.' }
-      publish_android_ref:  { required: false, type: string, default: 'v2.0.12',              description: 'Git ref of publish-android-kmp release.yaml (tag for prod, `dev` for local iteration).' }
-      publish_apple_ref:    { required: false, type: string, default: 'v2.0.12',              description: 'Git ref of publish-apple-kmp release.yaml (tag for prod, `dev` for local iteration).' }
     secrets:
       google_services:          { required: false }
       firebase_creds:           { required: false }
@@ -82,8 +80,6 @@ on:
       pre_fastlane_script:  { required: false, type: string, default: '' }
       runner_pool_linux:    { required: false, type: string, default: '["ubuntu-latest"]' }
       runner_pool_mac:      { required: false, type: string, default: '["macos-14"]' }
-      publish_android_ref:  { required: false, type: string, default: 'v2.0.12' }
-      publish_apple_ref:    { required: false, type: string, default: 'v2.0.12' }
 
 jobs:
   version-resolve:
@@ -232,7 +228,7 @@ jobs:
     name: Android · Firebase Distribution (Stage 0)
     if: ${{ inputs.android_target == 'firebase+internal' || inputs.android_target == 'firebase' }}
     needs: [version-resolve, validate-secrets]
-    uses: therajanmaurya/mifos-x-actionhub-publish-android-kmp/.github/workflows/release.yaml@${{ inputs.publish_android_ref }}
+    uses: therajanmaurya/mifos-x-actionhub-publish-android-kmp/.github/workflows/release.yaml@v2.0.12
     with:
       android_package_name: ${{ inputs.android_package_name }}
       version_tag:          ${{ needs.version-resolve.outputs.version }}
@@ -260,7 +256,7 @@ jobs:
           || inputs.android_target == 'beta'
           || inputs.android_target == 'production' }}
     needs: [version-resolve, validate-secrets]
-    uses: therajanmaurya/mifos-x-actionhub-publish-android-kmp/.github/workflows/release.yaml@${{ inputs.publish_android_ref }}
+    uses: therajanmaurya/mifos-x-actionhub-publish-android-kmp/.github/workflows/release.yaml@v2.0.12
     with:
       android_package_name: ${{ inputs.android_package_name }}
       version_tag:          ${{ needs.version-resolve.outputs.version }}
@@ -284,7 +280,7 @@ jobs:
     name: iOS · Firebase Distribution (Stage 0)
     if: ${{ inputs.ios_target == 'firebase+testflight' || inputs.ios_target == 'firebase' }}
     needs: [version-resolve, validate-secrets]
-    uses: therajanmaurya/mifos-x-actionhub-publish-apple-kmp/.github/workflows/release.yaml@${{ inputs.publish_apple_ref }}
+    uses: therajanmaurya/mifos-x-actionhub-publish-apple-kmp/.github/workflows/release.yaml@v2.0.12
     with:
       platform:            ios
       package_name:        ${{ inputs.ios_package_name }}
@@ -312,7 +308,7 @@ jobs:
           || inputs.ios_target == 'beta'
           || inputs.ios_target == 'production' }}
     needs: [version-resolve, validate-secrets]
-    uses: therajanmaurya/mifos-x-actionhub-publish-apple-kmp/.github/workflows/release.yaml@${{ inputs.publish_apple_ref }}
+    uses: therajanmaurya/mifos-x-actionhub-publish-apple-kmp/.github/workflows/release.yaml@v2.0.12
     with:
       platform:            ios
       package_name:        ${{ inputs.ios_package_name }}
@@ -336,7 +332,7 @@ jobs:
     name: macOS · Mac TF / Beta / MAS
     if: ${{ inputs.mac_target != 'skip' }}
     needs: [version-resolve, validate-secrets]
-    uses: therajanmaurya/mifos-x-actionhub-publish-apple-kmp/.github/workflows/release.yaml@${{ inputs.publish_apple_ref }}
+    uses: therajanmaurya/mifos-x-actionhub-publish-apple-kmp/.github/workflows/release.yaml@v2.0.12
     with:
       platform:      mac
       package_name:  ${{ inputs.mac_package_name }}
