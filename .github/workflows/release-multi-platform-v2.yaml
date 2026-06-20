@@ -82,6 +82,28 @@ on:
       runner_pool_mac:      { required: false, type: string, default: '["macos-14"]' }
 
 jobs:
+  # TEMP DEBUG (2026-06-21): probe whether the consumer's inherited secrets
+  # actually reach this orchestrator across the cross-org hop. Prints LENGTHS
+  # only (never values) — safe. Remove once the secret-forwarding path is proven.
+  debug-secret-presence:
+    name: DEBUG · secret presence (lengths only)
+    runs-on: ${{ fromJSON(inputs.runner_pool_linux) }}
+    env:
+      UPLOAD_KEYSTORE_LEN:   ${{ secrets.upload_keystore }}
+      GOOGLE_SERVICES_LEN:   ${{ secrets.google_services }}
+      FIREBASE_CREDS_LEN:    ${{ secrets.firebase_creds }}
+      KEYSTORE_PASSWORD_LEN: ${{ secrets.keystore_password }}
+      KEYSTORE_ALIAS_LEN:    ${{ secrets.keystore_alias }}
+    steps:
+      - name: Echo presence (length only, never value)
+        run: |
+          echo "fastlane_mode = ${{ inputs.fastlane_mode }}"
+          echo "upload_keystore   len=${#UPLOAD_KEYSTORE_LEN}"
+          echo "google_services   len=${#GOOGLE_SERVICES_LEN}"
+          echo "firebase_creds    len=${#FIREBASE_CREDS_LEN}"
+          echo "keystore_password len=${#KEYSTORE_PASSWORD_LEN}"
+          echo "keystore_alias    len=${#KEYSTORE_ALIAS_LEN}"
+
   version-resolve:
     name: Resolve version
     runs-on: ${{ fromJSON(inputs.runner_pool_linux) }}
