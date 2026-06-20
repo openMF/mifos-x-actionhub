@@ -238,15 +238,17 @@ jobs:
       fastlane_cwd:         ${{ inputs.fastlane_cwd }}
       pre_fastlane_script:  ${{ inputs.pre_fastlane_script }}
       runner_pool:          ${{ inputs.runner_pool_linux }}
-    secrets:
-      google_services:          ${{ secrets.google_services }}
-      firebase_creds:           ${{ secrets.firebase_creds }}
-      playstore_creds:          ${{ secrets.playstore_creds }}
-      upload_keystore:          ${{ secrets.upload_keystore }}
-      keystore_password:        ${{ secrets.keystore_password }}
-      keystore_alias:           ${{ secrets.keystore_alias }}
-      keystore_alias_password:  ${{ secrets.keystore_alias_password }}
-      SOPS_AGE_KEY:             ${{ secrets.SOPS_AGE_KEY }}
+    # secrets: inherit (NOT an explicit map). The orchestrator receives the
+    # consumer's secrets via the consumer's `secrets: inherit`. Re-forwarding
+    # those INHERITED secrets through an explicit `${{ secrets.NAME }}` map to a
+    # CROSS-REPO reusable workflow (therajanmaurya consumer → openMF orchestrator
+    # → therajanmaurya publish) silently resolves to empty strings — the values
+    # never reach publish-android's job env, so pre_fastlane_script's
+    # `if [ -n "${UPLOAD_KEYSTORE_B64:-}" ]` guards no-op and the keystore is
+    # never materialized (signing FAILs: "keystore not found"). `inherit` is the
+    # documented-robust pattern that forwards inherited secrets at every hop.
+    # (mifos-x release pipeline, 2026-06-21 canonical-pipeline android signing fix)
+    secrets: inherit
 
   android-promote:
     name: Android · Play Store (Internal / Beta / Production)
@@ -266,15 +268,9 @@ jobs:
       fastlane_cwd:         ${{ inputs.fastlane_cwd }}
       pre_fastlane_script:  ${{ inputs.pre_fastlane_script }}
       runner_pool:          ${{ inputs.runner_pool_linux }}
-    secrets:
-      google_services:          ${{ secrets.google_services }}
-      firebase_creds:           ${{ secrets.firebase_creds }}
-      playstore_creds:          ${{ secrets.playstore_creds }}
-      upload_keystore:          ${{ secrets.upload_keystore }}
-      keystore_password:        ${{ secrets.keystore_password }}
-      keystore_alias:           ${{ secrets.keystore_alias }}
-      keystore_alias_password:  ${{ secrets.keystore_alias_password }}
-      SOPS_AGE_KEY:             ${{ secrets.SOPS_AGE_KEY }}
+    # secrets: inherit — see rationale on android-firebase above (cross-repo
+    # inherited-secret re-forward must use inherit, not an explicit map).
+    secrets: inherit
 
   ios-firebase:
     name: iOS · Firebase Distribution (Stage 0)
