@@ -43,6 +43,7 @@ on:
       web_target:           { required: false, type: string, default: 'preview',             description: 'preview | staging | production | skip' }
       web_host:             { required: false, type: string, default: 'gh-pages',            description: 'gh-pages | cloudflare-pages | netlify | vercel' }
       production_rollout:   { required: false, type: string, default: '0.10',                description: 'Android staged rollout (0.0-1.0)' }
+      android_tester_groups: { required: false, type: string, default: '',                   description: 'Firebase App Distribution tester groups (comma-separated). EMPTY = upload only, no group distribution (default). Set to real Firebase group aliases to distribute; non-existent group names make the API reject the release ("Invalid request").' }
       fastlane_mode:        { required: false, type: string, default: 'standard',             description: "'standard' (default) or 'pre-materialized' — see RULE-DEPLOYMENT-MANIFEST-001" }
       fastlane_cwd:         { required: false, type: string, default: '.',                    description: 'Working dir for fastlane (set to `deployment` when using deployment/-layout)' }
       pre_fastlane_script:  { required: false, type: string, default: '',                     description: 'Optional bash to run before each fastlane stage (pre-materialized mode)' }
@@ -77,6 +78,7 @@ on:
       web_target:           { required: false, type: choice, options: [preview, staging, production, skip],                                default: preview }
       web_host:             { required: false, type: choice, options: [gh-pages, cloudflare-pages, netlify, vercel],                       default: gh-pages }
       production_rollout:   { required: false, type: string, default: '0.10' }
+      android_tester_groups: { required: false, type: string, default: '' }
       fastlane_mode:        { required: false, type: choice, options: [standard, pre-materialized],                                       default: standard }
       fastlane_cwd:         { required: false, type: string, default: '.' }
       pre_fastlane_script:  { required: false, type: string, default: '' }
@@ -236,6 +238,7 @@ jobs:
       version_tag:          ${{ needs.version-resolve.outputs.version }}
       starting_rung:        firebase
       production_rollout:   '0.0'
+      tester_groups:        ${{ inputs.android_tester_groups }}
       mode:                 ${{ inputs.fastlane_mode }}
       fastlane_cwd:         ${{ inputs.fastlane_cwd }}
       pre_fastlane_script:  ${{ inputs.pre_fastlane_script }}
