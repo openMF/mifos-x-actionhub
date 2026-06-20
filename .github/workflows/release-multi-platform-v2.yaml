@@ -238,15 +238,12 @@ jobs:
       fastlane_cwd:         ${{ inputs.fastlane_cwd }}
       pre_fastlane_script:  ${{ inputs.pre_fastlane_script }}
       runner_pool:          ${{ inputs.runner_pool_linux }}
-    secrets:
-      google_services:          ${{ secrets.google_services }}
-      firebase_creds:           ${{ secrets.firebase_creds }}
-      playstore_creds:          ${{ secrets.playstore_creds }}
-      upload_keystore:          ${{ secrets.upload_keystore }}
-      keystore_password:        ${{ secrets.keystore_password }}
-      keystore_alias:           ${{ secrets.keystore_alias }}
-      keystore_alias_password:  ${{ secrets.keystore_alias_password }}
-      SOPS_AGE_KEY:             ${{ secrets.SOPS_AGE_KEY }}
+    # secrets: inherit (NOT an explicit map). Re-forwarding INHERITED secrets
+    # through `${{ secrets.NAME }}` to a CROSS-REPO reusable workflow silently
+    # resolves to empty — values never reach publish-android's job env, the
+    # pre_fastlane_script guards no-op, and signing FAILs (keystore not found).
+    # inherit forwards inherited secrets at every hop (2026-06-21 pipeline fix).
+    secrets: inherit
 
   android-promote:
     name: Android · Play Store (Internal / Beta / Production)
@@ -266,15 +263,9 @@ jobs:
       fastlane_cwd:         ${{ inputs.fastlane_cwd }}
       pre_fastlane_script:  ${{ inputs.pre_fastlane_script }}
       runner_pool:          ${{ inputs.runner_pool_linux }}
-    secrets:
-      google_services:          ${{ secrets.google_services }}
-      firebase_creds:           ${{ secrets.firebase_creds }}
-      playstore_creds:          ${{ secrets.playstore_creds }}
-      upload_keystore:          ${{ secrets.upload_keystore }}
-      keystore_password:        ${{ secrets.keystore_password }}
-      keystore_alias:           ${{ secrets.keystore_alias }}
-      keystore_alias_password:  ${{ secrets.keystore_alias_password }}
-      SOPS_AGE_KEY:             ${{ secrets.SOPS_AGE_KEY }}
+    # secrets: inherit — see android-firebase rationale (cross-repo inherited
+    # secrets must be forwarded via inherit, not an explicit map).
+    secrets: inherit
 
   ios-firebase:
     name: iOS · Firebase Distribution (Stage 0)
