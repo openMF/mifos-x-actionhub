@@ -65,6 +65,28 @@ on:
       match_password:           { required: false }
       match_ssh_private_key:    { required: false }
       SOPS_AGE_KEY:             { required: false }
+      # macOS .p12 signing (6) — manual keychain import, see publish-apple-kmp/macos-signing
+      mac_signing_certificate:            { required: false }
+      mac_signing_certificate_password:   { required: false }
+      mac_installer_certificate:          { required: false }
+      mac_installer_certificate_password: { required: false }
+      mac_provisioning_profile_base64:    { required: false }
+      keychain_password:                  { required: false }
+      # Web hosts (cloudflare/netlify/vercel token already implied via inherit before; declare explicitly)
+      cloudflare_api_token:     { required: false }
+      netlify_auth_token:       { required: false }
+      vercel_token:             { required: false }
+      vercel_org_id:            { required: false }
+      vercel_project_id:        { required: false }
+      # Windows Azure Trusted Signing + Partner Center (8)
+      azure_client_id:                { required: false }
+      azure_tenant_id:                { required: false }
+      azure_subscription_id:          { required: false }
+      azure_trusted_signing_endpoint: { required: false }
+      azure_trusted_signing_account:  { required: false }
+      azure_cert_profile_name:        { required: false }
+      microsoft_store_client_id:      { required: false }
+      microsoft_store_client_secret:  { required: false }
 
   workflow_dispatch:
     inputs:
@@ -130,7 +152,7 @@ jobs:
     runs-on: ${{ fromJSON(inputs.runner_pool_linux) }}
     steps:
       - name: Android — google_services + upload_keystore family
-        if: ${{ inputs.android_target != 'skip' && inputs.fastlane_mode == 'standard' }}
+        if: ${{ inputs.android_target != 'skip' }}
         env:
           google_services:         ${{ secrets.google_services }}
           firebase_creds:          ${{ secrets.firebase_creds }}
@@ -173,7 +195,7 @@ jobs:
           echo "✅ Android secrets present"
 
       - name: iOS — appstore + match family
-        if: ${{ inputs.ios_target != 'skip' && inputs.fastlane_mode == 'standard' }}
+        if: ${{ inputs.ios_target != 'skip' }}
         env:
           appstore_key_id:       ${{ secrets.appstore_key_id }}
           appstore_issuer_id:    ${{ secrets.appstore_issuer_id }}
@@ -364,6 +386,12 @@ jobs:
       appstore_auth_key:      ${{ secrets.appstore_auth_key }}
       match_password:         ${{ secrets.match_password }}
       match_ssh_private_key:  ${{ secrets.match_ssh_private_key }}
+      mac_signing_certificate:            ${{ secrets.mac_signing_certificate }}
+      mac_signing_certificate_password:   ${{ secrets.mac_signing_certificate_password }}
+      mac_installer_certificate:          ${{ secrets.mac_installer_certificate }}
+      mac_installer_certificate_password: ${{ secrets.mac_installer_certificate_password }}
+      mac_provisioning_profile_base64:    ${{ secrets.mac_provisioning_profile_base64 }}
+      keychain_password:                  ${{ secrets.keychain_password }}
 
   desktop-win:
     name: Desktop · Windows
@@ -375,7 +403,15 @@ jobs:
       desktop_package_name: ${{ inputs.desktop_package_name }}
       github_tag:           ${{ needs.version-resolve.outputs.version }}
       starting_rung:        ${{ inputs.desktop_win_target }}
-    secrets: inherit
+    secrets:
+      azure_client_id:                ${{ secrets.azure_client_id }}
+      azure_tenant_id:                ${{ secrets.azure_tenant_id }}
+      azure_subscription_id:          ${{ secrets.azure_subscription_id }}
+      azure_trusted_signing_endpoint: ${{ secrets.azure_trusted_signing_endpoint }}
+      azure_trusted_signing_account:  ${{ secrets.azure_trusted_signing_account }}
+      azure_cert_profile_name:        ${{ secrets.azure_cert_profile_name }}
+      microsoft_store_client_id:      ${{ secrets.microsoft_store_client_id }}
+      microsoft_store_client_secret:  ${{ secrets.microsoft_store_client_secret }}
 
   desktop-linux:
     name: Desktop · Linux
@@ -387,7 +423,8 @@ jobs:
       desktop_package_name: ${{ inputs.desktop_package_name }}
       github_tag:           ${{ needs.version-resolve.outputs.version }}
       starting_rung:        ${{ inputs.desktop_linux_target }}
-    secrets: inherit
+    # Linux DEB needs no org secrets — only GITHUB_TOKEN. Explicit empty map (tidy from inherit).
+    secrets: {}
 
   web:
     name: Web · ${{ inputs.web_host }}
@@ -398,4 +435,9 @@ jobs:
       host:             ${{ inputs.web_host }}
       web_package_name: ${{ inputs.web_package_name }}
       starting_rung:    ${{ inputs.web_target }}
-    secrets: inherit
+    secrets:
+      cloudflare_api_token: ${{ secrets.cloudflare_api_token }}
+      netlify_auth_token:   ${{ secrets.netlify_auth_token }}
+      vercel_token:         ${{ secrets.vercel_token }}
+      vercel_org_id:        ${{ secrets.vercel_org_id }}
+      vercel_project_id:    ${{ secrets.vercel_project_id }}
