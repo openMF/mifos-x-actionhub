@@ -35,7 +35,7 @@ on:
       desktop_package_name: { required: false, type: string, default: 'cmp-desktop' }
       web_package_name:     { required: false, type: string, default: 'cmp-web' }
       android_target:       { required: false, type: string, default: 'firebase+internal',  description: 'firebase+internal | firebase | internal | closed | beta | production | skip' }
-      ios_target:           { required: false, type: string, default: 'firebase+testflight', description: 'firebase+testflight | firebase | internal | beta | production | skip' }
+      ios_target:           { required: false, type: string, default: 'internal', description: 'internal | beta | production | skip (iOS firebase dropped 2026-06-22)' }
       mac_target:           { required: false, type: string, default: 'internal',            description: 'internal | beta | production | skip' }
       desktop_win_target:   { required: false, type: string, default: 'prerelease',          description: 'prerelease | beta | stable | skip' }
       desktop_win_artifact: { required: false, type: string, default: 'windows-msi-signed',  description: 'windows-msi-signed | windows-exe | windows-microsoft-store' }
@@ -92,7 +92,7 @@ on:
     inputs:
       version_tag:          { required: false, type: string, default: '',                 description: 'Leave empty to auto-compute YYYY.M.D' }
       android_target:       { required: false, type: choice, options: [firebase+internal, firebase, internal, closed, beta, production, skip],     default: firebase+internal }
-      ios_target:           { required: false, type: choice, options: [firebase+testflight, firebase, internal, beta, production, skip],   default: firebase+testflight }
+      ios_target:           { required: false, type: choice, options: [internal, beta, production, skip],   default: internal }
       mac_target:           { required: false, type: choice, options: [internal, beta, production, skip],                                  default: internal }
       desktop_win_target:   { required: false, type: choice, options: [prerelease, beta, stable, skip],                                    default: prerelease }
       desktop_win_artifact: { required: false, type: choice, options: [windows-msi-signed, windows-exe, windows-microsoft-store],          default: windows-msi-signed }
@@ -317,45 +317,21 @@ jobs:
       firebase_android_demo_app_id: ${{ secrets.firebase_android_demo_app_id }}
       SOPS_AGE_KEY:                 ${{ secrets.SOPS_AGE_KEY }}
 
-  ios-firebase:
-    name: iOS · Firebase Distribution (Stage 0)
-    if: ${{ inputs.ios_target == 'firebase+testflight' || inputs.ios_target == 'firebase' }}
-    needs: [version-resolve, validate-secrets]
-    uses: therajanmaurya/mifos-x-actionhub-publish-apple-kmp/.github/workflows/release.yaml@v2.0.13
-    with:
-      platform:            ios
-      package_name:        ${{ inputs.ios_package_name }}
-      shared_module:       ${{ inputs.shared_module }}
-      version_tag:         ${{ needs.version-resolve.outputs.version }}
-      starting_rung:       firebase
-      mode:                ${{ inputs.fastlane_mode }}
-      fastlane_cwd:        ${{ inputs.fastlane_cwd }}
-      pre_fastlane_script: ${{ inputs.pre_fastlane_script }}
-      runner_pool:         ${{ inputs.runner_pool_mac }}
-    secrets:
-      appstore_key_id:        ${{ secrets.appstore_key_id }}
-      appstore_issuer_id:     ${{ secrets.appstore_issuer_id }}
-      appstore_auth_key:      ${{ secrets.appstore_auth_key }}
-      match_password:         ${{ secrets.match_password }}
-      match_ssh_private_key:  ${{ secrets.match_ssh_private_key }}
-      firebase_creds:         ${{ secrets.firebase_creds }}
-      SOPS_AGE_KEY:           ${{ secrets.SOPS_AGE_KEY }}
-
+  # iOS Firebase DROPPED 2026-06-22 — TestFlight Internal+External cover testing natively.
   ios-promote:
-    name: iOS · TestFlight / Beta / App Store
+    name: iOS · TestFlight / App Store
     if: >-
-      ${{ inputs.ios_target == 'firebase+testflight'
-          || inputs.ios_target == 'internal'
+      ${{ inputs.ios_target == 'internal'
           || inputs.ios_target == 'beta'
           || inputs.ios_target == 'production' }}
     needs: [version-resolve, validate-secrets]
-    uses: therajanmaurya/mifos-x-actionhub-publish-apple-kmp/.github/workflows/release.yaml@v2.0.13
+    uses: therajanmaurya/mifos-x-actionhub-publish-apple-kmp/.github/workflows/release.yaml@v2.0.14
     with:
       platform:            ios
       package_name:        ${{ inputs.ios_package_name }}
       shared_module:       ${{ inputs.shared_module }}
       version_tag:         ${{ needs.version-resolve.outputs.version }}
-      starting_rung:       ${{ inputs.ios_target == 'firebase+testflight' && 'internal' || inputs.ios_target }}
+      starting_rung:       ${{ inputs.ios_target }}
       mode:                ${{ inputs.fastlane_mode }}
       fastlane_cwd:        ${{ inputs.fastlane_cwd }}
       pre_fastlane_script: ${{ inputs.pre_fastlane_script }}
