@@ -34,7 +34,7 @@ on:
       shared_module:        { required: false, type: string, default: 'cmp-shared' }
       desktop_package_name: { required: false, type: string, default: 'cmp-desktop' }
       web_package_name:     { required: false, type: string, default: 'cmp-web' }
-      android_target:       { required: false, type: string, default: 'firebase+internal',  description: 'firebase+internal | firebase | internal | beta | production | skip' }
+      android_target:       { required: false, type: string, default: 'firebase+internal',  description: 'firebase+internal | firebase | internal | closed | beta | production | skip' }
       ios_target:           { required: false, type: string, default: 'firebase+testflight', description: 'firebase+testflight | firebase | internal | beta | production | skip' }
       mac_target:           { required: false, type: string, default: 'internal',            description: 'internal | beta | production | skip' }
       desktop_win_target:   { required: false, type: string, default: 'prerelease',          description: 'prerelease | beta | stable | skip' }
@@ -91,7 +91,7 @@ on:
   workflow_dispatch:
     inputs:
       version_tag:          { required: false, type: string, default: '',                 description: 'Leave empty to auto-compute YYYY.M.D' }
-      android_target:       { required: false, type: choice, options: [firebase+internal, firebase, internal, beta, production, skip],     default: firebase+internal }
+      android_target:       { required: false, type: choice, options: [firebase+internal, firebase, internal, closed, beta, production, skip],     default: firebase+internal }
       ios_target:           { required: false, type: choice, options: [firebase+testflight, firebase, internal, beta, production, skip],   default: firebase+testflight }
       mac_target:           { required: false, type: choice, options: [internal, beta, production, skip],                                  default: internal }
       desktop_win_target:   { required: false, type: choice, options: [prerelease, beta, stable, skip],                                    default: prerelease }
@@ -289,10 +289,11 @@ jobs:
     if: >-
       ${{ inputs.android_target == 'firebase+internal'
           || inputs.android_target == 'internal'
+          || inputs.android_target == 'closed'
           || inputs.android_target == 'beta'
           || inputs.android_target == 'production' }}
     needs: [version-resolve, validate-secrets]
-    uses: therajanmaurya/mifos-x-actionhub-publish-android-kmp/.github/workflows/release.yaml@v2.0.19
+    uses: therajanmaurya/mifos-x-actionhub-publish-android-kmp/.github/workflows/release.yaml@v2.0.20
     with:
       android_package_name: ${{ inputs.android_package_name }}
       version_tag:          ${{ needs.version-resolve.outputs.version }}
