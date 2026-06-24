@@ -29,6 +29,7 @@ on:
       version_tag:          { required: false, type: string, default: '',                 description: 'Version tag (empty → auto-compute YYYY.M.D)' }
       target_branch:        { required: false, type: string, default: 'dev',              description: 'Source branch to release from' }
       android_package_name: { required: false, type: string, default: 'cmp-android' }
+      application_id:       { required: false, type: string, default: '',              description: 'Android applicationId (e.g. org.mifos.kmp.template) — feeds firebase app-id↔package preflight (FB-PRE-3)' }
       ios_package_name:     { required: false, type: string, default: 'cmp-ios' }
       mac_package_name:     { required: false, type: string, default: 'cmp-desktop' }
       shared_module:        { required: false, type: string, default: 'cmp-shared' }
@@ -256,9 +257,10 @@ jobs:
     needs: [version-resolve, validate-secrets]
     # Firebase channel → release-firebase.yaml (split 2026-06-22, firebase ∥ play D2).
     # This workflow has NO starting_rung / production_rollout / playstore_creds inputs.
-    uses: therajanmaurya/mifos-x-actionhub-publish-android-kmp/.github/workflows/release-firebase.yaml@v2.0.17
+    uses: therajanmaurya/mifos-x-actionhub-publish-android-kmp/.github/workflows/release-firebase.yaml@v2.0.21
     with:
       android_package_name: ${{ inputs.android_package_name }}
+      application_id:       ${{ inputs.application_id }}
       version_tag:          ${{ needs.version-resolve.outputs.version }}
       tester_groups:        ${{ inputs.android_tester_groups }}
       mode:                 ${{ inputs.fastlane_mode }}
