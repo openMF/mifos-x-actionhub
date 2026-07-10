@@ -403,6 +403,8 @@ jobs:
       shared_module: ${{ inputs.shared_module }}
       version_tag:   ${{ needs.version-resolve.outputs.version }}
       starting_rung: ${{ inputs.mac_target }}
+      fastlane_cwd:  ${{ inputs.fastlane_cwd }}
+      mode:          ${{ inputs.fastlane_mode }}
       runner_pool:   ${{ inputs.runner_pool_mac }}
       # TODO(phase-4-followup): therajanmaurya/mifos-x-actionhub-publish-apple-kmp release.yaml (mac path)
       # must declare matching `flavor` + `build_type` inputs and thread them into the fastlane mac lane.
