@@ -53,7 +53,7 @@ on:
       # EMPTY flavor = current v1.0.46 baseline behavior (single-flavor prod / assembleRelease). Consumers that do not
       # pass `flavor:` are unaffected. Downstream publish-{android,apple}-kmp workflows must declare matching inputs
       # (phase-4-followup); until then these values are silently ignored at the reusable-workflow boundary.
-      flavor:               { required: false, type: string, default: '',                     description: 'Product flavor to deploy (e.g. `prod`, `demo`). EMPTY (default) preserves v1.0.46 prod-baseline behavior — additive & back-compatible for consumers that do not pass it. Threaded to Android + Apple publish-* workflow calls.' }
+      flavor:               { required: false, type: string, default: '',                     description: 'Product flavor to deploy (e.g. `prod`, `demo`). EMPTY (default) preserves v1.0.46 prod-baseline behavior — additive & back-compatible for consumers that do not pass it. Threaded to Android + Apple + Desktop + Web publish-* workflow calls.' }
       build_type:           { required: false, type: string, default: 'release',              description: 'Gradle build type (`debug` | `staging` | `release`). Defaults to `release` for back-compat. Composed with `flavor` into the gradle variant (e.g. `demo` + `release` → assembleDemoRelease).' }
     secrets:
       google_services:          { required: false }
@@ -428,12 +428,14 @@ jobs:
     name: Desktop · Windows
     if: ${{ inputs.desktop_win_target != 'skip' }}
     needs: [version-resolve, validate-secrets]
-    uses: therajanmaurya/mifos-x-actionhub-publish-desktop-kmp/.github/workflows/release.yaml@v2.0.6
+    uses: therajanmaurya/mifos-x-actionhub-publish-desktop-kmp/.github/workflows/release.yaml@v2.0.8
     with:
       target:               ${{ inputs.desktop_win_artifact }}
       desktop_package_name: ${{ inputs.desktop_package_name }}
       github_tag:           ${{ needs.version-resolve.outputs.version }}
       starting_rung:        ${{ inputs.desktop_win_target }}
+      flavor:               ${{ inputs.flavor }}
+      build_type:           ${{ inputs.build_type }}
     secrets:
       azure_client_id:                ${{ secrets.azure_client_id }}
       azure_tenant_id:                ${{ secrets.azure_tenant_id }}
@@ -448,12 +450,14 @@ jobs:
     name: Desktop · Linux
     if: ${{ inputs.desktop_linux_target != 'skip' }}
     needs: [version-resolve, validate-secrets]
-    uses: therajanmaurya/mifos-x-actionhub-publish-desktop-kmp/.github/workflows/release.yaml@v2.0.6
+    uses: therajanmaurya/mifos-x-actionhub-publish-desktop-kmp/.github/workflows/release.yaml@v2.0.8
     with:
       target:               linux-deb
       desktop_package_name: ${{ inputs.desktop_package_name }}
       github_tag:           ${{ needs.version-resolve.outputs.version }}
       starting_rung:        ${{ inputs.desktop_linux_target }}
+      flavor:               ${{ inputs.flavor }}
+      build_type:           ${{ inputs.build_type }}
     # Linux DEB needs no org secrets — only GITHUB_TOKEN. Explicit empty map (tidy from inherit).
     secrets: {}
 
@@ -461,11 +465,13 @@ jobs:
     name: Web · ${{ inputs.web_host }}
     if: ${{ inputs.web_target != 'skip' }}
     needs: [version-resolve, validate-secrets]
-    uses: therajanmaurya/mifos-x-actionhub-publish-web-kmp/.github/workflows/release.yaml@v2.0.7
+    uses: therajanmaurya/mifos-x-actionhub-publish-web-kmp/.github/workflows/release.yaml@v2.0.9
     with:
       host:             ${{ inputs.web_host }}
       web_package_name: ${{ inputs.web_package_name }}
       starting_rung:    ${{ inputs.web_target }}
+      flavor:           ${{ inputs.flavor }}
+      build_type:       ${{ inputs.build_type }}
     secrets:
       cloudflare_api_token: ${{ secrets.cloudflare_api_token }}
       netlify_auth_token:   ${{ secrets.netlify_auth_token }}
