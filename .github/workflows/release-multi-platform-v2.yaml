@@ -339,7 +339,7 @@ jobs:
     name: iOS · Firebase Distribution (Stage 0)
     if: ${{ inputs.ios_target == 'firebase+testflight' || inputs.ios_target == 'firebase' }}
     needs: [version-resolve, validate-secrets]
-    uses: therajanmaurya/mifos-x-actionhub-publish-apple-kmp/.github/workflows/release.yaml@v2.0.16
+    uses: therajanmaurya/mifos-x-actionhub-publish-apple-kmp/.github/workflows/release.yaml@v2.0.17
     with:
       platform:            ios
       package_name:        ${{ inputs.ios_package_name }}
@@ -367,7 +367,7 @@ jobs:
           || inputs.ios_target == 'beta'
           || inputs.ios_target == 'production' }}
     needs: [version-resolve, validate-secrets]
-    uses: therajanmaurya/mifos-x-actionhub-publish-apple-kmp/.github/workflows/release.yaml@v2.0.16
+    uses: therajanmaurya/mifos-x-actionhub-publish-apple-kmp/.github/workflows/release.yaml@v2.0.17
     with:
       platform:            ios
       package_name:        ${{ inputs.ios_package_name }}
@@ -396,7 +396,7 @@ jobs:
     name: macOS · Mac TF / Beta / MAS
     if: ${{ inputs.mac_target != 'skip' }}
     needs: [version-resolve, validate-secrets]
-    uses: therajanmaurya/mifos-x-actionhub-publish-apple-kmp/.github/workflows/release.yaml@v2.0.16
+    uses: therajanmaurya/mifos-x-actionhub-publish-apple-kmp/.github/workflows/release.yaml@v2.0.17
     with:
       platform:      mac
       package_name:  ${{ inputs.mac_package_name }}
