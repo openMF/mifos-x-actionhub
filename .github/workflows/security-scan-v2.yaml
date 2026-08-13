@@ -29,6 +29,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
         with: { distribution: zulu, java-version: '${{ inputs.java-version }}' }
+      - uses: gradle/actions/setup-gradle@v4
       - id: gen
         run: |
           ./gradlew cyclonedxBom -PcyclonedxOutputFormat="${{ inputs.sbom_format }}"

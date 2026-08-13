@@ -1,0 +1,176 @@
+# .github/workflows/promote-dev-to-main-release.yaml
+#
+# Manually-triggered release: promote dev → main, tag it, cut a GitHub Release,
+# and open the next in-development version on dev.
+#
+# BRANCH MODEL
+#   dev  — development (default branch). All PRs merge here.
+#   main — the released line. Consumers pin the `@vX.Y.Z` tags cut FROM main.
+#
+# VERSIONING (dogfoods the org's shared actions)
+#   • Resolve  → MobileByteLabs/mbl-actionhub-resolve-version (github-releases mode) for the
+#                bump intent + explicit-override, THEN floored at the highest existing git tag
+#                (Releases can lag tags — currently Releases stop at v1.0.47 while tags reach
+#                v1.0.61 — so tags are the authoritative uniqueness source). Maven checks off
+#                (the actionhub is not a Maven artifact).
+#   • Bump     → MobileByteLabs/mbl-actionhub-bump-version opens a PR on dev advancing the
+#                human-visible `version.properties` marker after the release.
+#   The dev→main promotion itself is bespoke (no action covers a two-unrelated-histories
+#   tree promotion) — see the "Promote" step.
+#
+# "Rebase main with dev" == set main's TREE to dev's tree via a merge commit
+# (`git commit-tree <dev-tree> -p main -p dev`): conflict-free, non-force (old main is a
+# parent → fast-forward push), history-linked, and valid even though main and dev are
+# currently unrelated histories.
+#
+# TOKEN
+#   Promoting dev's `.github/workflows/**` onto main requires a PAT with the `workflow`
+#   scope (GITHUB_TOKEN may not write workflow files). Store it as `RELEASE_TOKEN`; the
+#   workflow falls back to github.token when a release carries no workflow-file changes.
+name: Release · Promote dev → main
+
+on:
+  workflow_dispatch:
+    inputs:
+      bump:
+        description: 'Semver bump for this release (ignored if release_version is set)'
+        type: choice
+        options: [patch, minor, major]
+        default: patch
+      release_version:
+        description: 'Explicit version e.g. v1.0.30 (overrides bump; blank = auto)'
+        type: string
+        required: false
+      dry_run:
+        description: 'Resolve + log only — no push, tag, release, or bump'
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: promote-dev-to-main
+  cancel-in-progress: false
+
+jobs:
+  promote:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout dev (full history + tags)
+        uses: actions/checkout@v4
+        with:
+          ref: dev
+          fetch-depth: 0
+          token: ${{ secrets.RELEASE_TOKEN || github.token }}
+          persist-credentials: true
+
+      - name: Configure git identity
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      # Source of truth = GitHub Releases on this repo. Maven verification disabled (not a
+      # Maven artifact); group-id/artifact-id are required inputs but unused in this mode.
+      - name: Resolve release version
+        id: resolve
+        uses: MobileByteLabs/mbl-actionhub-resolve-version@v1.2.0
+        with:
+          group-id: openMF
+          artifact-id: mifos-x-actionhub
+          version-source: github-releases
+          bump: ${{ inputs.bump }}
+          version: ${{ inputs.release_version }}
+          verify-against-maven: 'false'
+          tag-pattern: '^v?[0-9]+\.[0-9]+\.[0-9]+$'
+
+      # Tag-authoritative floor. GitHub Releases can lag tags (in this repo, Releases stop at
+      # v1.0.47 while tags run to v1.0.61), so the resolver's Releases-based proposal may
+      # undershoot. Floor the version at latest-tag+bump and take the higher of that vs. the
+      # resolver's intent — guaranteeing the release never collides with / regresses below an
+      # existing tag. Once a release publishes tag+Release together, the two converge and the
+      # resolver becomes authoritative on its own.
+      - name: Normalize + guard version
+        id: ver
+        run: |
+          set -euo pipefail
+          git fetch --tags --force --quiet
+          RAW='${{ steps.resolve.outputs.version }}'
+          RNUM=${RAW#v}
+          echo "$RNUM" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$' || { echo "::error::resolver returned non-semver: '$RAW'"; exit 1; }
+          if [ -n "${{ inputs.release_version }}" ]; then
+            # Explicit override: honor exactly; collision-guard only.
+            NUM=$RNUM
+          else
+            LT=$(git tag -l 'v[0-9]*.[0-9]*.[0-9]*' | sort -V | tail -1); LT=${LT#v}; LT=${LT:-0.0.0}
+            a=${LT%%.*}; r=${LT#*.}; b=${r%%.*}; c=${r##*.}
+            case "${{ inputs.bump }}" in
+              major) FLOOR="$((a+1)).0.0" ;;
+              minor) FLOOR="${a}.$((b+1)).0" ;;
+              *)     FLOOR="${a}.${b}.$((c+1))" ;;
+            esac
+            NUM=$(printf '%s\n%s\n' "$RNUM" "$FLOOR" | sort -V | tail -1)
+          fi
+          TAG="v$NUM"
+          if git rev-parse -q --verify "refs/tags/$TAG" >/dev/null; then
+            echo "::error::tag $TAG already exists — pass a higher release_version."; exit 1
+          fi
+          echo "num=$NUM" >> "$GITHUB_OUTPUT"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          {
+            echo "## Release plan"
+            echo "- resolver: \`${{ steps.resolve.outputs.version }}\` (source \`${{ steps.resolve.outputs.source }}\`, current \`${{ steps.resolve.outputs.current }}\`)"
+            echo "- highest existing tag floored the result (Releases lag tags in this repo)"
+            echo "- **this release: \`$TAG\`**"
+            echo "- dry run: \`${{ inputs.dry_run }}\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Promote dev → main  (main tree := dev tree, non-force, history-linked)
+        if: ${{ inputs.dry_run == false }}
+        run: |
+          set -euo pipefail
+          git fetch origin dev --quiet
+          DEV=$(git rev-parse origin/dev)
+          TREE=$(git rev-parse "$DEV^{tree}")
+          if git ls-remote --exit-code --heads origin main >/dev/null 2>&1; then
+            git fetch origin main --quiet
+            MAIN=$(git rev-parse origin/main)
+            if [ "$(git rev-parse "$MAIN^{tree}")" = "$TREE" ]; then
+              echo "main already carries dev's tree — nothing to promote."
+              NEW=$MAIN
+            else
+              NEW=$(git commit-tree "$TREE" -p "$MAIN" -p "$DEV" \
+                    -m "release(${{ steps.ver.outputs.tag }}): promote dev → main")
+            fi
+          else
+            NEW=$DEV
+          fi
+          git push origin "$NEW:refs/heads/main"
+          echo "MAIN_SHA=$NEW" >> "$GITHUB_ENV"
+
+      - name: Tag + GitHub Release on main
+        if: ${{ inputs.dry_run == false }}
+        env:
+          GH_TOKEN: ${{ secrets.RELEASE_TOKEN || github.token }}
+        run: |
+          set -euo pipefail
+          TAG='${{ steps.ver.outputs.tag }}'
+          git tag -a "$TAG" "$MAIN_SHA" -m "$TAG"
+          git push origin "refs/tags/$TAG"
+          gh release create "$TAG" --verify-tag --title "$TAG" --generate-notes --latest
+          echo "released **$TAG** on main @ \`$MAIN_SHA\`" >> "$GITHUB_STEP_SUMMARY"
+
+      # Post-release: PR on dev advancing the human-visible marker to the next patch.
+      # SoT remains the Releases above; this file is not read back by the resolver.
+      - name: Bump next dev version (PR on dev)
+        if: ${{ inputs.dry_run == false }}
+        uses: MobileByteLabs/mbl-actionhub-bump-version@v1.6.0
+        with:
+          published-version: ${{ steps.ver.outputs.num }}
+          properties-path: version.properties
+          properties-key: actionhub.version
+          bump-type: patch
+          base-branch: dev
+          auto-merge: 'true'
+          github-token: ${{ secrets.RELEASE_TOKEN || github.token }}

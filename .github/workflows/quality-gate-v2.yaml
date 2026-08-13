@@ -19,6 +19,13 @@ on:
       sbom_path:
         value: ${{ jobs.sbom.outputs.path }}
 
+# Cancel a superseded run instead of letting five fresh jobs pile on and hold runners (the dev-team
+# "runs in bunches, grabs many runners" report). Scoped per caller repo+ref so unrelated callers on
+# the same branch name never cancel each other.
+concurrency:
+  group: quality-gate-v2-${{ github.repository }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   format:
     name: Spotless
@@ -27,6 +34,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
         with: { distribution: zulu, java-version: '${{ inputs.java-version }}' }
+      - uses: gradle/actions/setup-gradle@v4
       - run: ./gradlew spotlessCheck
 
   static-analysis:
@@ -36,6 +44,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
         with: { distribution: zulu, java-version: '${{ inputs.java-version }}' }
+      - uses: gradle/actions/setup-gradle@v4
       - run: ./gradlew detekt
       - uses: actions/upload-artifact@v4
         if: always()
@@ -48,6 +57,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
         with: { distribution: zulu, java-version: '${{ inputs.java-version }}' }
+      - uses: gradle/actions/setup-gradle@v4
       - run: ./gradlew dependencyGuard
 
   coverage:
@@ -59,6 +69,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
         with: { distribution: zulu, java-version: '${{ inputs.java-version }}' }
+      - uses: gradle/actions/setup-gradle@v4
       - name: Run tests + Kover XML report
         run: ./gradlew koverXmlReport
       - name: Compute coverage + enforce threshold
@@ -90,6 +101,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
         with: { distribution: zulu, java-version: '${{ inputs.java-version }}' }
+      - uses: gradle/actions/setup-gradle@v4
       - name: Generate SBOM via cyclonedx-gradle-plugin
         id: gen
         run: |
