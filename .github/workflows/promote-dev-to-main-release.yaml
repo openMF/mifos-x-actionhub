@@ -7,21 +7,19 @@
 #   dev  — development (default branch). All PRs merge here.
 #   main — the released line. Consumers pin the `@vX.Y.Z` tags cut FROM main.
 #
-# VERSIONING (dogfoods the org's shared actions)
-#   • Resolve  → MobileByteLabs/mbl-actionhub-resolve-version (github-releases mode) for the
-#                bump intent + explicit-override, THEN floored at the highest existing git tag
-#                (Releases can lag tags — currently Releases stop at v1.0.47 while tags reach
-#                v1.0.61 — so tags are the authoritative uniqueness source). Maven checks off
-#                (the actionhub is not a Maven artifact).
-#   • Bump     → MobileByteLabs/mbl-actionhub-bump-version opens a PR on dev advancing the
-#                human-visible `version.properties` marker after the release.
-#   The dev→main promotion itself is bespoke (no action covers a two-unrelated-histories
-#   tree promotion) — see the "Promote" step.
+# VERSIONING
+#   Resolve → MobileByteLabs/mbl-actionhub-resolve-version (github-releases mode) for the bump
+#   intent + explicit-override, THEN floored at the highest existing git tag (Releases can lag
+#   tags — Releases stopped at v1.0.47 while tags reached v1.0.61 — so tags are the
+#   authoritative uniqueness source). Maven checks off (not a Maven artifact). There is NO
+#   dev-only version marker file: the git TAG is the version, so `main` and `dev` stay
+#   content-identical after a release.
 #
-# "Rebase main with dev" == set main's TREE to dev's tree via a merge commit
-# (`git commit-tree <dev-tree> -p main -p dev`): conflict-free, non-force (old main is a
-# parent → fast-forward push), history-linked, and valid even though main and dev are
-# currently unrelated histories.
+# "Rebase main with dev" == set `main` to dev's EXACT commit
+# (`git push --force-with-lease origin dev:main`), so after every release `main == dev`
+# (0 ahead / 0 behind — the signal that dev's stable state was promoted). The first alignment
+# (main/dev started as unrelated histories) force-updates; later releases fast-forward.
+# Consumers pin vX.Y.Z TAGS, not the `main` ref, so moving `main` never breaks a pinned consumer.
 #
 # TOKEN
 #   Promoting dev's `.github/workflows/**` onto main requires a PAT with the `workflow`
@@ -42,13 +40,12 @@ on:
         type: string
         required: false
       dry_run:
-        description: 'Resolve + log only — no push, tag, release, or bump'
+        description: 'Resolve + log only — no push, tag, or release'
         type: boolean
         default: false
 
 permissions:
   contents: write
-  pull-requests: write
 
 concurrency:
   group: promote-dev-to-main
@@ -126,28 +123,19 @@ jobs:
             echo "- dry run: \`${{ inputs.dry_run }}\`"
           } >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Promote dev → main  (main tree := dev tree, non-force, history-linked)
+      # Make `main` mirror `dev` EXACTLY (same commit) so `main == dev` right after release —
+      # 0 ahead / 0 behind. First alignment (unrelated histories) force-updates; once main sits
+      # on dev's history, later releases fast-forward. Consumers pin vX.Y.Z TAGS, not the main
+      # ref, so moving main never breaks a pinned consumer. force-with-lease guards against a
+      # concurrent main push (fails safe rather than clobbering).
+      - name: Promote dev → main  (main := dev, exact)
         if: ${{ inputs.dry_run == false }}
         run: |
           set -euo pipefail
-          git fetch origin dev --quiet
+          git fetch origin dev main --quiet || git fetch origin dev --quiet
           DEV=$(git rev-parse origin/dev)
-          TREE=$(git rev-parse "$DEV^{tree}")
-          if git ls-remote --exit-code --heads origin main >/dev/null 2>&1; then
-            git fetch origin main --quiet
-            MAIN=$(git rev-parse origin/main)
-            if [ "$(git rev-parse "$MAIN^{tree}")" = "$TREE" ]; then
-              echo "main already carries dev's tree — nothing to promote."
-              NEW=$MAIN
-            else
-              NEW=$(git commit-tree "$TREE" -p "$MAIN" -p "$DEV" \
-                    -m "release(${{ steps.ver.outputs.tag }}): promote dev → main")
-            fi
-          else
-            NEW=$DEV
-          fi
-          git push origin "$NEW:refs/heads/main"
-          echo "MAIN_SHA=$NEW" >> "$GITHUB_ENV"
+          git push --force-with-lease origin "$DEV:refs/heads/main"
+          echo "MAIN_SHA=$DEV" >> "$GITHUB_ENV"
 
       - name: Tag + GitHub Release on main
         if: ${{ inputs.dry_run == false }}
@@ -159,18 +147,4 @@ jobs:
           git tag -a "$TAG" "$MAIN_SHA" -m "$TAG"
           git push origin "refs/tags/$TAG"
           gh release create "$TAG" --verify-tag --title "$TAG" --generate-notes --latest
-          echo "released **$TAG** on main @ \`$MAIN_SHA\`" >> "$GITHUB_STEP_SUMMARY"
-
-      # Post-release: PR on dev advancing the human-visible marker to the next patch.
-      # SoT remains the Releases above; this file is not read back by the resolver.
-      - name: Bump next dev version (PR on dev)
-        if: ${{ inputs.dry_run == false }}
-        uses: MobileByteLabs/mbl-actionhub-bump-version@v1.6.0
-        with:
-          published-version: ${{ steps.ver.outputs.num }}
-          properties-path: version.properties
-          properties-key: actionhub.version
-          bump-type: patch
-          base-branch: dev
-          auto-merge: 'true'
-          github-token: ${{ secrets.RELEASE_TOKEN || github.token }}
+          echo "released **$TAG** on main @ \`$MAIN_SHA\` — main now equals dev" >> "$GITHUB_STEP_SUMMARY"
