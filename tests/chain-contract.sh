@@ -245,15 +245,20 @@ got = set(d[\"on\" if \"on\" in d else True][\"workflow_call\"][\"inputs\"].keys
 expected = set([\"android_package_name\",\"ios_package_name\",\"mac_package_name\",\"desktop_package_name\",\"web_package_name\"])
 assert expected.issubset(got), \"missing: \" + str(expected - got)
 '"
-run_test "T42: workflow_dispatch inputs match workflow_call inputs (UX form parity)" "py '
+run_test "T42: workflow_dispatch (if present) is a subset of workflow_call + within GitHub 10-input cap" "py '
 import yaml
 d = yaml.safe_load(open(\"$ORCH_RELEASE_FILE\"))
 trig = d[\"on\" if \"on\" in d else True]
 wc_inputs = set(trig[\"workflow_call\"][\"inputs\"].keys())
-wd_inputs = set(trig[\"workflow_dispatch\"][\"inputs\"].keys())
-# workflow_dispatch may be a subset (some package-names are hardcoded as defaults), but every wd input must be in wc
+# A reusable workflow (workflow_call) need NOT expose workflow_dispatch — consumers dispatch via their
+# own thin wrapper. If present, it must be a SUBSET of workflow_call (no drift) AND stay within GitHub
+# hard cap of 10 workflow_dispatch inputs; a full mirror of a 10+-input workflow_call is INVALID (kept
+# main red for months). Absent workflow_dispatch is the correct shape here.
+wd = (trig.get(\"workflow_dispatch\") or {}).get(\"inputs\") or {}
+wd_inputs = set(wd.keys())
 extra_wd = wd_inputs - wc_inputs
 assert not extra_wd, \"workflow_dispatch has inputs not in workflow_call: \" + str(extra_wd)
+assert len(wd_inputs) <= 10, \"workflow_dispatch has \" + str(len(wd_inputs)) + \" inputs; GitHub caps it at 10\"
 '"
 echo
 

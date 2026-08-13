@@ -16,17 +16,35 @@
 
 ## 🆕 v2 surface (since v1.0.17)
 
-[`.github/workflows/v2/`](./.github/workflows/v2/) — a redesigned, opt-in workflow surface featuring:
+The **`*-v2.yaml`** workflows (flattened from the old `v2/` subdir) are a redesigned, opt-in surface. v2 is a **3-tier repository chain** — the orchestrator here fans out to dedicated per-platform repos:
 
-- **Uniform 3-stage promotion ladder** across Android / iOS / macOS / Desktop / Web (internal → beta → production)
+```
+Consumer (kmp-project-template + forks)              Tier 1 — thin wrapper (release-multi-platform.yml)
+    └─ uses openMF/mifos-x-actionhub/.github/workflows/*-v2.yaml@v1.0.X →
+openMF/mifos-x-actionhub  (THIS REPO)                Tier 2 — orchestrator (*-v2.yaml)
+    └─ uses openMF/mifos-x-actionhub-publish-*-kmp@v2.0.X →
+openMF/mifos-x-actionhub-publish-{android,           Tier 3 — per-platform build / sign / publish ladders
+                    apple,desktop,web}-kmp
+```
+
+**Orchestrator workflows** (`.github/workflows/*-v2.yaml`):
+
+- **Uniform 3-stage promotion ladder** across Android / iOS / macOS / Desktop / Web (internal → beta → production) — `release-multi-platform-v2.yaml` + per-platform `release-{android,apple,desktop,web}-v2.yaml`
 - **Approval gates** via GHA `environment:` protection rules (consumer-configured)
-- **Supersede semantics** (`concurrency.cancel-in-progress: true`) — new release cancels pending approvals
-- **Auto-tag + auto-release** (`v2/tag-weekly-release.yaml`, `v2/tag-monthly-release.yaml`) — adopting the `mifos-pay` cron pattern
-- **NEW capabilities** absent in v1: `v2/rollback.yaml`, `v2/security-scan.yaml`, `v2/deployment-status.yaml`, `v2/release-notes-generate.yaml`
+- **Supersede semantics** (`concurrency.cancel-in-progress: true`) — a new release cancels pending approvals
+- **Auto-tag + auto-release** — `tag-weekly-release-v2.yaml`, `tag-monthly-release-v2.yaml`
+- **NEW capabilities** absent in v1 — `rollback-v2.yaml`, `security-scan-v2.yaml`, `deployment-status-v2.yaml`, `release-notes-generate-v2.yaml`, `quality-gate-v2.yaml`, `pr-check-v2.yaml`
 
-**v1 is unchanged.** Pinned consumers at `@v1.0.16` continue working without migration. Opt-in to v2 by referencing `.github/workflows/v2/*@v1.0.17+`.
+**Tier-3 per-platform repositories** — the actual build/sign/publish logic lives in dedicated repos, pinned per-workflow at `@v2.0.X`:
 
-📖 See [`.github/workflows/v2/README.md`](./.github/workflows/v2/README.md) for the full v2 file index, migration table, and consumer usage examples.
+- [`mifos-x-actionhub-publish-android-kmp`](https://github.com/openMF/mifos-x-actionhub-publish-android-kmp)
+- [`mifos-x-actionhub-publish-apple-kmp`](https://github.com/openMF/mifos-x-actionhub-publish-apple-kmp) — iOS + macOS
+- [`mifos-x-actionhub-publish-desktop-kmp`](https://github.com/openMF/mifos-x-actionhub-publish-desktop-kmp)
+- [`mifos-x-actionhub-publish-web-kmp`](https://github.com/openMF/mifos-x-actionhub-publish-web-kmp)
+
+**v1 is unchanged.** Pinned consumers at `@v1.0.16` continue working without migration. Opt-in to v2 by referencing `.github/workflows/*-v2.yaml@v1.0.17+`.
+
+📖 [`.github/V2_GUIDE.md`](./.github/V2_GUIDE.md) — canonical secret schema + v2 usage · [`CONTRIBUTING.md`](./CONTRIBUTING.md) — which repo owns which change · [`PLATFORM_REGISTRY.yaml`](./PLATFORM_REGISTRY.yaml) — the per-platform repo registry.
 
 ---
 

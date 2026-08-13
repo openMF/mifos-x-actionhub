@@ -63,23 +63,12 @@ on:
       match_ssh_private_key:    { required: false }
       SOPS_AGE_KEY:             { required: false }
 
-  workflow_dispatch:
-    inputs:
-      version_tag:          { required: false, type: string, default: '',                 description: 'Leave empty to auto-compute YYYY.M.D' }
-      android_target:       { required: false, type: choice, options: [firebase+internal, firebase, internal, beta, production, skip],     default: firebase+internal }
-      ios_target:           { required: false, type: choice, options: [firebase+testflight, firebase, internal, beta, production, skip],   default: firebase+testflight }
-      mac_target:           { required: false, type: choice, options: [internal, beta, production, skip],                                  default: internal }
-      desktop_win_target:   { required: false, type: choice, options: [prerelease, beta, stable, skip],                                    default: prerelease }
-      desktop_win_artifact: { required: false, type: choice, options: [windows-msi-signed, windows-exe, windows-microsoft-store],          default: windows-msi-signed }
-      desktop_linux_target: { required: false, type: choice, options: [prerelease, beta, stable, skip],                                    default: prerelease }
-      web_target:           { required: false, type: choice, options: [preview, staging, production, skip],                                default: preview }
-      web_host:             { required: false, type: choice, options: [gh-pages, cloudflare-pages, netlify, vercel],                       default: gh-pages }
-      production_rollout:   { required: false, type: string, default: '0.10' }
-      fastlane_mode:        { required: false, type: choice, options: [standard, pre-materialized],                                       default: standard }
-      fastlane_cwd:         { required: false, type: string, default: '.' }
-      pre_fastlane_script:  { required: false, type: string, default: '' }
-      runner_pool_linux:    { required: false, type: string, default: '["ubuntu-latest"]' }
-      runner_pool_mac:      { required: false, type: string, default: '["macos-14"]' }
+  # NOTE: no `workflow_dispatch:` here — this is a REUSABLE workflow (`workflow_call`), invoked by a
+  # consumer's thin wrapper (release-multi-platform.yml), which owns the manual-dispatch UX. A mirrored
+  # `workflow_dispatch` block used to duplicate every `workflow_call` input, which (a) is pure drift and
+  # (b) blew past GitHub's 10-input `workflow_dispatch` cap (15 inputs → actionlint failure that kept
+  # main's CI red). All inputs live on `workflow_call` above; the jobs read them via `inputs.*` when
+  # called. To manually run a release, dispatch the consumer wrapper, not this reusable file directly.
 
 jobs:
   version-resolve:

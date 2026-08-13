@@ -16,6 +16,8 @@ on:
       desktop_package_name: { required: false, type: string, default: 'cmp-desktop' }
       web_package_name:     { required: false, type: string, default: 'cmp-web' }
       java-version:         { required: false, type: string, default: '17' }
+      xcode_version:        { required: false, type: string, default: '26.5', description: 'Xcode to select for the iOS PR-check — a 26.x is required for the iOS 26 SDK symbols CMP 1.11 references. Pre-installed on macos-26; falls back to the runner default if absent.' }
+      macos_runner:         { required: false, type: string, default: 'macos-26', description: 'Runner image for the iOS PR-check job. macos-26 (Tahoe) is GA + the macos-latest default since 2026-06 and ships Xcode 26.x pre-installed.' }
     outputs:
       android_pass:
         value: ${{ jobs.android.result == 'success' || jobs.android.result == 'skipped' }}
@@ -25,6 +27,14 @@ on:
         value: ${{ jobs.desktop.result == 'success' || jobs.desktop.result == 'skipped' }}
       web_pass:
         value: ${{ jobs.web.result == 'success' || jobs.web.result == 'skipped' }}
+
+# Shared default so a superseded invocation is cancelled instead of holding runners (the dev-team
+# "runs in bunches, grabs many runners" report). Scoped per caller repo+ref so two repos on the same
+# branch name never cancel each other. A consumer's own wrapper-level `concurrency` additionally
+# covers any LOCAL jobs it defines outside this reusable flow.
+concurrency:
+  group: pr-check-v2-${{ github.repository }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   android:
@@ -44,19 +54,49 @@ jobs:
   ios:
     if: ${{ contains(inputs.platforms, 'ios') }}
     name: PR Check · iOS
-    runs-on: macos-14
+    runs-on: ${{ inputs.macos_runner }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
         with: { distribution: zulu, java-version: '${{ inputs.java-version }}' }
-      - uses: maxim-lobanov/setup-xcode@v1
-        with: { xcode-version: '15.2' }
-      - name: Build iOS debug (unsigned)
+      - uses: gradle/actions/setup-gradle@v3
+      # macos-26 ships Xcode 26.x pre-installed, so SELECT it (instant) rather than
+      # maxim-lobanov/setup-xcode (which may download + is slow). Guarded: fall back to the runner
+      # default if the pinned app isn't present, so a future runner-image reshuffle can't hard-fail.
+      - name: Select Xcode ${{ inputs.xcode_version }}
         run: |
-          ./gradlew ":${{ inputs.shared_module }}:compileKotlin"
-          xcodebuild -workspace ${{ inputs.ios_package_name }}/iosApp.xcworkspace \
-            -scheme iosApp -configuration Debug -sdk iphonesimulator \
-            CODE_SIGNING_ALLOWED=NO build
+          APP="/Applications/Xcode_${{ inputs.xcode_version }}.app"
+          if [ -d "$APP" ]; then sudo xcode-select -s "$APP"; else echo "note: $APP absent — using runner default"; fi
+          xcodebuild -version
+      - uses: ruby/setup-ruby@v1
+        with: { ruby-version: '3.3', bundler-cache: true }
+      # ~/.konan (Kotlin/Native toolchain + platform klibs) is the biggest cold-run cost of an iOS
+      # build; setup-gradle caches ~/.gradle but NOT this. Keyed on the version catalog.
+      - name: Cache Kotlin/Native (~/.konan)
+        uses: actions/cache@v4
+        with:
+          path: ~/.konan
+          key: konan-${{ runner.os }}-${{ hashFiles('gradle/libs.versions.toml') }}
+          restore-keys: konan-${{ runner.os }}-
+      # Resolved SwiftPM clones (e.g. a native Firebase SDK graph) so xcodebuild's
+      # -resolvePackageDependencies / -showBuildSettings don't re-clone the world every run.
+      - name: Cache SwiftPM packages
+        uses: actions/cache@v4
+        with:
+          path: ~/Library/Caches/org.swift.swiftpm
+          key: spm-${{ runner.os }}-${{ hashFiles(format('{0}/**/Package.resolved', inputs.ios_package_name)) }}
+          restore-keys: spm-${{ runner.os }}-
+      # Delegate the KMP + SwiftPM specifics (per-flavor scheme, DEBUG ComposeApp XCFramework
+      # assembly, framework embed) to the consumer's canonical `fastlane ios build_ios` lane. The
+      # reusable flow stays project-agnostic — it never hardcodes a scheme/workspace, never runs the
+      # ambiguous `:shared:compileKotlin`, and never builds an unused RELEASE XCFramework. The
+      # settings-timeout override keeps `-showBuildSettings` from falsely timing out on the SwiftPM
+      # graph on a cold runner.
+      - name: fastlane ios build_ios (unsigned, debug)
+        env:
+          FASTLANE_XCODEBUILD_SETTINGS_TIMEOUT: '120'
+          FASTLANE_XCODEBUILD_SETTINGS_RETRIES: '5'
+        run: bundle exec fastlane ios build_ios
 
   desktop:
     if: ${{ contains(inputs.platforms, 'desktop') }}
