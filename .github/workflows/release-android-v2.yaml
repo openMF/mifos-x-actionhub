@@ -1,6 +1,6 @@
 # .github/workflows/release-android-v2.yaml
 #
-# Thin wrapper → therajanmaurya/mifos-x-actionhub-publish-android-kmp/.github/workflows/release.yaml@v2.0.4
+# Thin wrapper → therajanmaurya/mifos-x-actionhub-publish-android-kmp/.github/workflows/release.yaml@v2.0.26
 # Provides a stable @v1.0.17+ entry point for consumers who want the discoverable
 # mifos-x-actionhub interface instead of referencing the platform repo directly.
 #
@@ -24,7 +24,12 @@ on:
       upload_keystore:          { required: true }
       keystore_password:        { required: true }
       keystore_alias:           { required: true }
-      keystore_alias_password:  { required: true }
+      # NOT required: a PKCS12 keystore (keytool's default) has no separate key password — keytool
+      # discards `-keypass` at creation with "Different store and key passwords not supported for
+      # PKCS12 KeyStores". Callers passing only keystore_password are correct, and requiring this
+      # rejected them at the contract boundary. Tier 3 (publish-android-kmp) already declares it
+      # optional and defaults it from keystore_password.
+      keystore_alias_password:  { required: false }
 
   workflow_dispatch:
     inputs:
@@ -34,7 +39,7 @@ on:
 
 jobs:
   delegate:
-    uses: therajanmaurya/mifos-x-actionhub-publish-android-kmp/.github/workflows/release.yaml@v2.0.4
+    uses: therajanmaurya/mifos-x-actionhub-publish-android-kmp/.github/workflows/release.yaml@v2.0.26
     with:
       android_package_name: ${{ inputs.android_package_name }}
       version_tag:          ${{ inputs.version_tag }}

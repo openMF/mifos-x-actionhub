@@ -170,7 +170,7 @@ jobs:
           upload_keystore:         ${{ secrets.upload_keystore }}
           keystore_password:       ${{ secrets.keystore_password }}
           keystore_alias:          ${{ secrets.keystore_alias }}
-          keystore_alias_password: ${{ secrets.keystore_alias_password }}
+          keystore_alias_password: ${{ secrets.keystore_alias_password || secrets.keystore_password }}
         run: |
           MISSING=()
           # All targets need keystore + google services
@@ -341,7 +341,7 @@ jobs:
       upload_keystore:              ${{ secrets.upload_keystore }}
       keystore_password:            ${{ secrets.keystore_password }}
       keystore_alias:               ${{ secrets.keystore_alias }}
-      keystore_alias_password:      ${{ secrets.keystore_alias_password }}
+      keystore_alias_password:      ${{ secrets.keystore_alias_password || secrets.keystore_password }}
       firebase_android_app_id:      ${{ secrets.firebase_android_app_id }}
       firebase_android_demo_app_id: ${{ secrets.firebase_android_demo_app_id }}
       SOPS_AGE_KEY:                 ${{ secrets.SOPS_AGE_KEY }}
@@ -378,7 +378,7 @@ jobs:
       upload_keystore:              ${{ secrets.upload_keystore }}
       keystore_password:            ${{ secrets.keystore_password }}
       keystore_alias:               ${{ secrets.keystore_alias }}
-      keystore_alias_password:      ${{ secrets.keystore_alias_password }}
+      keystore_alias_password:      ${{ secrets.keystore_alias_password || secrets.keystore_password }}
       firebase_android_app_id:      ${{ secrets.firebase_android_app_id }}
       firebase_android_demo_app_id: ${{ secrets.firebase_android_demo_app_id }}
       SOPS_AGE_KEY:                 ${{ secrets.SOPS_AGE_KEY }}
