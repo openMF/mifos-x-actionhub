@@ -112,7 +112,7 @@ jobs:
 
     steps:
       # Step 1: Check out the repository code to the runner
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Build & Publish Web App
         uses: openMF/mifos-x-actionhub-web-publish@v1.0.1

@@ -41,7 +41,7 @@ jobs:
     name: Validate inputs + audit
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Validate
         run: |
           if [[ -z "${{ inputs.reason }}" ]]; then
@@ -62,11 +62,11 @@ jobs:
     runs-on: ubuntu-latest
     environment: rollback-android   # requires admin approval
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with: { ref: '${{ inputs.rollback_to_version }}', fetch-depth: 0 }
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v5
         with: { distribution: zulu, java-version: '17' }
-      - uses: ruby/setup-ruby@afeafc3d1ab54a631816aba4c914a0081c12ff2f  # v1.232.0
+      - uses: ruby/setup-ruby@95ef2b042f9d7a56d8268cba8559e2842e2ad01b  # v1.232.0
         with: { bundler-cache: true }
       - name: Materialize Play Store creds
         env: { PLAYSTORE_CREDS: '${{ secrets.playstore_creds }}' }
@@ -92,9 +92,9 @@ jobs:
     runs-on: macos-14
     environment: rollback-ios
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with: { ref: '${{ inputs.rollback_to_version }}', fetch-depth: 0 }
-      - uses: ruby/setup-ruby@afeafc3d1ab54a631816aba4c914a0081c12ff2f
+      - uses: ruby/setup-ruby@95ef2b042f9d7a56d8268cba8559e2842e2ad01b
         with: { bundler-cache: true }
       - name: Materialize Apple secrets
         env:
@@ -122,7 +122,7 @@ jobs:
     runs-on: macos-14
     environment: rollback-mac
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with: { ref: '${{ inputs.rollback_to_version }}' }
       - run: echo "::notice::Mac rollback not yet implemented — manual intervention required"
 
@@ -133,7 +133,7 @@ jobs:
     runs-on: ubuntu-latest
     environment: rollback-web
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with: { fetch-depth: 0 }
       - name: Overwrite gh-pages with previous tag's gh-pages-staging
         env:
@@ -149,7 +149,7 @@ jobs:
     if: always()
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Append rollback row
         env:
           PLATFORM:   ${{ inputs.platform }}

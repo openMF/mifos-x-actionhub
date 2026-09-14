@@ -29,7 +29,7 @@
 # - Callable from other workflows
 
 # Actions Used:
-# 1. actions/checkout@v4 - Checks out repository code
+# 1. actions/checkout@v5 - Checks out repository code
 # 2. josStorer/get-current-time - Retrieves current timestamp
 # 3. rickstaa/action-create-tag - Creates Git tags
 
@@ -81,7 +81,7 @@ jobs:
     steps:
       # Step 1: Checkout the repository
       # This is required to perform any operations on the repository
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       # Step 2: Get current timestamp
       # This action provides formatted date/time outputs that we can use

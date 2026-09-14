@@ -31,22 +31,22 @@ jobs:
     name: Spotless
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-java@v5
         with: { distribution: zulu, java-version: '${{ inputs.java-version }}' }
-      - uses: gradle/actions/setup-gradle@v4
+      - uses: gradle/actions/setup-gradle@v5
       - run: ./gradlew spotlessCheck
 
   static-analysis:
     name: Detekt
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-java@v5
         with: { distribution: zulu, java-version: '${{ inputs.java-version }}' }
-      - uses: gradle/actions/setup-gradle@v4
+      - uses: gradle/actions/setup-gradle@v5
       - run: ./gradlew detekt
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         if: always()
         with: { name: detekt-reports, path: '**/build/reports/detekt/**' }
 
@@ -54,10 +54,10 @@ jobs:
     name: Dependency Guard
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-java@v5
         with: { distribution: zulu, java-version: '${{ inputs.java-version }}' }
-      - uses: gradle/actions/setup-gradle@v4
+      - uses: gradle/actions/setup-gradle@v5
       - run: ./gradlew dependencyGuard
 
   coverage:
@@ -66,10 +66,10 @@ jobs:
     outputs:
       pct: ${{ steps.report.outputs.pct }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-java@v5
         with: { distribution: zulu, java-version: '${{ inputs.java-version }}' }
-      - uses: gradle/actions/setup-gradle@v4
+      - uses: gradle/actions/setup-gradle@v5
       - name: Run tests + Kover XML report
         run: ./gradlew koverXmlReport
       - name: Compute coverage + enforce threshold
@@ -89,7 +89,7 @@ jobs:
           echo "pct=$PCT" >> "$GITHUB_OUTPUT"
           MEETS=$(awk -v p="$PCT" -v t="$THRESHOLD" 'BEGIN { print (p >= t) ? "yes" : "no" }')
           [[ "$MEETS" == "yes" ]] || { echo "::error::Coverage $PCT below threshold $THRESHOLD"; exit 1; }
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         with: { name: kover-report, path: '**/build/reports/kover/**' }
 
   sbom:
@@ -98,15 +98,15 @@ jobs:
     outputs:
       path: ${{ steps.gen.outputs.path }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-java@v5
         with: { distribution: zulu, java-version: '${{ inputs.java-version }}' }
-      - uses: gradle/actions/setup-gradle@v4
+      - uses: gradle/actions/setup-gradle@v5
       - name: Generate SBOM via cyclonedx-gradle-plugin
         id: gen
         run: |
           ./gradlew cyclonedxBom -PcyclonedxOutputFormat="${{ inputs.sbom_format }}"
           SBOM=$(find . -name 'bom.*' -path '*reports*' | head -1)
           echo "path=$SBOM" >> "$GITHUB_OUTPUT"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         with: { name: sbom, path: '**/build/reports/bom.*' }

@@ -209,7 +209,7 @@ jobs:
     runs-on: ${{ inputs.runner }}
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Static Analysis Check
         uses: openMF/mifos-x-actionhub-static-analysis-check@v1.0.1
@@ -222,7 +222,7 @@ jobs:
     runs-on: ${{ inputs.runner }}
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
@@ -248,7 +248,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Create Supabase credentials file (Unix)
         if: runner.os != 'Windows'
@@ -280,7 +280,7 @@ jobs:
     runs-on: ${{ inputs.runner }}
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Create Supabase credentials file
         run: |
@@ -302,7 +302,7 @@ jobs:
     runs-on: ${{ inputs.runner_macos }}
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Create Supabase credentials file
         run: |
