@@ -42,10 +42,10 @@ jobs:
     name: PR Check · Android
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-java@v5
         with: { distribution: zulu, java-version: '${{ inputs.java-version }}' }
-      - uses: gradle/actions/setup-gradle@v4
+      - uses: gradle/actions/setup-gradle@v5
       - name: Spotless + Detekt + Dependency Guard + assembleDebug
         run: |
           ./gradlew spotlessCheck detekt dependencyGuard
@@ -56,10 +56,10 @@ jobs:
     name: PR Check · iOS
     runs-on: ${{ inputs.macos_runner }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-java@v5
         with: { distribution: zulu, java-version: '${{ inputs.java-version }}' }
-      - uses: gradle/actions/setup-gradle@v4
+      - uses: gradle/actions/setup-gradle@v5
       # macos-26 ships Xcode 26.x pre-installed, so SELECT it (instant) rather than
       # maxim-lobanov/setup-xcode (which may download + is slow). Guarded: fall back to the runner
       # default if the pinned app isn't present, so a future runner-image reshuffle can't hard-fail.
@@ -73,7 +73,7 @@ jobs:
       # ~/.konan (Kotlin/Native toolchain + platform klibs) is the biggest cold-run cost of an iOS
       # build; setup-gradle caches ~/.gradle but NOT this. Keyed on the version catalog.
       - name: Cache Kotlin/Native (~/.konan)
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ~/.konan
           key: konan-${{ runner.os }}-${{ hashFiles('gradle/libs.versions.toml') }}
@@ -81,7 +81,7 @@ jobs:
       # Resolved SwiftPM clones (e.g. a native Firebase SDK graph) so xcodebuild's
       # -resolvePackageDependencies / -showBuildSettings don't re-clone the world every run.
       - name: Cache SwiftPM packages
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ~/Library/Caches/org.swift.swiftpm
           key: spm-${{ runner.os }}-${{ hashFiles(format('{0}/**/Package.resolved', inputs.ios_package_name)) }}
@@ -107,13 +107,13 @@ jobs:
         os: [ubuntu-latest, windows-latest, macos-14]
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-java@v5
         with: { distribution: zulu, java-version: '${{ inputs.java-version }}' }
       # Was missing entirely: without setup-gradle this 3-OS matrix re-downloaded the whole
       # dependency graph cold every run (the source of the intermittent Maven/plugin-portal 429s)
       # and shared no build cache. Per-OS caches are keyed automatically by the action.
-      - uses: gradle/actions/setup-gradle@v4
+      - uses: gradle/actions/setup-gradle@v5
       - name: Build Desktop distributable
         run: ./gradlew ":${{ inputs.desktop_package_name }}:createReleaseDistributable"
 
@@ -122,10 +122,10 @@ jobs:
     name: PR Check · Web
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-java@v5
         with: { distribution: zulu, java-version: '${{ inputs.java-version }}' }
       # Was missing entirely — same cold-download / no-build-cache penalty as the desktop job above.
-      - uses: gradle/actions/setup-gradle@v4
+      - uses: gradle/actions/setup-gradle@v5
       - name: Build Kotlin/JS distribution
         run: ./gradlew ":${{ inputs.web_package_name }}:jsBrowserDistribution"

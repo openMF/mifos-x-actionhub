@@ -372,7 +372,7 @@ jobs:
     steps:
       # Check out caller repository
       - name: Checkout Caller Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
@@ -402,7 +402,7 @@ jobs:
     steps:
       # Check out caller repository
       - name: Checkout Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
@@ -434,7 +434,7 @@ jobs:
       contents: write
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
@@ -486,7 +486,7 @@ jobs:
     runs-on: macos-latest
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Create Supabase credentials file
         run: |
@@ -532,7 +532,7 @@ jobs:
     runs-on: macos-latest
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Create Supabase credentials file
         run: |
@@ -578,7 +578,7 @@ jobs:
     runs-on: macos-latest
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Create Supabase credentials file
         run: |
@@ -610,7 +610,7 @@ jobs:
     runs-on: macos-latest
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Create Supabase credentials file
         run: |
@@ -645,7 +645,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
@@ -692,7 +692,7 @@ jobs:
       pages: write
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Create Supabase credentials file
         run: |
@@ -714,7 +714,7 @@ jobs:
     needs: [ publish_android_on_firebase, publish_ios_app_to_firebase, publish_desktop_external, publish_web ]
     runs-on: macos-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
@@ -727,7 +727,7 @@ jobs:
 
       # Setup Ruby for Fastlane automation
       - name: Configure Ruby
-        uses: ruby/setup-ruby@a2bbe5b1b236842c1cb7dd11e8e3b51e0a616acc # v1.202.0
+        uses: ruby/setup-ruby@95ef2b042f9d7a56d8268cba8559e2842e2ad01b # v1.202.0
         with:
           bundler-cache: true
 
@@ -753,7 +753,7 @@ jobs:
 
       # Get all build artifacts
       - name: Download All Artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           path: ./all-artifacts
 
@@ -820,7 +820,7 @@ jobs:
 
 
       - name: Generate Release Notes
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         id: release-notes
         with:
           github-token: ${{ secrets.token }}
