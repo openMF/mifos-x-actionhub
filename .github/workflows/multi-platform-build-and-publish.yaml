@@ -384,7 +384,7 @@ jobs:
           fi
 
       - name: Publish Android App on Firebase
-        uses: openMF/mifos-x-actionhub-android-firebase-publish@v1.0.0
+        uses: openMF/mifos-x-actionhub-android-firebase-publish@v1.0.15
         with:
           android_package_name: ${{ inputs.android_package_name }}
           keystore_file: ${{ secrets.original_keystore_file }}
@@ -414,7 +414,7 @@ jobs:
           fi
 
       - name: Promote Android App to Beta or Internal
-        uses: openMF/mifos-x-actionhub-publish-android-on-playstore-beta@v1.0.0
+        uses: openMF/mifos-x-actionhub-publish-android-on-playstore-beta@v1.0.15
         with:
           release_type: ${{ inputs.release_type }}
           android_package_name: ${{ inputs.android_package_name }}
@@ -465,7 +465,7 @@ jobs:
         run: ./gradlew ${{ inputs.shared_module }}:generateDummyFramework
 
       - name: Deploy iOS App to Firebase
-        uses: openMF/mifos-x-actionhub-publish-ios-on-firebase@v1.0.3
+        uses: openMF/mifos-x-actionhub-publish-ios-on-firebase@v1.0.15
         continue-on-error: true
         with:
           ios_package_name: ${{ inputs.ios_package_name }}
@@ -561,7 +561,7 @@ jobs:
         run: ./gradlew ${{ inputs.shared_module }}:generateDummyFramework
 
       - name: Deploy iOS App to App Store
-        uses: openMF/mifos-x-actionhub-publish-ios-on-appstore@v1.0.2
+        uses: openMF/mifos-x-actionhub-publish-ios-on-appstore@v1.0.15
         with:
           metadata_path: ${{ inputs.metadata_path }}
           # Configuration read from fastlane-config/project_config.rb
@@ -588,7 +588,7 @@ jobs:
           fi
 
       - name: Upload macOS to TestFlight
-        uses: openMF/mifos-x-actionhub-publish-macos-on-appstore-testflight-kmp@v1.0.0
+        uses: openMF/mifos-x-actionhub-publish-macos-on-appstore-testflight-kmp@v1.0.15
         with:
           app_identifier: ${{ inputs.app_identifier }}
           cmp_desktop_dir: ${{ inputs.cmp_desktop_dir }}
@@ -620,7 +620,7 @@ jobs:
           fi
 
       - name: Submit macOS App to App Store
-        uses: openMF/mifos-x-actionhub-publish-macos-on-appstore-kmp@v1.0.0
+        uses: openMF/mifos-x-actionhub-publish-macos-on-appstore-kmp@v1.0.15
         with:
           app_identifier: ${{ inputs.app_identifier }}
           cmp_desktop_dir: ${{ inputs.cmp_desktop_dir }}

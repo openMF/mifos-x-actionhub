@@ -98,6 +98,6 @@ jobs:
         uses: actions/checkout@v5
 
       - name: Promote Beta to Production Play Store
-        uses: openMF/mifos-x-actionhub-publish-android-on-playstore-production@v1.0.0
+        uses: openMF/mifos-x-actionhub-publish-android-on-playstore-production@v1.0.15
         with:
           playstore_creds: ${{ secrets.playstore_creds }}

@@ -141,7 +141,7 @@ jobs:
           fetch-depth: 0
 
       - name: Publish Android App on Firebase
-        uses: openMF/mifos-x-actionhub-android-firebase-publish@v1.0.0
+        uses: openMF/mifos-x-actionhub-android-firebase-publish@v1.0.15
         with:
           android_package_name: ${{ inputs.android_package_name }}
           keystore_file: ${{ secrets.original_keystore_file }}
@@ -164,7 +164,7 @@ jobs:
           fetch-depth: 0
 
       - name: Promote Android App to Beta or Internal
-        uses: openMF/mifos-x-actionhub-publish-android-on-playstore-beta@v1.0.0
+        uses: openMF/mifos-x-actionhub-publish-android-on-playstore-beta@v1.0.15
         with:
           release_type: ${{ inputs.release_type }}
           android_package_name: ${{ inputs.android_package_name }}

@@ -107,7 +107,7 @@ jobs:
         uses: actions/checkout@v5
 
       - name: Static Analysis Check
-        uses: openMF/mifos-x-actionhub-static-analysis-check@v1.0.1
+        uses: openMF/mifos-x-actionhub-static-analysis-check@v1.0.2
         with:
           java-version: ${{ inputs.java-version }}
 

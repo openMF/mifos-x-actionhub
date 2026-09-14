@@ -212,7 +212,7 @@ jobs:
         uses: actions/checkout@v5
 
       - name: Static Analysis Check
-        uses: openMF/mifos-x-actionhub-static-analysis-check@v1.0.1
+        uses: openMF/mifos-x-actionhub-static-analysis-check@v1.0.2
         with:
           java-version: ${{ inputs.java-version }}
 
@@ -268,7 +268,7 @@ jobs:
           }
 
       - name: Build Desktop App
-        uses: openMF/mifos-x-actionhub-build-desktop-app-kmp@v1.0.1
+        uses: openMF/mifos-x-actionhub-build-desktop-app-kmp@v1.0.2
         with:
           desktop_package_name: ${{ inputs.desktop_package_name }}
           build_type: 'Debug'
@@ -290,7 +290,7 @@ jobs:
           fi
 
       - name: Build Web App
-        uses: openMF/mifos-x-actionhub-build-web-app-kmp@v1.0.1
+        uses: openMF/mifos-x-actionhub-build-web-app-kmp@v1.0.2
         with:
           web_package_name: ${{ inputs.web_package_name }}
           java-version: ${{ inputs.java-version }}
