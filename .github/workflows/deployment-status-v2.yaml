@@ -18,7 +18,7 @@ on:
       playstore_creds:   { required: false }
       appstore_auth_key: { required: false }
       appstore_key_id:   { required: false }
-      appstore_issuer_id:{ required: false }
+      appstore_issuer_id: { required: false }
 
 jobs:
   status:
