@@ -666,7 +666,7 @@ jobs:
             [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String('${{ secrets.supabase_creds }}')) | Out-File -FilePath secrets/supabaseCredentialsFile.json -Encoding UTF8
           }
 
-      - uses: openMF/mifos-x-actionhub-publish-desktop-app-kmp@v1.0.1
+      - uses: openMF/mifos-x-actionhub-publish-desktop-app-kmp@v2.0.2
         with:
           desktop_package_name: ${{ inputs.desktop_package_name }}
           windows_signing_key: ${{ secrets.windows_signing_key }}
