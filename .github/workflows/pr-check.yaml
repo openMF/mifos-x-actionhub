@@ -109,11 +109,11 @@ on:
       runner:
         description: >
           Runner label for Linux/Android/Web/checks jobs.
-          Use 'ubuntu-latest' (default) for GitHub-hosted runners.
+          Use 'ubuntu-26.04' (default) for GitHub-hosted runners.
           Use 'self-hosted' to route to a registered self-hosted macOS runner.
         type: string
         required: false
-        default: 'ubuntu-latest'
+        default: 'ubuntu-26.04'
 
       runner_macos:
         description: >
@@ -131,7 +131,7 @@ on:
           Pass '["self-hosted"]' to run only the macOS desktop build on your local runner.
         type: string
         required: false
-        default: '["ubuntu-latest","macos-latest","windows-latest"]'
+        default: '["ubuntu-26.04","macos-latest","windows-latest"]'
 
       java-version:
         description: 'Java version to use (e.g., 17, 21)'

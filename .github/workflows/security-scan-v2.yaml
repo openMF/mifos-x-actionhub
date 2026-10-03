@@ -22,7 +22,7 @@ on:
 jobs:
   sbom:
     name: SBOM (CycloneDX)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     outputs:
       artifact: ${{ steps.gen.outputs.path }}
     steps:
@@ -41,7 +41,7 @@ jobs:
   osv:
     name: Dependency vulnerabilities (OSV-Scanner)
     needs: sbom
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     outputs:
       vulns: ${{ steps.scan.outputs.count }}
     steps:
@@ -79,7 +79,7 @@ jobs:
 
   gitleaks:
     name: Secret leak scan (gitleaks)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     outputs:
       leaks: ${{ steps.scan.outputs.count }}
     steps:

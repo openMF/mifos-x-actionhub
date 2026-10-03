@@ -77,7 +77,7 @@ jobs:
     # Job to create a new version tag based on the current year and month
     # This helps track monthly releases in a calendar-based versioning scheme
     name: Tag Monthly Release
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     steps:
       # Step 1: Checkout the repository
       # This is required to perform any operations on the repository

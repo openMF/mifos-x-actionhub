@@ -58,7 +58,7 @@ on:
       runs-on:
         description: 'Runner label.'
         type: string
-        default: 'ubuntu-latest'
+        default: 'ubuntu-26.04'
       timeout-minutes:
         description: 'Job timeout in minutes.'
         type: number

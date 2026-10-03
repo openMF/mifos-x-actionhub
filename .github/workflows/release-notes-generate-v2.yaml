@@ -24,7 +24,7 @@ permissions:
 jobs:
   generate:
     name: Generate notes
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     outputs:
       notes_path: ${{ steps.write.outputs.notes_path }}
     steps:

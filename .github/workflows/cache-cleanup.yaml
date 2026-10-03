@@ -20,7 +20,7 @@ on:
 jobs:
   get_pr:
     if: inputs.cleanup_pr
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     outputs:
       pr_number: ${{ steps.get_pr.outputs.number }}
     steps:
@@ -43,7 +43,7 @@ jobs:
     needs: get_pr
     name: Cleanup PR Cache
     if: inputs.cleanup_pr
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     steps:
       - name: Cleanup PR Cache
         run: |
@@ -74,7 +74,7 @@ jobs:
   cleanup_all:
     name: Cleanup All Caches
     if: inputs.cleanup_all
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     steps:
       - name: Cleanup All Caches
         run: |

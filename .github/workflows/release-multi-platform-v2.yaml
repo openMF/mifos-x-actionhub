@@ -47,7 +47,7 @@ on:
       fastlane_mode:        { required: false, type: string, default: 'standard',             description: "'standard' (default) or 'pre-materialized' — see RULE-DEPLOYMENT-MANIFEST-001" }
       fastlane_cwd:         { required: false, type: string, default: '.',                    description: 'Working dir for fastlane (set to `deployment` when using deployment/-layout)' }
       pre_fastlane_script:  { required: false, type: string, default: '',                     description: 'Optional bash to run before each fastlane stage (pre-materialized mode)' }
-      runner_pool_linux:    { required: false, type: string, default: '["ubuntu-latest"]',    description: 'JSON-array runs-on for Linux/Android jobs. Pass `["self-hosted","macOS"]` for local Mac runner.' }
+      runner_pool_linux:    { required: false, type: string, default: '["ubuntu-26.04"]',    description: 'JSON-array runs-on for Linux/Android jobs. Pass `["self-hosted","macOS"]` for local Mac runner.' }
       runner_pool_mac:      { required: false, type: string, default: '["macos-14"]',         description: 'JSON-array runs-on for Apple jobs. Pass `["self-hosted","macOS"]` for local Mac runner.' }
       # Additive flavor dimension — introduced @v1.0.47 (kmp-product-flavors epic, deploy-gha-product-flavors phase 4).
       # EMPTY flavor = current v1.0.46 baseline behavior (single-flavor prod / assembleRelease). Consumers that do not
@@ -110,7 +110,7 @@ on:
       fastlane_mode:        { required: false, type: choice, options: [standard, pre-materialized],                                       default: standard }
       fastlane_cwd:         { required: false, type: string, default: '.' }
       pre_fastlane_script:  { required: false, type: string, default: '' }
-      runner_pool_linux:    { required: false, type: string, default: '["ubuntu-latest"]' }
+      runner_pool_linux:    { required: false, type: string, default: '["ubuntu-26.04"]' }
       runner_pool_mac:      { required: false, type: string, default: '["macos-14"]' }
       # Mirror of the workflow_call `flavor` / `build_type` additions — free-text (`type: string`) to keep the
       # workflow-dispatch UI aligned with the reusable-workflow surface. EMPTY flavor preserves v1.0.46 behavior.
