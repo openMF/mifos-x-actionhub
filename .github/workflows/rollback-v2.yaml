@@ -39,7 +39,7 @@ permissions:
 jobs:
   validate-inputs:
     name: Validate inputs + audit
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     steps:
       - uses: actions/checkout@v5
       - name: Validate
@@ -59,7 +59,7 @@ jobs:
     if: ${{ inputs.platform == 'android' || inputs.platform == 'all' }}
     needs: validate-inputs
     name: Rollback Android (Play track)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     environment: rollback-android   # requires admin approval
     steps:
       - uses: actions/checkout@v5
@@ -130,7 +130,7 @@ jobs:
     if: ${{ inputs.platform == 'web' || inputs.platform == 'all' }}
     needs: validate-inputs
     name: Rollback Web (copy gh-pages-staging → gh-pages)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     environment: rollback-web
     steps:
       - uses: actions/checkout@v5
@@ -147,7 +147,7 @@ jobs:
     name: Append ROLLBACK_LOG.yaml
     needs: [validate-inputs]
     if: always()
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     steps:
       - uses: actions/checkout@v5
       - name: Append rollback row

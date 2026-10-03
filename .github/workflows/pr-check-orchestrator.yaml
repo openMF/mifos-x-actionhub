@@ -30,7 +30,7 @@ jobs:
     # to the chain). Those should be addressed in a separate cleanup PR;
     # for now we lint only the files the chain-contract tests reason about.
     name: actionlint — release-*-v2.yaml + pr-check-orchestrator.yaml
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     steps:
       - uses: actions/checkout@v5
       - name: Install actionlint
@@ -49,7 +49,7 @@ jobs:
 
   chain-contract:
     name: Chain Contract tests (cross-repo, 29 assertions)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     permissions:
       contents: read
     steps:

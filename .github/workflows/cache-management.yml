@@ -21,7 +21,7 @@ on:
 
 jobs:
   check_cache:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     outputs:
       cache-cleared: ${{ steps.cache-status.outputs.cache_cleared }}
     steps:
@@ -50,7 +50,7 @@ jobs:
 
   handle_failure:
     if: failure()
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     steps:
       - name: Install jq
         run: sudo apt-get install jq -y

@@ -23,7 +23,7 @@ on:
 jobs:
   status:
     name: Render deployment rung matrix
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     steps:
       - uses: actions/checkout@v5
 

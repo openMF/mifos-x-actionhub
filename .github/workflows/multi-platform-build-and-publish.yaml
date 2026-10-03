@@ -641,7 +641,7 @@ jobs:
     name: Publish Desktop App
     strategy:
       matrix:
-        os: [ ubuntu-latest, windows-latest, macos-latest ]
+        os: [ ubuntu-26.04, windows-latest, macos-latest ]
     runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout Repository
@@ -683,7 +683,7 @@ jobs:
   # Web Publishing Job
   publish_web:
     name: Publish Web App
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
@@ -870,7 +870,7 @@ jobs:
             ./all-artifacts/android-app/${{ inputs.android_package_name }}/build/outputs/apk/demo/release/*.apk
             ./all-artifacts/android-app/${{ inputs.android_package_name }}/build/outputs/apk/prod/release/*.apk
             ./all-artifacts/desktop-app-macos-latest/${{ inputs.desktop_package_name }}/build/compose/binaries/main-release/dmg/*.dmg
-            ./all-artifacts/desktop-app-ubuntu-latest/${{ inputs.desktop_package_name }}/build/compose/binaries/main-release/deb/*.deb
+            ./all-artifacts/desktop-app-ubuntu-26.04/${{ inputs.desktop_package_name }}/build/compose/binaries/main-release/deb/*.deb
             ./all-artifacts/desktop-app-windows-latest/${{ inputs.desktop_package_name }}/build/compose/binaries/main-release/exe/*.exe
             ./all-artifacts/desktop-app-windows-latest/${{ inputs.desktop_package_name }}/build/compose/binaries/main-release/msi/*.msi            
             ./all-artifacts/${{ inputs.web_package_name }}.zip

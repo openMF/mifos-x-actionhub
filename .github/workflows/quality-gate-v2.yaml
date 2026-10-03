@@ -29,7 +29,7 @@ concurrency:
 jobs:
   format:
     name: Spotless
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-java@v5
@@ -39,7 +39,7 @@ jobs:
 
   static-analysis:
     name: Detekt
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-java@v5
@@ -52,7 +52,7 @@ jobs:
 
   dependency-guard:
     name: Dependency Guard
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-java@v5
@@ -62,7 +62,7 @@ jobs:
 
   coverage:
     name: Kover Coverage
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     outputs:
       pct: ${{ steps.report.outputs.pct }}
     steps:
@@ -94,7 +94,7 @@ jobs:
 
   sbom:
     name: SBOM (CycloneDX)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     outputs:
       path: ${{ steps.gen.outputs.path }}
     steps:

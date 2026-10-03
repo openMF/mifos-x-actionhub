@@ -101,7 +101,7 @@ concurrency:
 jobs:
   checks:
     name: Static Analysis Check
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v5
@@ -114,7 +114,7 @@ jobs:
   build_android_app:
     name: Build Android Application
     needs: [ checks ]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v5
