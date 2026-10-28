@@ -84,15 +84,22 @@ on:
       vercel_token:             { required: false }
       vercel_org_id:            { required: false }
       vercel_project_id:        { required: false }
-      # Windows Azure Trusted Signing + Partner Center (8)
+      # Windows: Azure Trusted Signing (windows-msi-signed) + Microsoft Store MSIX (13).
+      # The Store re-signs the MSIX, so the Store target needs Partner Center creds + MSIX identity,
+      # not Azure. Names follow publish-desktop-kmp v2.0.14 (was microsoft_store_client_id/secret).
       azure_client_id:                { required: false }
       azure_tenant_id:                { required: false }
       azure_subscription_id:          { required: false }
       azure_trusted_signing_endpoint: { required: false }
       azure_trusted_signing_account:  { required: false }
       azure_cert_profile_name:        { required: false }
-      microsoft_store_client_id:      { required: false }
-      microsoft_store_client_secret:  { required: false }
+      ms_app_id:                           { required: false }
+      ms_partner_center_tenant_id:         { required: false }
+      ms_partner_center_client_id:         { required: false }
+      ms_partner_center_client_secret:     { required: false }
+      windows_msix_identity_name:          { required: false }
+      windows_msix_publisher:              { required: false }
+      windows_msix_publisher_display_name: { required: false }
 
   workflow_dispatch:
     inputs:
@@ -481,7 +488,7 @@ jobs:
     name: Windows
     if: ${{ inputs.desktop_win_target != 'skip' }}
     needs: [version-resolve, validate-secrets]
-    uses: therajanmaurya/mifos-x-actionhub-publish-desktop-kmp/.github/workflows/release.yaml@v2.0.13
+    uses: therajanmaurya/mifos-x-actionhub-publish-desktop-kmp/.github/workflows/release.yaml@v2.0.14
     with:
       target:               ${{ inputs.desktop_win_artifact }}
       desktop_package_name: ${{ inputs.desktop_package_name }}
@@ -496,14 +503,19 @@ jobs:
       azure_trusted_signing_endpoint: ${{ secrets.azure_trusted_signing_endpoint }}
       azure_trusted_signing_account:  ${{ secrets.azure_trusted_signing_account }}
       azure_cert_profile_name:        ${{ secrets.azure_cert_profile_name }}
-      microsoft_store_client_id:      ${{ secrets.microsoft_store_client_id }}
-      microsoft_store_client_secret:  ${{ secrets.microsoft_store_client_secret }}
+      ms_app_id:                           ${{ secrets.ms_app_id }}
+      ms_partner_center_tenant_id:         ${{ secrets.ms_partner_center_tenant_id }}
+      ms_partner_center_client_id:         ${{ secrets.ms_partner_center_client_id }}
+      ms_partner_center_client_secret:     ${{ secrets.ms_partner_center_client_secret }}
+      windows_msix_identity_name:          ${{ secrets.windows_msix_identity_name }}
+      windows_msix_publisher:              ${{ secrets.windows_msix_publisher }}
+      windows_msix_publisher_display_name: ${{ secrets.windows_msix_publisher_display_name }}
 
   desktop-linux:
     name: Linux
     if: ${{ inputs.desktop_linux_target != 'skip' }}
     needs: [version-resolve, validate-secrets]
-    uses: therajanmaurya/mifos-x-actionhub-publish-desktop-kmp/.github/workflows/release.yaml@v2.0.13
+    uses: therajanmaurya/mifos-x-actionhub-publish-desktop-kmp/.github/workflows/release.yaml@v2.0.14
     with:
       target:               linux-deb
       desktop_package_name: ${{ inputs.desktop_package_name }}
