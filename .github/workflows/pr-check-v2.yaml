@@ -107,6 +107,12 @@ jobs:
         os: [ubuntu-26.04, windows-latest, macos-14]
     runs-on: ${{ matrix.os }}
     steps:
+      # Windows' 260-char MAX_PATH breaks checkout of the deep, tracked
+      # cmp-ios/KotlinMultiplatformLinkedPackage/** paths once the repo name is long
+      # (D:\a\<repo>\<repo>\ + 211 chars). Long paths must be on BEFORE checkout.
+      - name: Enable long paths (Windows)
+        if: runner.os == 'Windows'
+        run: git config --system core.longpaths true
       - uses: actions/checkout@v5
       - uses: actions/setup-java@v5
         with: { distribution: zulu, java-version: '${{ inputs.java-version }}' }

@@ -112,6 +112,12 @@ jobs:
 
     steps:
       # Step 1: Check out the repository code to the runner
+      # Windows' 260-char MAX_PATH breaks checkout of the deep, tracked
+      # cmp-ios/KotlinMultiplatformLinkedPackage/** paths once the repo name is long
+      # (D:\a\<repo>\<repo>\ + 211 chars). Long paths must be on BEFORE checkout.
+      - name: Enable long paths (Windows)
+        if: runner.os == 'Windows'
+        run: git config --system core.longpaths true
       - uses: actions/checkout@v5
 
       - name: Build & Publish Web App
