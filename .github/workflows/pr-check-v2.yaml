@@ -104,7 +104,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-26.04, windows-latest, macos-14]
+        os: [ubuntu-26.04, windows-latest, macos-15]
     runs-on: ${{ matrix.os }}
     steps:
       # Windows' 260-char MAX_PATH breaks checkout of the deep, tracked
