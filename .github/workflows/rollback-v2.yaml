@@ -89,7 +89,7 @@ jobs:
     if: ${{ inputs.platform == 'ios' || inputs.platform == 'all' }}
     needs: validate-inputs
     name: Rollback iOS (TestFlight expire + App Store deliver previous)
-    runs-on: macos-14
+    runs-on: macos-15
     environment: rollback-ios
     steps:
       - uses: actions/checkout@v5
@@ -119,7 +119,7 @@ jobs:
     if: ${{ inputs.platform == 'mac' || inputs.platform == 'all' }}
     needs: validate-inputs
     name: Rollback macOS (Mac App Store)
-    runs-on: macos-14
+    runs-on: macos-15
     environment: rollback-mac
     steps:
       - uses: actions/checkout@v5
