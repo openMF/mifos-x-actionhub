@@ -113,7 +113,7 @@ on:
           Use 'self-hosted' to route to a registered self-hosted macOS runner.
         type: string
         required: false
-        default: 'ubuntu-26.04'
+        default: ''
 
       runner_macos:
         description: >
@@ -122,7 +122,7 @@ on:
           Use 'self-hosted' to route to a registered self-hosted macOS runner.
         type: string
         required: false
-        default: 'macos-latest'
+        default: ''
 
       runner_desktop_matrix:
         description: >
@@ -131,7 +131,7 @@ on:
           Pass '["self-hosted"]' to run only the macOS desktop build on your local runner.
         type: string
         required: false
-        default: '["ubuntu-26.04","macos-latest","windows-latest"]'
+        default: ''
 
       java-version:
         description: 'Java version to use (e.g., 17, 21)'
@@ -206,7 +206,7 @@ concurrency:
 jobs:
   checks:
     name: Static Analysis Check
-    runs-on: ${{ inputs.runner }}
+    runs-on: ${{ inputs.runner || vars.CI_RUNNER_LINUX || 'ubuntu-26.04' }}
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v5
@@ -219,7 +219,7 @@ jobs:
   build_android_app:
     name: Build Android Application
     needs: [ checks ]
-    runs-on: ${{ inputs.runner }}
+    runs-on: ${{ inputs.runner || vars.CI_RUNNER_LINUX || 'ubuntu-26.04' }}
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v5
@@ -244,7 +244,7 @@ jobs:
     needs: [ checks ]
     strategy:
       matrix:
-        os: ${{ fromJSON(inputs.runner_desktop_matrix) }}
+        os: ${{ fromJSON(inputs.runner_desktop_matrix || format('["{0}","{1}","{2}"]', vars.CI_RUNNER_LINUX || 'ubuntu-26.04', vars.CI_RUNNER_MAC || 'macos-latest', vars.CI_RUNNER_WINDOWS || 'windows-latest')) }}
     runs-on: ${{ matrix.os }}
     steps:
       # Windows' 260-char MAX_PATH breaks checkout of the deep, tracked
@@ -283,7 +283,7 @@ jobs:
   build_web_app:
     name: Build Web Application
     needs: [ checks ]
-    runs-on: ${{ inputs.runner }}
+    runs-on: ${{ inputs.runner || vars.CI_RUNNER_LINUX || 'ubuntu-26.04' }}
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v5
@@ -305,7 +305,7 @@ jobs:
     name: Build iOS App
     if: ${{ inputs.build_ios }}
     needs: [ checks ]
-    runs-on: ${{ inputs.runner_macos }}
+    runs-on: ${{ inputs.runner_macos || vars.CI_RUNNER_MAC || 'macos-latest' }}
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v5

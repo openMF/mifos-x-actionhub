@@ -58,7 +58,7 @@ on:
       runs-on:
         description: 'Runner label.'
         type: string
-        default: 'ubuntu-26.04'
+        default: ''
       timeout-minutes:
         description: 'Job timeout in minutes.'
         type: number
@@ -67,7 +67,7 @@ on:
 jobs:
   coverage:
     name: Enforce per-module coverage floor
-    runs-on: ${{ inputs.runs-on }}
+    runs-on: ${{ inputs.runs-on || vars.CI_RUNNER_LINUX || 'ubuntu-26.04' }}
     timeout-minutes: ${{ inputs.timeout-minutes }}
 
     steps:
