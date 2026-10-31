@@ -23,7 +23,7 @@ on:
 jobs:
   status:
     name: Render deployment rung matrix
-    runs-on: ubuntu-26.04
+    runs-on: ${{ vars.CI_RUNNER_LINUX || 'ubuntu-26.04' }}
     steps:
       - uses: actions/checkout@v5
 

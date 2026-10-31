@@ -92,7 +92,7 @@ jobs:
   # Job to promote app from beta to production in Play Store
   play_promote_production:
     name: Play Publish Production
-    runs-on: macos-latest
+    runs-on: ${{ vars.CI_RUNNER_MAC || 'macos-latest' }}
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v5

@@ -108,8 +108,7 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     # Use Windows runner for build environment
-    runs-on: windows-latest
-
+    runs-on: ${{ vars.CI_RUNNER_WINDOWS || 'windows-latest' }}
     steps:
       # Step 1: Check out the repository code to the runner
       # Windows' 260-char MAX_PATH breaks checkout of the deep, tracked

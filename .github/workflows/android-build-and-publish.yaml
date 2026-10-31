@@ -132,7 +132,7 @@ jobs:
   # Publish Android app on Firebase App Distribution
   publish_android_on_firebase:
     name: Deploy Android App On Firebase
-    runs-on: macos-latest
+    runs-on: ${{ vars.CI_RUNNER_MAC || 'macos-latest' }}
     steps:
       # Check out caller repository
       - name: Checkout Caller Repository
@@ -155,7 +155,7 @@ jobs:
   # Publish Android app on Play Store
   publish_android_on_playstore:
     name: Publish Android App On Play Store
-    runs-on: macos-latest
+    runs-on: ${{ vars.CI_RUNNER_MAC || 'macos-latest' }}
     steps:
       # Check out caller repository
       - name: Checkout Repository
@@ -178,7 +178,7 @@ jobs:
   # Creates GitHub release with all built artifacts
   github_release:
     name: Create Github Release
-    runs-on: macos-latest
+    runs-on: ${{ vars.CI_RUNNER_MAC || 'macos-latest' }}
     steps:
       - uses: actions/checkout@v5
         with:

@@ -47,8 +47,8 @@ on:
       fastlane_mode:        { required: false, type: string, default: 'standard',             description: "'standard' (default) or 'pre-materialized' — see RULE-DEPLOYMENT-MANIFEST-001" }
       fastlane_cwd:         { required: false, type: string, default: '.',                    description: 'Working dir for fastlane (set to `deployment` when using deployment/-layout)' }
       pre_fastlane_script:  { required: false, type: string, default: '',                     description: 'Optional bash to run before each fastlane stage (pre-materialized mode)' }
-      runner_pool_linux:    { required: false, type: string, default: '["ubuntu-26.04"]',    description: 'JSON-array runs-on for Linux/Android jobs. Pass `["self-hosted","macOS"]` for local Mac runner.' }
-      runner_pool_mac:      { required: false, type: string, default: '["macos-15"]',         description: 'JSON-array runs-on for Apple jobs. Pass `["self-hosted","macOS"]` for local Mac runner.' }
+      runner_pool_linux:    { required: false, type: string, default: '',    description: 'JSON-array runs-on for Linux/Android jobs. Pass `["self-hosted","macOS"]` for local Mac runner.' }
+      runner_pool_mac:      { required: false, type: string, default: '',         description: 'JSON-array runs-on for Apple jobs. Pass `["self-hosted","macOS"]` for local Mac runner.' }
       # Additive flavor dimension — introduced @v1.0.47 (kmp-product-flavors epic, deploy-gha-product-flavors phase 4).
       # EMPTY flavor = current v1.0.46 baseline behavior (single-flavor prod / assembleRelease). Consumers that do not
       # pass `flavor:` are unaffected. Downstream publish-{android,apple}-kmp workflows must declare matching inputs
@@ -117,8 +117,8 @@ on:
       fastlane_mode:        { required: false, type: choice, options: [standard, pre-materialized],                                       default: standard }
       fastlane_cwd:         { required: false, type: string, default: '.' }
       pre_fastlane_script:  { required: false, type: string, default: '' }
-      runner_pool_linux:    { required: false, type: string, default: '["ubuntu-26.04"]' }
-      runner_pool_mac:      { required: false, type: string, default: '["macos-15"]' }
+      runner_pool_linux:    { required: false, type: string, default: '' }
+      runner_pool_mac:      { required: false, type: string, default: '' }
       # Mirror of the workflow_call `flavor` / `build_type` additions — free-text (`type: string`) to keep the
       # workflow-dispatch UI aligned with the reusable-workflow surface. EMPTY flavor preserves v1.0.46 behavior.
       flavor:               { required: false, type: string, default: '',                                                                    description: 'Product flavor (empty = prod baseline; e.g. `demo`). Additive, back-compat.' }
@@ -127,7 +127,7 @@ on:
 jobs:
   version-resolve:
     name: Version
-    runs-on: ${{ fromJSON(inputs.runner_pool_linux) }}
+    runs-on: ${{ fromJSON(inputs.runner_pool_linux || format('["{0}"]', vars.CI_RUNNER_LINUX || 'ubuntu-26.04')) }}
     outputs:
       version: ${{ steps.compute.outputs.version }}
     steps:
@@ -166,7 +166,7 @@ jobs:
   # die deep in Fastlane / Gradle / Play Console with confusing errors.
   validate-secrets:
     name: Preflight · Secrets
-    runs-on: ${{ fromJSON(inputs.runner_pool_linux) }}
+    runs-on: ${{ fromJSON(inputs.runner_pool_linux || format('["{0}"]', vars.CI_RUNNER_LINUX || 'ubuntu-26.04')) }}
     steps:
       - name: Android — google_services + upload_keystore family
         if: ${{ inputs.android_target != 'skip' }}
@@ -278,7 +278,7 @@ jobs:
   gh-release-init:
     name: Release · Init
     needs: [version-resolve]
-    runs-on: ${{ fromJSON(inputs.runner_pool_linux) }}
+    runs-on: ${{ fromJSON(inputs.runner_pool_linux || format('["{0}"]', vars.CI_RUNNER_LINUX || 'ubuntu-26.04')) }}
     permissions:
       contents: write
     steps:
@@ -324,7 +324,7 @@ jobs:
     # node, so pointing this job there ran nothing for Firebase. release-firebase.yaml has no rung
     # ladder (single Stage-0 Firebase deploy), hence no starting_rung / production_rollout. It
     # DOES declare flavor / build_type, so those are now genuinely consumed.
-    uses: therajanmaurya/mifos-x-actionhub-publish-android-kmp/.github/workflows/release-firebase.yaml@v2.0.29
+    uses: therajanmaurya/mifos-x-actionhub-publish-android-kmp/.github/workflows/release-firebase.yaml@v2.0.30
     with:
       android_package_name: ${{ inputs.android_package_name }}
       version_tag:          ${{ needs.version-resolve.outputs.version }}
@@ -332,7 +332,7 @@ jobs:
       mode:                 ${{ inputs.fastlane_mode }}
       fastlane_cwd:         ${{ inputs.fastlane_cwd }}
       pre_fastlane_script:  ${{ inputs.pre_fastlane_script }}
-      runner_pool:          ${{ inputs.runner_pool_linux }}
+      runner_pool:          ${{ inputs.runner_pool_linux || format('["{0}"]', vars.CI_RUNNER_LINUX || 'ubuntu-26.04') }}
       flavor:               ${{ inputs.flavor }}
       build_type:           ${{ inputs.build_type }}
     # EXPLICIT secret map (NOT inherit). This chain is cross-ORG at every hop
@@ -361,7 +361,7 @@ jobs:
           || inputs.android_target == 'beta'
           || inputs.android_target == 'production' }}
     needs: [version-resolve, validate-secrets]
-    uses: therajanmaurya/mifos-x-actionhub-publish-android-kmp/.github/workflows/release.yaml@v2.0.29
+    uses: therajanmaurya/mifos-x-actionhub-publish-android-kmp/.github/workflows/release.yaml@v2.0.30
     with:
       android_package_name: ${{ inputs.android_package_name }}
       version_tag:          ${{ needs.version-resolve.outputs.version }}
@@ -370,7 +370,7 @@ jobs:
       mode:                 ${{ inputs.fastlane_mode }}
       fastlane_cwd:         ${{ inputs.fastlane_cwd }}
       pre_fastlane_script:  ${{ inputs.pre_fastlane_script }}
-      runner_pool:          ${{ inputs.runner_pool_linux }}
+      runner_pool:          ${{ inputs.runner_pool_linux || format('["{0}"]', vars.CI_RUNNER_LINUX || 'ubuntu-26.04') }}
       # TODO(phase-4-followup): therajanmaurya/mifos-x-actionhub-publish-android-kmp release.yaml (Play Store
       # internal / beta / production ladder) must declare matching `flavor` + `build_type` inputs and thread them
       # into the `bundle exec fastlane android <lane>` invocation. Silently ignored downstream until it does.
@@ -394,7 +394,7 @@ jobs:
     name: iOS Firebase
     if: ${{ inputs.ios_target == 'firebase+testflight' || inputs.ios_target == 'firebase' }}
     needs: [version-resolve, validate-secrets]
-    uses: therajanmaurya/mifos-x-actionhub-publish-apple-kmp/.github/workflows/release.yaml@v2.0.25
+    uses: therajanmaurya/mifos-x-actionhub-publish-apple-kmp/.github/workflows/release.yaml@v2.0.26
     with:
       platform:            ios
       package_name:        ${{ inputs.ios_package_name }}
@@ -404,7 +404,7 @@ jobs:
       mode:                ${{ inputs.fastlane_mode }}
       fastlane_cwd:        ${{ inputs.fastlane_cwd }}
       pre_fastlane_script: ${{ inputs.pre_fastlane_script }}
-      runner_pool:         ${{ inputs.runner_pool_mac }}
+      runner_pool:         ${{ inputs.runner_pool_mac || format('["{0}"]', vars.CI_RUNNER_MAC || 'macos-15') }}
     secrets:
       appstore_key_id:        ${{ secrets.appstore_key_id }}
       appstore_issuer_id:     ${{ secrets.appstore_issuer_id }}
@@ -422,7 +422,7 @@ jobs:
           || inputs.ios_target == 'beta'
           || inputs.ios_target == 'production' }}
     needs: [version-resolve, validate-secrets]
-    uses: therajanmaurya/mifos-x-actionhub-publish-apple-kmp/.github/workflows/release.yaml@v2.0.25
+    uses: therajanmaurya/mifos-x-actionhub-publish-apple-kmp/.github/workflows/release.yaml@v2.0.26
     with:
       platform:            ios
       package_name:        ${{ inputs.ios_package_name }}
@@ -432,7 +432,7 @@ jobs:
       mode:                ${{ inputs.fastlane_mode }}
       fastlane_cwd:        ${{ inputs.fastlane_cwd }}
       pre_fastlane_script: ${{ inputs.pre_fastlane_script }}
-      runner_pool:         ${{ inputs.runner_pool_mac }}
+      runner_pool:         ${{ inputs.runner_pool_mac || format('["{0}"]', vars.CI_RUNNER_MAC || 'macos-15') }}
       # TODO(phase-4-followup): therajanmaurya/mifos-x-actionhub-publish-apple-kmp release.yaml (iOS path)
       # must declare matching `flavor` + `build_type` inputs and thread them into the fastlane iOS lane
       # (scheme resolves to "{flavor}{BuildType}" e.g. `demoRelease`). Silently ignored downstream until it does.
@@ -451,7 +451,7 @@ jobs:
     name: macOS
     if: ${{ inputs.mac_target != 'skip' }}
     needs: [version-resolve, validate-secrets]
-    uses: therajanmaurya/mifos-x-actionhub-publish-apple-kmp/.github/workflows/release.yaml@v2.0.25
+    uses: therajanmaurya/mifos-x-actionhub-publish-apple-kmp/.github/workflows/release.yaml@v2.0.26
     with:
       platform:      mac
       package_name:  ${{ inputs.mac_package_name }}
@@ -465,7 +465,7 @@ jobs:
       # materialization (the standard-mode self-materialize wrote to the wrong CWD
       # → OpenSSL "invalid curve name" when load_api_key read a deployment-relative path).
       pre_fastlane_script: ${{ inputs.pre_fastlane_script }}
-      runner_pool:   ${{ inputs.runner_pool_mac }}
+      runner_pool:   ${{ inputs.runner_pool_mac || format('["{0}"]', vars.CI_RUNNER_MAC || 'macos-15') }}
       # TODO(phase-4-followup): therajanmaurya/mifos-x-actionhub-publish-apple-kmp release.yaml (mac path)
       # must declare matching `flavor` + `build_type` inputs and thread them into the fastlane mac lane.
       # Silently ignored downstream until it does — EMPTY-flavor callers still see identical v1.0.46 behavior.
@@ -488,7 +488,7 @@ jobs:
     name: Windows
     if: ${{ inputs.desktop_win_target != 'skip' }}
     needs: [version-resolve, validate-secrets]
-    uses: therajanmaurya/mifos-x-actionhub-publish-desktop-kmp/.github/workflows/release.yaml@v3.0.1
+    uses: therajanmaurya/mifos-x-actionhub-publish-desktop-kmp/.github/workflows/release.yaml@v3.0.2
     with:
       target:               ${{ inputs.desktop_win_artifact }}
       desktop_package_name: ${{ inputs.desktop_package_name }}
@@ -515,7 +515,7 @@ jobs:
     name: Linux
     if: ${{ inputs.desktop_linux_target != 'skip' }}
     needs: [version-resolve, validate-secrets]
-    uses: therajanmaurya/mifos-x-actionhub-publish-desktop-kmp/.github/workflows/release.yaml@v3.0.1
+    uses: therajanmaurya/mifos-x-actionhub-publish-desktop-kmp/.github/workflows/release.yaml@v3.0.2
     with:
       target:               linux-deb
       desktop_package_name: ${{ inputs.desktop_package_name }}
@@ -530,7 +530,7 @@ jobs:
     name: Web
     if: ${{ inputs.web_target != 'skip' }}
     needs: [version-resolve, validate-secrets]
-    uses: therajanmaurya/mifos-x-actionhub-publish-web-kmp/.github/workflows/release.yaml@v2.0.15
+    uses: therajanmaurya/mifos-x-actionhub-publish-web-kmp/.github/workflows/release.yaml@v2.0.16
     with:
       host:             ${{ inputs.web_host }}
       web_package_name: ${{ inputs.web_package_name }}
@@ -569,7 +569,7 @@ jobs:
       - desktop-linux
       - web
     if: ${{ always() && needs.gh-release-init.result == 'success' }}
-    runs-on: ${{ fromJSON(inputs.runner_pool_linux) }}
+    runs-on: ${{ fromJSON(inputs.runner_pool_linux || format('["{0}"]', vars.CI_RUNNER_LINUX || 'ubuntu-26.04')) }}
     permissions:
       contents: write
     steps:
