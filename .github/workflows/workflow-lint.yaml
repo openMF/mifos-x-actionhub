@@ -1,0 +1,61 @@
+# .github/workflows/workflow-lint.yaml
+#
+# Fails a PR that would ship a workflow GitHub refuses to load. A parse error in a
+# reusable workflow does not fail here — it fails every CONSUMER, with zero jobs and
+# no log (deployment-status-v2.yaml carried `appstore_issuer_id:{ … }` for months, so
+# every caller's scheduled run failed). Two checks cover that class: actionlint's
+# syntax-check findings, and reserved GITHUB_* secret names (which actionlint misses).
+# Shellcheck / expression-typing findings are advisory and not gated.
+name: Workflow Lint
+
+on:
+  pull_request:
+    paths: ['.github/workflows/**']
+  push:
+    branches: [dev]
+    paths: ['.github/workflows/**']
+
+permissions:
+  contents: read
+
+jobs:
+  actionlint:
+    name: Reject workflows GitHub cannot load
+    runs-on: ${{ vars.CI_RUNNER_LINUX || 'ubuntu-26.04' }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Install actionlint
+        run: bash <(curl -sSfL https://raw.githubusercontent.com/rhysd/actionlint/v1.7.12/scripts/download-actionlint.bash) 1.7.12
+
+      - name: Check for syntax errors
+        run: |
+          # Exit 0 = clean, 1 = findings; anything else means actionlint itself failed — never pass that.
+          rc=0; ./actionlint -shellcheck= -pyflakes= -format '{{json .}}' > lint.json || rc=$?
+          [ "$rc" -le 1 ] || { echo "::error::actionlint failed to run (exit $rc)"; exit 1; }
+          # `secrets: {}` is valid (GitHub accepts an explicit empty map) — actionlint flags it anyway.
+          errors="$(jq -r '.[] | select(.kind == "syntax-check")
+                           | select(.message | contains("\"secrets\" section should not be empty") | not)
+                           | "\(.filepath):\(.line):\(.column): \(.message)"' lint.json)"
+          if [ -n "$errors" ]; then
+            printf '%s\n' "$errors" | sed 's/^/::error::/'
+            exit 1
+          fi
+          echo "No workflow syntax errors."
+
+      - name: Check for reserved secret names
+        # GitHub rejects a reusable workflow that declares a secret starting with GITHUB_
+        # (cache-management.yml declared GITHUB_TOKEN). actionlint does not check this.
+        run: |
+          command -v yq >/dev/null || { echo "::error::yq is not installed on this runner"; exit 1; }
+          bad=0
+          for f in .github/workflows/*.yml .github/workflows/*.yaml; do
+            [ -f "$f" ] || continue
+            for name in $(yq -r '.on.workflow_call.secrets // {} | keys | .[]' "$f"); do
+              case "$(printf '%s' "$name" | tr '[:lower:]' '[:upper:]')" in
+                GITHUB_*) echo "::error file=$f::secret '$name' uses the reserved GITHUB_ prefix"; bad=1 ;;
+              esac
+            done
+          done
+          [ "$bad" = 0 ] && echo "No reserved secret names."
+          exit "$bad"
