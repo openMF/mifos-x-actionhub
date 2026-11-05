@@ -42,6 +42,7 @@ on:
       desktop_linux_target: { required: false, type: string, default: 'prerelease',          description: 'prerelease | beta | stable | skip' }
       web_target:           { required: false, type: string, default: 'preview',             description: 'preview | staging | production | skip' }
       web_host:             { required: false, type: string, default: 'gh-pages',            description: 'gh-pages | cloudflare-pages | netlify | vercel' }
+      cloudflare_project_name: { required: false, type: string, default: '',              description: 'Cloudflare Pages project (web_host=cloudflare-pages); empty = the repository name' }
       production_rollout:   { required: false, type: string, default: '0.10',                description: 'Android staged rollout (0.0-1.0)' }
       android_tester_groups: { required: false, type: string, default: '',                   description: 'Firebase App Distribution tester groups (comma-separated). EMPTY = upload only, no group distribution (default). Set to real Firebase group aliases to distribute; non-existent group names make the API reject the release ("Invalid request").' }
       fastlane_mode:        { required: false, type: string, default: 'standard',             description: "'standard' (default) or 'pre-materialized' — see RULE-DEPLOYMENT-MANIFEST-001" }
@@ -80,6 +81,7 @@ on:
       keychain_password:                  { required: false }
       # Web hosts (cloudflare/netlify/vercel token already implied via inherit before; declare explicitly)
       cloudflare_api_token:     { required: false }
+      cloudflare_account_id:    { required: false }
       netlify_auth_token:       { required: false }
       vercel_token:             { required: false }
       vercel_org_id:            { required: false }
@@ -530,15 +532,17 @@ jobs:
     name: Web
     if: ${{ inputs.web_target != 'skip' }}
     needs: [version-resolve, validate-secrets]
-    uses: therajanmaurya/mifos-x-actionhub-publish-web-kmp/.github/workflows/release.yaml@v2.0.16
+    uses: therajanmaurya/mifos-x-actionhub-publish-web-kmp/.github/workflows/release.yaml@v2.0.17
     with:
       host:             ${{ inputs.web_host }}
       web_package_name: ${{ inputs.web_package_name }}
       starting_rung:    ${{ inputs.web_target }}
       flavor:           ${{ inputs.flavor }}
       build_type:       ${{ inputs.build_type }}
+      cloudflare_project_name: ${{ inputs.cloudflare_project_name }}
     secrets:
-      cloudflare_api_token: ${{ secrets.cloudflare_api_token }}
+      cloudflare_api_token:  ${{ secrets.cloudflare_api_token }}
+      cloudflare_account_id: ${{ secrets.cloudflare_account_id }}
       netlify_auth_token:   ${{ secrets.netlify_auth_token }}
       vercel_token:         ${{ secrets.vercel_token }}
       vercel_org_id:        ${{ secrets.vercel_org_id }}
