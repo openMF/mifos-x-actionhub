@@ -3,8 +3,9 @@
 # Fails a PR that would ship a workflow GitHub refuses to load. A parse error in a
 # reusable workflow does not fail here — it fails every CONSUMER, with zero jobs and
 # no log (deployment-status-v2.yaml carried `appstore_issuer_id:{ … }` for months, so
-# every caller's scheduled run failed). actionlint's syntax-check findings are exactly
-# that class; shellcheck / expression-typing findings are advisory and not gated.
+# every caller's scheduled run failed). Two checks cover that class: actionlint's
+# syntax-check findings, and reserved GITHUB_* secret names (which actionlint misses).
+# Shellcheck / expression-typing findings are advisory and not gated.
 name: Workflow Lint
 
 on:
@@ -41,3 +42,20 @@ jobs:
             exit 1
           fi
           echo "No workflow syntax errors."
+
+      - name: Check for reserved secret names
+        # GitHub rejects a reusable workflow that declares a secret starting with GITHUB_
+        # (cache-management.yml declared GITHUB_TOKEN). actionlint does not check this.
+        run: |
+          command -v yq >/dev/null || { echo "::error::yq is not installed on this runner"; exit 1; }
+          bad=0
+          for f in .github/workflows/*.yml .github/workflows/*.yaml; do
+            [ -f "$f" ] || continue
+            for name in $(yq -r '.on.workflow_call.secrets // {} | keys | .[]' "$f"); do
+              case "$(printf '%s' "$name" | tr '[:lower:]' '[:upper:]')" in
+                GITHUB_*) echo "::error file=$f::secret '$name' uses the reserved GITHUB_ prefix"; bad=1 ;;
+              esac
+            done
+          done
+          [ "$bad" = 0 ] && echo "No reserved secret names."
+          exit "$bad"
