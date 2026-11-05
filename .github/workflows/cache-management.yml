@@ -15,9 +15,10 @@ on:
         description: "Whether cache was cleared"
         value: ${{ jobs.check_cache.outputs.cache-cleared }}
     secrets:
-      GITHUB_TOKEN:
-        required: true
-        description: 'GitHub token for API access'
+      # Not GITHUB_TOKEN: that name is reserved, and declaring it makes GitHub reject this file.
+      token:
+        required: false
+        description: 'Token for the gh API calls; defaults to the caller github.token (same-repo only)'
 
 jobs:
   check_cache:
@@ -46,7 +47,7 @@ jobs:
             echo "cache_cleared=false" >> $GITHUB_OUTPUT
           fi
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.token || github.token }}
 
   handle_failure:
     if: failure()
@@ -74,4 +75,4 @@ jobs:
             exit 1
           fi
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.token || github.token }}
