@@ -108,19 +108,28 @@ for REPO in "${PUBLISH_REPOS[@]}"; do
     [ -z "$TAG" ] && continue
     gh api "repos/therajanmaurya/mifos-x-actionhub-$REPO/contents/.github/workflows/release.yaml?ref=$TAG" --jq '.content' 2>/dev/null | base64 -d > "/tmp/release-$REPO-$TAG.yaml" 2>/dev/null
 done
-run_test "T2a: orchestrator's call to publish-android-kmp matches its workflow_call inputs" "py '
-import yaml
+# Each Android job against the workflow it ACTUALLY calls, at the pinned tag (release-firebase.yaml for
+# android-firebase since the firebase ∥ play split, release.yaml for android-promote).
+run_test "T2a: orchestrator's calls to publish-android-kmp match each callee's workflow_call inputs" "py '
+import yaml, base64, subprocess
 orch = yaml.safe_load(open(\"$ORCH_RELEASE_FILE\"))
-import glob
-publish_files = glob.glob(\"/tmp/release-publish-android-kmp-*.yaml\")
-assert publish_files, \"no fetched publish-android-kmp file\"
-publish = yaml.safe_load(open(publish_files[0]))
-declared = set(publish[\"on\" if \"on\" in publish else True][\"workflow_call\"][\"inputs\"].keys())
-for job_name in [\"android-firebase\",\"android-internal\"]:
-    if job_name in orch[\"jobs\"]:
-        passed = set(orch[\"jobs\"][job_name].get(\"with\", {}).keys())
-        unknown = passed - declared
-        assert not unknown, job_name + \" passes inputs publish-android-kmp does not declare: \" + str(unknown)
+checked = 0
+for job_name, job in orch[\"jobs\"].items():
+    uses = job.get(\"uses\", \"\")
+    if \"publish-android-kmp/\" not in uses: continue
+    repo, rest = uses.split(\"/.github/\", 1)[0], uses.split(\"/\", 2)[2]
+    path, ref = rest.split(\"@\")
+    raw = subprocess.run([\"gh\", \"api\", \"repos/\" + repo + \"/contents/\" + path + \"?ref=\" + ref, \"--jq\", \".content\"],
+                         capture_output=True, text=True, check=True).stdout
+    callee = yaml.safe_load(base64.b64decode(raw))
+    declared = callee[\"on\" if \"on\" in callee else True][\"workflow_call\"].get(\"inputs\") or {}
+    passed = set((job.get(\"with\") or {}).keys())
+    unknown = passed - set(declared)
+    required = {k for k, v in declared.items() if (v or {}).get(\"required\")} - passed
+    assert not unknown, job_name + \" passes inputs \" + path + \"@\" + ref + \" does not declare: \" + str(unknown)
+    assert not required, job_name + \" omits required inputs of \" + path + \": \" + str(required)
+    checked += 1
+assert checked, \"no publish-android-kmp job found\"
 '"
 run_test "T2b: orchestrator's call to publish-apple-kmp matches its workflow_call inputs" "py '
 import yaml, glob
@@ -164,23 +173,27 @@ echo
 
 # ── Tier 4: Caller→callee secrets schema ─────────────────────────────────────
 echo "── Tier 4: Caller→callee secrets schema ──"
-run_test "T3a: orchestrator forwards all secrets publish-android-kmp expects" "py '
-import yaml, glob
-publish_files = glob.glob(\"/tmp/release-publish-android-kmp-*.yaml\")
-assert publish_files
-publish = yaml.safe_load(open(publish_files[0]))
-expected = set(publish[\"on\" if \"on\" in publish else True][\"workflow_call\"][\"secrets\"].keys())
+# Each Android job is checked against the workflow it ACTUALLY calls: since the firebase ∥ play split
+# android-firebase calls release-firebase.yaml (no Play credentials) and android-promote release.yaml.
+run_test "T3a: orchestrator forwards all secrets each publish-android-kmp workflow expects" "py '
+import yaml, json, base64, subprocess
 orch = yaml.safe_load(open(\"$ORCH_RELEASE_FILE\"))
-# Orchestrator may use secrets: inherit OR explicit secrets block
-for job_name in [\"android-firebase\",\"android-internal\"]:
-    if job_name in orch[\"jobs\"]:
-        sec = orch[\"jobs\"][job_name].get(\"secrets\")
-        if sec == \"inherit\":
-            continue  # inherit passes everything available — OK
-        if isinstance(sec, dict):
-            missing = expected - set(sec.keys())
-            # All publish-android-kmp secrets are required=True so missing is a real bug
-            assert not missing, job_name + \" missing secrets that publish-android-kmp requires: \" + str(missing)
+checked = 0
+for job_name, job in orch[\"jobs\"].items():
+    uses = job.get(\"uses\", \"\")
+    if \"publish-android-kmp/\" not in uses: continue
+    repo, rest = uses.split(\"/.github/\", 1)[0], uses.split(\"/\", 2)[2]
+    path, ref = rest.split(\"@\")
+    raw = subprocess.run([\"gh\", \"api\", \"repos/\" + repo + \"/contents/\" + path + \"?ref=\" + ref, \"--jq\", \".content\"],
+                         capture_output=True, text=True, check=True).stdout
+    callee = yaml.safe_load(base64.b64decode(raw))
+    expected = set((callee[\"on\" if \"on\" in callee else True][\"workflow_call\"].get(\"secrets\") or {}).keys())
+    sec = job.get(\"secrets\")
+    checked += 1
+    if sec == \"inherit\": continue  # inherit passes everything available — OK
+    missing = expected - set((sec or {}).keys())
+    assert not missing, job_name + \" (\" + path + \") missing secrets it declares: \" + str(missing)
+assert checked, \"no publish-android-kmp job found\"
 '"
 run_test "T3b: orchestrator forwards all secrets publish-apple-kmp expects" "py '
 import yaml, glob
@@ -274,7 +287,8 @@ assert not d[\"jobs\"][\"version-resolve\"].get(\"needs\")
 run_test "T52: every platform job depends on [version-resolve, validate-secrets]" "py '
 import yaml
 d = yaml.safe_load(open(\"$ORCH_RELEASE_FILE\"))
-platform_jobs = [j for j in d[\"jobs\"] if j not in [\"validate-secrets\",\"version-resolve\"]]
+# gh-release-init / gh-release-finalize manage the GitHub release itself, not a platform publish.
+platform_jobs = [j for j in d[\"jobs\"] if j not in [\"validate-secrets\",\"version-resolve\",\"gh-release-init\",\"gh-release-finalize\"]]
 for j in platform_jobs:
     needs = d[\"jobs\"][j].get(\"needs\", [])
     if isinstance(needs, str): needs = [needs]

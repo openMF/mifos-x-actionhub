@@ -33,7 +33,7 @@ permissions:
 jobs:
   compute-version:
     name: Compute monthly version + tag
-    runs-on: ${{ vars.CI_RUNNER_LINUX || 'ubuntu-26.04' }}
+    runs-on: ${{ vars.CI_RUNNER_LINUX || 'ubuntu-latest' }}
     outputs:
       version_tag: ${{ steps.bump.outputs.version_tag }}
     steps:

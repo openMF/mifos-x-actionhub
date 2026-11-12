@@ -53,7 +53,7 @@ concurrency:
 
 jobs:
   promote:
-    runs-on: ${{ vars.CI_RUNNER_LINUX || 'ubuntu-26.04' }}
+    runs-on: ${{ vars.CI_RUNNER_LINUX || 'ubuntu-latest' }}
     steps:
       - name: Checkout dev (full history + tags)
         uses: actions/checkout@v5
