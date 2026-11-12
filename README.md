@@ -1675,18 +1675,14 @@ jobs:
 
 </div>
 
-## Runner images — one place to change
+## Runner images
 
-Every job picks its runner in this order:
+Runner labels are written in the workflows themselves — there are no `CI_RUNNER_*` variables to set:
 
-1. an explicit input from the caller (e.g. `runner_pool_mac: '["self-hosted","macOS"]'`), else
-2. the configuration variable **`CI_RUNNER_LINUX`** / **`CI_RUNNER_MAC`** / **`CI_RUNNER_WINDOWS`**, else
-3. the label pinned in the workflow today.
+- **Linux:** `ubuntu-latest`, which follows GitHub's newest Ubuntu image by itself.
+- **Windows:** `windows-latest`, likewise.
+- **macOS:** pinned per job (`macos-15` for the build and release jobs, `macos-26` / `macos-latest` where a job needs
+  Xcode 26), because a new macOS image is also a new Xcode toolchain. To move a job to a new image, change its label
+  and run one PR check on it first.
 
-Variables resolve from the **calling** repository's context, so set them once at the organization level
-(Settings → Secrets and variables → Actions → Variables) and every repo using these workflows follows.
-When GitHub ships a new image (e.g. `macos-16`), change `CI_RUNNER_MAC` — no PR, no release, and rolling back is
-the same one edit. With no variable set, nothing changes.
-
-`CI_RUNNER_MAC` must name an image whose Xcode can build your iOS targets. Change images in a quiet window: run one
-PR check on the new image first, because a new image is also a new toolchain.
+A caller can still choose its own runners through the explicit inputs (e.g. `runner_pool_mac: '["self-hosted","macOS"]'`).

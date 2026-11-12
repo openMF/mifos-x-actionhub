@@ -296,6 +296,12 @@ for j in platform_jobs:
 '"
 echo
 
+# Linux runs on `ubuntu-latest`, which follows GitHub's newest image by itself. macOS / Windows come only from the
+# CI_RUNNER_{MAC,WINDOWS} variables: a literal fallback (`vars.CI_RUNNER_MAC || 'macos-15'`) goes stale when GitHub
+# retires an image and then needs a PR in every workflow — three macOS fallbacks had already drifted apart.
+run_test "T60: Linux is ubuntu-latest; no runner label sits behind a CI_RUNNER_* variable" "! grep -rnE \"vars\\.CI_RUNNER_LINUX|vars\\.CI_RUNNER_[A-Z]+ *\\|\\|\" .github/workflows"
+echo
+
 # ─────────────────────────────────────────────────────────────────────────────
 echo "════════════════════════════════════════════════════════════════════════════"
 echo "  Results: $PASS passed · $FAIL failed"
