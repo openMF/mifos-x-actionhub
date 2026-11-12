@@ -244,7 +244,7 @@ jobs:
     needs: [ checks ]
     strategy:
       matrix:
-        os: ${{ fromJSON(inputs.runner_desktop_matrix || format('["{0}","{1}","{2}"]', 'ubuntu-latest', vars.CI_RUNNER_MAC, vars.CI_RUNNER_WINDOWS)) }}
+        os: ${{ fromJSON(inputs.runner_desktop_matrix || format('["{0}","{1}","{2}"]', 'ubuntu-latest', 'macos-latest', 'windows-latest')) }}
     runs-on: ${{ matrix.os }}
     steps:
       # Windows' 260-char MAX_PATH breaks checkout of the deep, tracked
@@ -305,7 +305,7 @@ jobs:
     name: Build iOS App
     if: ${{ inputs.build_ios }}
     needs: [ checks ]
-    runs-on: ${{ inputs.runner_macos || vars.CI_RUNNER_MAC }}
+    runs-on: ${{ inputs.runner_macos || 'macos-latest' }}
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v5

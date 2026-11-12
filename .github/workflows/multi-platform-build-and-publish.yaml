@@ -368,7 +368,7 @@ jobs:
   # Publish Android app on Firebase App Distribution
   publish_android_on_firebase:
     name: Deploy Android App On Firebase
-    runs-on: ${{ vars.CI_RUNNER_MAC }}
+    runs-on: macos-latest
     steps:
       # Check out caller repository
       - name: Checkout Caller Repository
@@ -398,7 +398,7 @@ jobs:
   # Publish Android app on Play Store
   publish_android_on_playstore:
     name: Publish Android App On Play Store
-    runs-on: ${{ vars.CI_RUNNER_MAC }}
+    runs-on: macos-latest
     steps:
       # Check out caller repository
       - name: Checkout Repository
@@ -429,7 +429,7 @@ jobs:
   publish_ios_app_to_firebase:
     name: Publish iOS App On Firebase
     if: inputs.distribute_ios_firebase
-    runs-on: ${{ vars.CI_RUNNER_MAC }}
+    runs-on: macos-latest
     permissions:
       contents: write
     steps:
@@ -483,7 +483,7 @@ jobs:
   publish_ios_app_to_testflight:
     name: Publish iOS App On TestFlight
     if: inputs.distribute_ios_testflight
-    runs-on: ${{ vars.CI_RUNNER_MAC }}
+    runs-on: macos-latest
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v5
@@ -529,7 +529,7 @@ jobs:
   publish_ios_app_to_appstore:
     name: Publish iOS App On App Store
     if: inputs.distribute_ios_appstore
-    runs-on: ${{ vars.CI_RUNNER_MAC }}
+    runs-on: macos-latest
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v5
@@ -575,7 +575,7 @@ jobs:
   publish_macos_app_to_testflight:
     name: Publish macOS App On TestFlight
     if: inputs.distribute_macos_testflight
-    runs-on: ${{ vars.CI_RUNNER_MAC }}
+    runs-on: macos-latest
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v5
@@ -607,7 +607,7 @@ jobs:
   publish_macos_app_to_appstore:
     name: Publish macOS App On App Store
     if: inputs.distribute_macos_appstore
-    runs-on: ${{ vars.CI_RUNNER_MAC }}
+    runs-on: macos-latest
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v5
@@ -641,7 +641,7 @@ jobs:
     name: Publish Desktop App
     strategy:
       matrix:
-        os: [ "ubuntu-latest", "${{ vars.CI_RUNNER_WINDOWS }}", "${{ vars.CI_RUNNER_MAC }}" ]
+        os: [ "ubuntu-latest", "windows-latest", "macos-latest" ]
     runs-on: ${{ matrix.os }}
     steps:
       # Windows' 260-char MAX_PATH breaks checkout of the deep, tracked
@@ -718,7 +718,7 @@ jobs:
   github_release:
     name: Create Github Release
     needs: [ publish_android_on_firebase, publish_ios_app_to_firebase, publish_desktop_external, publish_web ]
-    runs-on: ${{ vars.CI_RUNNER_MAC }}
+    runs-on: macos-latest
     steps:
       - uses: actions/checkout@v5
         with:
@@ -875,8 +875,8 @@ jobs:
           files: |
             ./all-artifacts/android-app/${{ inputs.android_package_name }}/build/outputs/apk/demo/release/*.apk
             ./all-artifacts/android-app/${{ inputs.android_package_name }}/build/outputs/apk/prod/release/*.apk
-            ./all-artifacts/desktop-app-${{ vars.CI_RUNNER_MAC }}/${{ inputs.desktop_package_name }}/build/compose/binaries/main-release/dmg/*.dmg
+            ./all-artifacts/desktop-app-macos-latest/${{ inputs.desktop_package_name }}/build/compose/binaries/main-release/dmg/*.dmg
             ./all-artifacts/desktop-app-ubuntu-latest/${{ inputs.desktop_package_name }}/build/compose/binaries/main-release/deb/*.deb
-            ./all-artifacts/desktop-app-${{ vars.CI_RUNNER_WINDOWS }}/${{ inputs.desktop_package_name }}/build/compose/binaries/main-release/exe/*.exe
-            ./all-artifacts/desktop-app-${{ vars.CI_RUNNER_WINDOWS }}/${{ inputs.desktop_package_name }}/build/compose/binaries/main-release/msi/*.msi            
+            ./all-artifacts/desktop-app-windows-latest/${{ inputs.desktop_package_name }}/build/compose/binaries/main-release/exe/*.exe
+            ./all-artifacts/desktop-app-windows-latest/${{ inputs.desktop_package_name }}/build/compose/binaries/main-release/msi/*.msi            
             ./all-artifacts/${{ inputs.web_package_name }}.zip
