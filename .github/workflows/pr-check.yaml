@@ -109,7 +109,7 @@ on:
       runner:
         description: >
           Runner label for Linux/Android/Web/checks jobs.
-          Use 'ubuntu-26.04' (default) for GitHub-hosted runners.
+          Use 'ubuntu-latest' (default) for GitHub-hosted runners.
           Use 'self-hosted' to route to a registered self-hosted macOS runner.
         type: string
         required: false
@@ -206,7 +206,7 @@ concurrency:
 jobs:
   checks:
     name: Static Analysis Check
-    runs-on: ${{ inputs.runner || vars.CI_RUNNER_LINUX || 'ubuntu-26.04' }}
+    runs-on: ${{ inputs.runner || vars.CI_RUNNER_LINUX || 'ubuntu-latest' }}
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v5
@@ -219,7 +219,7 @@ jobs:
   build_android_app:
     name: Build Android Application
     needs: [ checks ]
-    runs-on: ${{ inputs.runner || vars.CI_RUNNER_LINUX || 'ubuntu-26.04' }}
+    runs-on: ${{ inputs.runner || vars.CI_RUNNER_LINUX || 'ubuntu-latest' }}
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v5
@@ -244,7 +244,7 @@ jobs:
     needs: [ checks ]
     strategy:
       matrix:
-        os: ${{ fromJSON(inputs.runner_desktop_matrix || format('["{0}","{1}","{2}"]', vars.CI_RUNNER_LINUX || 'ubuntu-26.04', vars.CI_RUNNER_MAC || 'macos-latest', vars.CI_RUNNER_WINDOWS || 'windows-latest')) }}
+        os: ${{ fromJSON(inputs.runner_desktop_matrix || format('["{0}","{1}","{2}"]', vars.CI_RUNNER_LINUX || 'ubuntu-latest', vars.CI_RUNNER_MAC || 'macos-latest', vars.CI_RUNNER_WINDOWS || 'windows-latest')) }}
     runs-on: ${{ matrix.os }}
     steps:
       # Windows' 260-char MAX_PATH breaks checkout of the deep, tracked
@@ -283,7 +283,7 @@ jobs:
   build_web_app:
     name: Build Web Application
     needs: [ checks ]
-    runs-on: ${{ inputs.runner || vars.CI_RUNNER_LINUX || 'ubuntu-26.04' }}
+    runs-on: ${{ inputs.runner || vars.CI_RUNNER_LINUX || 'ubuntu-latest' }}
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v5

@@ -1,6 +1,7 @@
 # .github/workflows/release-android-v2.yaml
 #
-# Thin wrapper → therajanmaurya/mifos-x-actionhub-publish-android-kmp/.github/workflows/release.yaml@v2.0.30
+# Thin wrapper → therajanmaurya/mifos-x-actionhub-publish-android-kmp @v2.0.31: `firebase` goes to
+# release-firebase.yaml (Firebase App Distribution), every other rung to release.yaml (the Play ladder).
 # Provides a stable @v1.0.17+ entry point for consumers who want the discoverable
 # mifos-x-actionhub interface instead of referencing the platform repo directly.
 #
@@ -14,7 +15,7 @@ on:
     inputs:
       android_package_name: { required: true,  type: string, description: 'Gradle module (e.g. cmp-android)' }
       version_tag:          { required: true,  type: string, description: 'Version tag (e.g. v2026.06.16)' }
-      starting_rung:        { required: false, type: string, default: 'firebase', description: 'firebase | internal | beta | production' }
+      starting_rung:        { required: false, type: string, default: 'firebase', description: 'firebase | internal | closed | beta | production' }
       tester_groups:        { required: false, type: string, default: 'qa-team,beta-testers', description: 'Firebase tester groups' }
       production_rollout:   { required: false, type: string, default: '0.10', description: 'Stage 3 staged rollout percentage' }
     secrets:
@@ -35,11 +36,24 @@ on:
     inputs:
       android_package_name: { required: true,  type: string, default: 'cmp-android' }
       version_tag:          { required: true,  type: string }
-      starting_rung:        { required: false, type: choice, options: [firebase, internal, beta, production], default: firebase }
+      starting_rung:        { required: false, type: choice, options: [firebase, internal, closed, beta, production], default: firebase }
 
 jobs:
+  # Since the firebase ∥ play split (publish-android-kmp v2.0.17, on dev from v2.0.31) release.yaml is the
+  # Play ladder only; Firebase App Distribution is release-firebase.yaml. The rung picks one of them —
+  # `firebase` alone distributes to Firebase, as release.yaml's Stage 0 did before the split.
+  firebase:
+    if: ${{ inputs.starting_rung == 'firebase' }}
+    uses: therajanmaurya/mifos-x-actionhub-publish-android-kmp/.github/workflows/release-firebase.yaml@v2.0.31
+    with:
+      android_package_name: ${{ inputs.android_package_name }}
+      version_tag:          ${{ inputs.version_tag }}
+      tester_groups:        ${{ inputs.tester_groups }}
+    secrets: inherit
+
   delegate:
-    uses: therajanmaurya/mifos-x-actionhub-publish-android-kmp/.github/workflows/release.yaml@v2.0.30
+    if: ${{ inputs.starting_rung != 'firebase' }}
+    uses: therajanmaurya/mifos-x-actionhub-publish-android-kmp/.github/workflows/release.yaml@v2.0.31
     with:
       android_package_name: ${{ inputs.android_package_name }}
       version_tag:          ${{ inputs.version_tag }}
