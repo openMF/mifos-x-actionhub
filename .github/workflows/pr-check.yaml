@@ -206,7 +206,7 @@ concurrency:
 jobs:
   checks:
     name: Static Analysis Check
-    runs-on: ${{ inputs.runner || vars.CI_RUNNER_LINUX || 'ubuntu-latest' }}
+    runs-on: ${{ inputs.runner || vars.CI_RUNNER_LINUX }}
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v5
@@ -219,7 +219,7 @@ jobs:
   build_android_app:
     name: Build Android Application
     needs: [ checks ]
-    runs-on: ${{ inputs.runner || vars.CI_RUNNER_LINUX || 'ubuntu-latest' }}
+    runs-on: ${{ inputs.runner || vars.CI_RUNNER_LINUX }}
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v5
@@ -244,7 +244,7 @@ jobs:
     needs: [ checks ]
     strategy:
       matrix:
-        os: ${{ fromJSON(inputs.runner_desktop_matrix || format('["{0}","{1}","{2}"]', vars.CI_RUNNER_LINUX || 'ubuntu-latest', vars.CI_RUNNER_MAC || 'macos-latest', vars.CI_RUNNER_WINDOWS || 'windows-latest')) }}
+        os: ${{ fromJSON(inputs.runner_desktop_matrix || format('["{0}","{1}","{2}"]', vars.CI_RUNNER_LINUX, vars.CI_RUNNER_MAC, vars.CI_RUNNER_WINDOWS)) }}
     runs-on: ${{ matrix.os }}
     steps:
       # Windows' 260-char MAX_PATH breaks checkout of the deep, tracked
@@ -283,7 +283,7 @@ jobs:
   build_web_app:
     name: Build Web Application
     needs: [ checks ]
-    runs-on: ${{ inputs.runner || vars.CI_RUNNER_LINUX || 'ubuntu-latest' }}
+    runs-on: ${{ inputs.runner || vars.CI_RUNNER_LINUX }}
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v5
@@ -305,7 +305,7 @@ jobs:
     name: Build iOS App
     if: ${{ inputs.build_ios }}
     needs: [ checks ]
-    runs-on: ${{ inputs.runner_macos || vars.CI_RUNNER_MAC || 'macos-latest' }}
+    runs-on: ${{ inputs.runner_macos || vars.CI_RUNNER_MAC }}
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v5

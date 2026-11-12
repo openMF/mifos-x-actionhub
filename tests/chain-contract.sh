@@ -296,6 +296,12 @@ for j in platform_jobs:
 '"
 echo
 
+# Runner images live in ONE place — the CI_RUNNER_{LINUX,MAC,WINDOWS} org variables. A literal fallback
+# (`vars.CI_RUNNER_MAC || 'macos-15'`) goes stale when GitHub retires an image and then needs a PR in every
+# workflow; three different macOS fallbacks had already drifted apart before they were removed.
+run_test "T60: no workflow pins a runner label behind a CI_RUNNER_* variable" "! grep -rnE \"vars\\.CI_RUNNER_[A-Z]+ *\\|\\|\" .github/workflows"
+echo
+
 # ─────────────────────────────────────────────────────────────────────────────
 echo "════════════════════════════════════════════════════════════════════════════"
 echo "  Results: $PASS passed · $FAIL failed"
