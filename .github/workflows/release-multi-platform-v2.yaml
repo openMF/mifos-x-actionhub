@@ -129,7 +129,7 @@ on:
 jobs:
   version-resolve:
     name: Version
-    runs-on: ${{ fromJSON(inputs.runner_pool_linux || format('["{0}"]', vars.CI_RUNNER_LINUX)) }}
+    runs-on: ${{ fromJSON(inputs.runner_pool_linux || format('["{0}"]', 'ubuntu-latest')) }}
     outputs:
       version: ${{ steps.compute.outputs.version }}
     steps:
@@ -168,7 +168,7 @@ jobs:
   # die deep in Fastlane / Gradle / Play Console with confusing errors.
   validate-secrets:
     name: Preflight · Secrets
-    runs-on: ${{ fromJSON(inputs.runner_pool_linux || format('["{0}"]', vars.CI_RUNNER_LINUX)) }}
+    runs-on: ${{ fromJSON(inputs.runner_pool_linux || format('["{0}"]', 'ubuntu-latest')) }}
     steps:
       - name: Android — google_services + upload_keystore family
         if: ${{ inputs.android_target != 'skip' }}
@@ -280,7 +280,7 @@ jobs:
   gh-release-init:
     name: Release · Init
     needs: [version-resolve]
-    runs-on: ${{ fromJSON(inputs.runner_pool_linux || format('["{0}"]', vars.CI_RUNNER_LINUX)) }}
+    runs-on: ${{ fromJSON(inputs.runner_pool_linux || format('["{0}"]', 'ubuntu-latest')) }}
     permissions:
       contents: write
     steps:
@@ -334,7 +334,7 @@ jobs:
       mode:                 ${{ inputs.fastlane_mode }}
       fastlane_cwd:         ${{ inputs.fastlane_cwd }}
       pre_fastlane_script:  ${{ inputs.pre_fastlane_script }}
-      runner_pool:          ${{ inputs.runner_pool_linux || format('["{0}"]', vars.CI_RUNNER_LINUX) }}
+      runner_pool:          ${{ inputs.runner_pool_linux || format('["{0}"]', 'ubuntu-latest') }}
       flavor:               ${{ inputs.flavor }}
       build_type:           ${{ inputs.build_type }}
     # EXPLICIT secret map (NOT inherit). This chain is cross-ORG at every hop
@@ -372,7 +372,7 @@ jobs:
       mode:                 ${{ inputs.fastlane_mode }}
       fastlane_cwd:         ${{ inputs.fastlane_cwd }}
       pre_fastlane_script:  ${{ inputs.pre_fastlane_script }}
-      runner_pool:          ${{ inputs.runner_pool_linux || format('["{0}"]', vars.CI_RUNNER_LINUX) }}
+      runner_pool:          ${{ inputs.runner_pool_linux || format('["{0}"]', 'ubuntu-latest') }}
       # TODO(phase-4-followup): therajanmaurya/mifos-x-actionhub-publish-android-kmp release.yaml (Play Store
       # internal / beta / production ladder) must declare matching `flavor` + `build_type` inputs and thread them
       # into the `bundle exec fastlane android <lane>` invocation. Silently ignored downstream until it does.
@@ -573,7 +573,7 @@ jobs:
       - desktop-linux
       - web
     if: ${{ always() && needs.gh-release-init.result == 'success' }}
-    runs-on: ${{ fromJSON(inputs.runner_pool_linux || format('["{0}"]', vars.CI_RUNNER_LINUX)) }}
+    runs-on: ${{ fromJSON(inputs.runner_pool_linux || format('["{0}"]', 'ubuntu-latest')) }}
     permissions:
       contents: write
     steps:

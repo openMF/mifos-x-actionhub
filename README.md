@@ -1677,19 +1677,19 @@ jobs:
 
 ## Runner images — one place to change
 
-Every job picks its runner in this order:
+**Linux** jobs run on `ubuntu-latest`, written in the workflows. That label always follows GitHub's newest Ubuntu
+image, so it never goes stale and there is nothing to set.
+
+**macOS** and **Windows** jobs pick their runner in this order:
 
 1. an explicit input from the caller (e.g. `runner_pool_mac: '["self-hosted","macOS"]'`), else
-2. the configuration variable **`CI_RUNNER_LINUX`** / **`CI_RUNNER_MAC`** / **`CI_RUNNER_WINDOWS`**.
+2. the configuration variable **`CI_RUNNER_MAC`** / **`CI_RUNNER_WINDOWS`**.
 
-There is no label in the workflows themselves: a pinned fallback goes stale the moment GitHub retires an image,
-and every workflow then needs a PR. The variables are therefore **required**.
-
-Variables resolve from the **calling** repository's context, so set them once at the organization level
-(Settings → Secrets and variables → Actions → Variables) and every repo using these workflows follows.
-When GitHub ships a new image (e.g. `macos-16`), change `CI_RUNNER_MAC` — no PR, no release, and rolling back is
-the same one edit. A repository that cannot see the variables gets an empty `runs-on` and its runs do not start —
-so set them at the organization level with access for all repositories (or per repository, for a repo outside it).
+There is no label behind those variables: a pinned fallback goes stale the moment GitHub retires an image, and every
+workflow then needs a PR. Variables resolve from the **calling** repository's context, so set them once at the
+organization level (Settings → Secrets and variables → Actions → Variables) with access for all repositories. When
+GitHub ships a new image (e.g. `macos-16`), change `CI_RUNNER_MAC` — no PR, no release, and rolling back is the same
+one edit. A repository that cannot see them gets an empty `runs-on` and its macOS / Windows runs do not start.
 
 `CI_RUNNER_MAC` must name an image whose Xcode can build your iOS targets. Change images in a quiet window: run one
 PR check on the new image first, because a new image is also a new toolchain.

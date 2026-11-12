@@ -67,7 +67,7 @@ on:
 jobs:
   coverage:
     name: Enforce per-module coverage floor
-    runs-on: ${{ inputs.runs-on || vars.CI_RUNNER_LINUX }}
+    runs-on: ${{ inputs.runs-on || 'ubuntu-latest' }}
     timeout-minutes: ${{ inputs.timeout-minutes }}
 
     steps:

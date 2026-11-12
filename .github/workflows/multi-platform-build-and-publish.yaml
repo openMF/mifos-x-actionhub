@@ -641,7 +641,7 @@ jobs:
     name: Publish Desktop App
     strategy:
       matrix:
-        os: [ "${{ vars.CI_RUNNER_LINUX }}", "${{ vars.CI_RUNNER_WINDOWS }}", "${{ vars.CI_RUNNER_MAC }}" ]
+        os: [ "ubuntu-latest", "${{ vars.CI_RUNNER_WINDOWS }}", "${{ vars.CI_RUNNER_MAC }}" ]
     runs-on: ${{ matrix.os }}
     steps:
       # Windows' 260-char MAX_PATH breaks checkout of the deep, tracked
@@ -689,7 +689,7 @@ jobs:
   # Web Publishing Job
   publish_web:
     name: Publish Web App
-    runs-on: ${{ vars.CI_RUNNER_LINUX }}
+    runs-on: ubuntu-latest
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
@@ -876,7 +876,7 @@ jobs:
             ./all-artifacts/android-app/${{ inputs.android_package_name }}/build/outputs/apk/demo/release/*.apk
             ./all-artifacts/android-app/${{ inputs.android_package_name }}/build/outputs/apk/prod/release/*.apk
             ./all-artifacts/desktop-app-${{ vars.CI_RUNNER_MAC }}/${{ inputs.desktop_package_name }}/build/compose/binaries/main-release/dmg/*.dmg
-            ./all-artifacts/desktop-app-${{ vars.CI_RUNNER_LINUX }}/${{ inputs.desktop_package_name }}/build/compose/binaries/main-release/deb/*.deb
+            ./all-artifacts/desktop-app-ubuntu-latest/${{ inputs.desktop_package_name }}/build/compose/binaries/main-release/deb/*.deb
             ./all-artifacts/desktop-app-${{ vars.CI_RUNNER_WINDOWS }}/${{ inputs.desktop_package_name }}/build/compose/binaries/main-release/exe/*.exe
             ./all-artifacts/desktop-app-${{ vars.CI_RUNNER_WINDOWS }}/${{ inputs.desktop_package_name }}/build/compose/binaries/main-release/msi/*.msi            
             ./all-artifacts/${{ inputs.web_package_name }}.zip
