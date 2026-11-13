@@ -296,10 +296,26 @@ for j in platform_jobs:
 '"
 echo
 
-# Linux runs on `ubuntu-latest`, which follows GitHub's newest image by itself. macOS / Windows come only from the
-# CI_RUNNER_{MAC,WINDOWS} variables: a literal fallback (`vars.CI_RUNNER_MAC || 'macos-15'`) goes stale when GitHub
-# retires an image and then needs a PR in every workflow — three macOS fallbacks had already drifted apart.
+# Runner labels are written in the workflows: Linux runs on `ubuntu-latest`, which follows GitHub's newest image by
+# itself, and each macOS / Windows job keeps the image it needs. None sits behind a CI_RUNNER_* variable, which the
+# repositories using these workflows cannot set.
 run_test "T60: Linux is ubuntu-latest; no runner label sits behind a CI_RUNNER_* variable" "! grep -rnE \"vars\\.CI_RUNNER_LINUX|vars\\.CI_RUNNER_[A-Z]+ *\\|\\|\" .github/workflows"
+
+# An expression string has no backslash escapes: `'[\"ubuntu-latest\"]'` reaches fromJSON as the text
+# [\"ubuntu-latest\"], which is not JSON, so the job cannot be created and every job after it is skipped. That
+# shipped in v1.0.73 and stopped every release before its first job; nothing before a real run noticed.
+run_test "T61: every JSON array literal in an expression parses as JSON" "python3 -c '
+import json, pathlib, re, sys
+bad = []
+for f in pathlib.Path(\".github/workflows\").glob(\"*.y*ml\"):
+    for n, line in enumerate(f.read_text().splitlines(), 1):
+        for expr in re.findall(r\"\\\$\\{\\{(.*?)\\}\\}\", line):
+            for lit in re.findall(r\"'\''(\\[[^'\'']*\\])'\''\", expr):
+                if \"{\" in lit: continue
+                try: json.loads(lit)
+                except ValueError: bad.append(f\"{f}:{n}: {lit}\")
+print(\"\\n\".join(bad)); sys.exit(1 if bad else 0)
+'"
 echo
 
 # ─────────────────────────────────────────────────────────────────────────────
