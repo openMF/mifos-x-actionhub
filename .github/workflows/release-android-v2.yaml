@@ -44,7 +44,7 @@ jobs:
   # `firebase` alone distributes to Firebase, as release.yaml's Stage 0 did before the split.
   firebase:
     if: ${{ inputs.starting_rung == 'firebase' }}
-    uses: therajanmaurya/mifos-x-actionhub-publish-android-kmp/.github/workflows/release-firebase.yaml@v2.0.31
+    uses: therajanmaurya/mifos-x-actionhub-publish-android-kmp/.github/workflows/release-firebase.yaml@v2.0.32
     with:
       android_package_name: ${{ inputs.android_package_name }}
       version_tag:          ${{ inputs.version_tag }}
@@ -53,7 +53,7 @@ jobs:
 
   delegate:
     if: ${{ inputs.starting_rung != 'firebase' }}
-    uses: therajanmaurya/mifos-x-actionhub-publish-android-kmp/.github/workflows/release.yaml@v2.0.31
+    uses: therajanmaurya/mifos-x-actionhub-publish-android-kmp/.github/workflows/release.yaml@v2.0.32
     with:
       android_package_name: ${{ inputs.android_package_name }}
       version_tag:          ${{ inputs.version_tag }}
